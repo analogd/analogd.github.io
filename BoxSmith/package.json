@@ -1,0 +1,15 @@
+{
+  "name": "boxsmith",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules lib/test/run-all-tests.mjs",
+    "lint": "eslint lib/ ui/",
+    "lint:fix": "eslint lib/ ui/ --fix"
+  },
+  "devDependencies": {
+    "eslint": "^9.17.0",
+    "eslint-plugin-import": "^2.31.0"
+  }
+}

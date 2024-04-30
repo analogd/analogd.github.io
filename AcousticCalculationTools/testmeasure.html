@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Distance Measurement</title>
+    <script src="https://aframe.io/releases/1.0.4/aframe.min.js"></script>
+    <script src="https://cdn.rawgit.com/jeromeetienne/ar.js/master/aframe/build/aframe-ar.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: Arial, sans-serif; }
+        #info { position: absolute; top: 10px; left: 10px; color: white; background: rgba(0, 0, 0, 0.5); padding: 10px; z-index: 2; }
+        #non-ios-warning { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; background: rgba(0, 0, 0, 0.8); padding: 20px; text-align: center; z-index: 2; }
+        #scene-container { width: 100%; height: 100%; }
+        .marker { color: white; background: red; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="info">
+        <button onclick="startMeasurement('L')">Measure Left Speaker</button>
+        <button onclick="startMeasurement('C')">Measure Center Speaker</button>
+        <button onclick="startMeasurement('R')">Measure Right Speaker</button>
+        <button onclick="startMeasurement('Sub')">Measure Subwoofer</button>
+        <div id="instructions">Click on the button to start measuring.</div>
+        <div id="results"></div>
+    </div>
+    <div id="non-ios-warning">
+        Please use an iOS device with AR capabilities to take measurements.
+    </div>
+    <div id="scene-container">
+        <a-scene embedded arjs>
+            <a-marker preset="hiro" id="marker">
+                <a-box position="0 0.5 0" material="color: yellow;"></a-box>
+            </a-marker>
+            <a-entity camera></a-entity>
+        </a-scene>
+    </div>
+
+    <script>
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        if (!isIOS) {
+            document.getElementById('info').style.display = 'none';
+            document.getElementById('non-ios-warning').style.display = 'block';
+        }
+
+        let startPosition = null;
+        let distances = { L: null, C: null, R: null, Sub: null };
+        let currentMeasurement = null;
+
+        function startMeasurement(speaker) {
+            currentMeasurement = speaker;
+            startPosition = null;
+            document.getElementById('instructions').textContent = `Point at the listening position and click on the marker to start measuring the ${speaker} speaker.`;
+        }
+
+        document.getElementById('marker').addEventListener('click', function(event) {
+            if (currentMeasurement) {
+                if (!startPosition) {
+                    startPosition = event.detail.intersection.point;
+                    document.getElementById('instructions').textContent = `Now point at the ${currentMeasurement} speaker and click on the marker again to measure the distance.`;
+                } else {
+                    let endPosition = event.detail.intersection.point;
+                    let distance = calculateDistance(startPosition, endPosition);
+                    distances[currentMeasurement] = distance;
+                    displayResults();
+                    document.getElementById('instructions').textContent = `Measurement for ${currentMeasurement} completed. Select another speaker to measure.`;
+                    currentMeasurement = null;
+                }
+            }
+        });
+
+        function calculateDistance(start, end) {
+            let dx = start.x - end.x;
+            let dy = start.y - end.y;
+            let dz = start.z - end.z;
+            return Math.sqrt(dx * dx + dy * dy + dz * dz).toFixed(2);
+        }
+
+        function displayResults() {
+            let resultDiv = document.getElementById('results');
+            resultDiv.innerHTML = `
+                Left Speaker: ${distances.L ? distances.L + ' meters' : 'Not measured'}<br>
+                Center Speaker: ${distances.C ? distances.C + ' meters' : 'Not measured'}<br>
+                Right Speaker: ${distances.R ? distances.R + ' meters' : 'Not measured'}<br>
+                Subwoofer: ${distances.Sub ? distances.Sub + ' meters' : 'Not measured'}
+            `;
+        }
+    </script>
+</body>
+</html>

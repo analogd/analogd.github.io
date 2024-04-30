@@ -1,0 +1,41 @@
+{
+  "name": "@boxsmith/core",
+  "version": "0.1.0",
+  "description": "Loudspeaker enclosure design library built from Thiele-Small theory",
+  "type": "module",
+  "main": "models/index.js",
+  "exports": {
+    ".": "./models/index.js",
+    "./foundation": "./foundation/index.js",
+    "./foundation/*": "./foundation/*.js",
+    "./engineering": "./engineering/index.js",
+    "./tools": "./tools/index.js"
+  },
+  "files": [
+    "foundation/",
+    "engineering/",
+    "models/",
+    "tools/",
+    "reference/"
+  ],
+  "keywords": [
+    "loudspeaker",
+    "subwoofer",
+    "thiele-small",
+    "enclosure",
+    "audio",
+    "acoustics",
+    "speaker-design"
+  ],
+  "author": "",
+  "license": "MIT",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/analogd/BoxSmith"
+  }
+}

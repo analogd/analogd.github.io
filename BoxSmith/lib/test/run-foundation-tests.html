@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foundation Tests - Loudspeaker Theory</title>
+    <style>
+        body {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #8b949e;
+            margin-bottom: 30px;
+        }
+        .actions {
+            margin: 20px 0;
+        }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #2ea043;
+        }
+        button.secondary {
+            background: #21262d;
+            border: 1px solid #30363d;
+        }
+        button.secondary:hover {
+            background: #30363d;
+        }
+        #console {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            font-size: 13px;
+            white-space: pre-wrap;
+            font-family: 'SF Mono', Monaco, monospace;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .pass { color: #3fb950; }
+        .fail { color: #f85149; }
+        .info { color: #58a6ff; }
+        .group { color: #d2a8ff; font-weight: bold; }
+        .summary {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .metric {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .metric-label {
+            color: #8b949e;
+        }
+        .metric-value {
+            color: #58a6ff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Foundation Library - Test Suite</h1>
+    <div class="subtitle">Pure Thiele-Small theory validated against published papers</div>
+
+    <div class="actions">
+        <button id="runTests" onclick="runTests()">▶ Run Tests</button>
+        <button class="secondary" onclick="clearConsole()">Clear</button>
+    </div>
+
+    <div id="summary" class="summary" style="display: none;">
+        <div class="metric">
+            <span class="metric-label">Total:</span>
+            <span class="metric-value" id="totalTests">0</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Passed:</span>
+            <span class="metric-value pass" id="passedTests">0</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Failed:</span>
+            <span class="metric-value fail" id="failedTests">0</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Success:</span>
+            <span class="metric-value" id="successRate">0%</span>
+        </div>
+    </div>
+
+    <div id="console"></div>
+
+    <script type="module">
+        import { runFoundationTests } from './Foundation.test.js';
+
+        const consoleElement = document.getElementById('console');
+        let testStats = {
+            total: 0,
+            passed: 0,
+            failed: 0,
+            currentGroup: null
+        };
+
+        function log(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = message;
+            consoleElement.appendChild(line);
+            consoleElement.scrollTop = consoleElement.scrollHeight;
+        }
+
+        function describe(name, fn) {
+            testStats.currentGroup = name;
+            log(`\n${name}`, 'group');
+            fn();
+            testStats.currentGroup = null;
+        }
+
+        function test(name, fn) {
+            testStats.total++;
+            try {
+                fn();
+                testStats.passed++;
+                log(`  ✅ ${name}`, 'pass');
+            } catch (error) {
+                testStats.failed++;
+                log(`  ❌ ${name}`, 'fail');
+                log(`     ${error.message}`, 'fail');
+            }
+        }
+
+        const expect = (actual) => ({
+            toBe(expected) {
+                if (actual !== expected) {
+                    throw new Error(`Expected ${expected}, got ${actual}`);
+                }
+            },
+            toBeCloseTo(expected, decimals = 2) {
+                const factor = Math.pow(10, decimals);
+                const roundedActual = Math.round(actual * factor) / factor;
+                const roundedExpected = Math.round(expected * factor) / factor;
+                if (roundedActual !== roundedExpected) {
+                    throw new Error(`Expected ${expected}, got ${actual} (rounded to ${decimals} decimals)`);
+                }
+            },
+            toBeGreaterThan(expected) {
+                if (actual <= expected) {
+                    throw new Error(`Expected ${actual} > ${expected}`);
+                }
+            },
+            toBeLessThan(expected) {
+                if (actual >= expected) {
+                    throw new Error(`Expected ${actual} < ${expected}`);
+                }
+            },
+            toBeGreaterThanOrEqual(expected) {
+                if (actual < expected) {
+                    throw new Error(`Expected ${actual} >= ${expected}`);
+                }
+            },
+            toBeLessThanOrEqual(expected) {
+                if (actual > expected) {
+                    throw new Error(`Expected ${actual} <= ${expected}`);
+                }
+            },
+            toThrow() {
+                try {
+                    actual();
+                    throw new Error('Expected function to throw');
+                } catch (e) {
+                    // Expected
+                }
+            }
+        });
+
+        // Make test functions available globally
+        window.TestFramework = { test, expect, describe };
+
+        window.runTests = function() {
+            document.getElementById('runTests').disabled = true;
+            document.getElementById('console').innerHTML = '';
+            testStats = { total: 0, passed: 0, failed: 0, currentGroup: null };
+
+            log('🧪 Running Foundation Tests\n', 'info');
+
+            runFoundationTests({ test, expect, describe });
+
+            // Update summary
+            document.getElementById('summary').style.display = 'block';
+            document.getElementById('totalTests').textContent = testStats.total;
+            document.getElementById('passedTests').textContent = testStats.passed;
+            document.getElementById('failedTests').textContent = testStats.failed;
+            const successRate = testStats.total > 0
+                ? ((testStats.passed / testStats.total) * 100).toFixed(1)
+                : 0;
+            document.getElementById('successRate').textContent = successRate + '%';
+
+            log(`\n📊 Final Results: ${testStats.passed}/${testStats.total} passed`,
+                testStats.failed === 0 ? 'pass' : 'info');
+
+            document.getElementById('runTests').disabled = false;
+        };
+
+        window.clearConsole = function() {
+            document.getElementById('console').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+        };
+
+        // Auto-message on load
+        window.addEventListener('load', () => {
+            log('Foundation test suite loaded. Click "Run Tests" to begin.', 'info');
+        });
+    </script>
+</body>
+</html>

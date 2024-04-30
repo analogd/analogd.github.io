@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSP Playground - BoxSmith</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* DSP Playground specific styles - will move to styles.css later */
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .dsp-playground {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .dsp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .dsp-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f0f6fc;
+            margin: 0;
+        }
+
+        .dsp-header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .dsp-btn {
+            padding: 8px 16px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            color: #c9d1d9;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .dsp-btn:hover {
+            background: #30363d;
+            border-color: #484f58;
+        }
+
+        .dsp-btn.primary {
+            background: #238636;
+            border-color: #238636;
+            color: #fff;
+        }
+
+        .dsp-btn.primary:hover {
+            background: #2ea043;
+        }
+
+        /* Graphs Container */
+        .dsp-graphs {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .dsp-graph-container {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .dsp-graph-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .dsp-graph-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #f0f6fc;
+        }
+
+        .dsp-graph-toggle {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dsp-toggle-btn {
+            padding: 4px 12px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            color: #8b949e;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .dsp-toggle-btn:first-child {
+            border-radius: 4px 0 0 4px;
+        }
+
+        .dsp-toggle-btn:last-child {
+            border-radius: 0 4px 4px 0;
+        }
+
+        .dsp-toggle-btn:not(:first-child) {
+            border-left: none;
+        }
+
+        .dsp-toggle-btn.active {
+            background: #0d419d;
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+
+        .dsp-graph-wrapper {
+            height: 220px;
+            position: relative;
+        }
+
+        /* Drag hint overlay */
+        .dsp-drag-hint {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 0.6875rem;
+            color: #6e7681;
+            pointer-events: none;
+        }
+
+        /* Filter Slots */
+        .dsp-filter-slots {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .dsp-filter-slot {
+            flex: 1;
+            min-width: 100px;
+            max-width: 140px;
+            padding: 12px;
+            background: #161b22;
+            border: 2px solid #30363d;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: center;
+        }
+
+        .dsp-filter-slot:hover {
+            border-color: #484f58;
+        }
+
+        .dsp-filter-slot.selected {
+            border-color: #58a6ff;
+            background: #1c2128;
+        }
+
+        .dsp-filter-slot.disabled {
+            opacity: 0.4;
+        }
+
+        .dsp-filter-slot-color {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            margin-bottom: 8px;
+        }
+
+        .dsp-filter-slot-type {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #f0f6fc;
+            margin-bottom: 4px;
+        }
+
+        .dsp-filter-slot-value {
+            font-size: 0.6875rem;
+            color: #8b949e;
+        }
+
+        .dsp-filter-slot-toggle {
+            margin-top: 8px;
+        }
+
+        .dsp-filter-slot-toggle input {
+            accent-color: #58a6ff;
+        }
+
+        /* Type dropdown in slot */
+        .dsp-filter-slot select {
+            width: 100%;
+            padding: 4px 6px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            color: #f0f6fc;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 4px;
+        }
+
+        .dsp-filter-slot select:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+
+        /* Selected Filter Controls */
+        .dsp-controls {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .dsp-controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #21262d;
+        }
+
+        .dsp-controls-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        .dsp-controls-subtitle {
+            font-size: 0.75rem;
+            color: #8b949e;
+        }
+
+        .dsp-controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+        }
+
+        .dsp-control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .dsp-control-group.hidden {
+            display: none;
+        }
+
+        .dsp-control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .dsp-control-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: #8b949e;
+        }
+
+        .dsp-control-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #f0f6fc;
+        }
+
+        .dsp-control-value .unit {
+            font-size: 0.75rem;
+            font-weight: 400;
+            color: #8b949e;
+            margin-left: 2px;
+        }
+
+        .dsp-slider {
+            width: 100%;
+            height: 6px;
+            background: #30363d;
+            border-radius: 3px;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .dsp-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #58a6ff;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.1s ease;
+        }
+
+        .dsp-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .dsp-slider-range {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6875rem;
+            color: #6e7681;
+            margin-top: 4px;
+        }
+
+        /* Filter Type Selector */
+        .dsp-type-selector {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .dsp-type-btn {
+            padding: 6px 12px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            color: #8b949e;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .dsp-type-btn:hover {
+            background: #30363d;
+            color: #c9d1d9;
+        }
+
+        .dsp-type-btn.active {
+            background: #0d419d;
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+
+        /* Order selector for HPF/LPF/APF */
+        .dsp-order-selector {
+            display: flex;
+            gap: 4px;
+        }
+
+        .dsp-order-btn {
+            padding: 4px 10px;
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 4px;
+            color: #8b949e;
+            font-size: 0.6875rem;
+            cursor: pointer;
+        }
+
+        .dsp-order-btn.active {
+            background: #0d419d;
+            border-color: #58a6ff;
+            color: #58a6ff;
+        }
+
+        /* Back link */
+        .dsp-back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #58a6ff;
+            text-decoration: none;
+            font-size: 0.875rem;
+            margin-bottom: 16px;
+        }
+
+        .dsp-back-link:hover {
+            text-decoration: underline;
+        }
+
+        /* Info panel */
+        .dsp-info {
+            margin-top: 24px;
+            padding: 16px;
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+        }
+
+        .dsp-info-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #8b949e;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .dsp-info-content {
+            font-size: 0.8125rem;
+            color: #c9d1d9;
+            line-height: 1.6;
+        }
+
+        .dsp-info-content code {
+            background: #21262d;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="dsp-playground">
+        <a href="index.html" class="dsp-back-link">← Back to BoxSmith</a>
+
+        <div class="dsp-header">
+            <h1>DSP Playground</h1>
+            <div class="dsp-header-actions">
+                <button class="dsp-btn primary" id="loadAutoEqBtn">Load Auto-EQ</button>
+                <button class="dsp-btn" id="resetBtn">Reset All</button>
+            </div>
+        </div>
+
+        <!-- Graphs -->
+        <div class="dsp-graphs">
+            <!-- Magnitude Graph -->
+            <div class="dsp-graph-container">
+                <div class="dsp-graph-header">
+                    <span class="dsp-graph-title">Magnitude Response</span>
+                </div>
+                <div class="dsp-graph-wrapper">
+                    <canvas id="magnitudeChart"></canvas>
+                    <div class="dsp-drag-hint">Drag PEQ nodes to adjust</div>
+                </div>
+            </div>
+
+            <!-- Phase / Group Delay Graph -->
+            <div class="dsp-graph-container">
+                <div class="dsp-graph-header">
+                    <span class="dsp-graph-title">Phase Response</span>
+                    <div class="dsp-graph-toggle">
+                        <button class="dsp-toggle-btn active" data-mode="phase">Phase (°)</button>
+                        <button class="dsp-toggle-btn" data-mode="delay">Group Delay (ms)</button>
+                    </div>
+                </div>
+                <div class="dsp-graph-wrapper">
+                    <canvas id="phaseChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Slots (generated by JS) -->
+        <div class="dsp-filter-slots" id="filterSlots"></div>
+
+        <!-- Selected Filter Controls -->
+        <div class="dsp-controls">
+            <div class="dsp-controls-header">
+                <div>
+                    <span class="dsp-controls-title" id="selectedFilterTitle">High-Pass Filter</span>
+                    <span class="dsp-controls-subtitle" id="selectedFilterSubtitle">Subsonic protection</span>
+                </div>
+            </div>
+            <div class="dsp-controls-grid">
+                <!-- Frequency -->
+                <div class="dsp-control-group" id="freqControl">
+                    <div class="dsp-control-header">
+                        <span class="dsp-control-label">Frequency</span>
+                        <span class="dsp-control-value"><span id="freqValue">20</span><span class="unit">Hz</span></span>
+                    </div>
+                    <input type="range" class="dsp-slider" id="freqSlider" min="10" max="200" value="20">
+                    <div class="dsp-slider-range">
+                        <span>10</span>
+                        <span>200</span>
+                    </div>
+                </div>
+
+                <!-- Gain (PEQ only) -->
+                <div class="dsp-control-group hidden" id="gainControl">
+                    <div class="dsp-control-header">
+                        <span class="dsp-control-label">Gain</span>
+                        <span class="dsp-control-value"><span id="gainValue">0.0</span><span class="unit">dB</span></span>
+                    </div>
+                    <input type="range" class="dsp-slider" id="gainSlider" min="-15" max="15" step="0.5" value="0">
+                    <div class="dsp-slider-range">
+                        <span>-15</span>
+                        <span>+15</span>
+                    </div>
+                </div>
+
+                <!-- Q (PEQ and APF 2nd order) -->
+                <div class="dsp-control-group hidden" id="qControl">
+                    <div class="dsp-control-header">
+                        <span class="dsp-control-label">Q</span>
+                        <span class="dsp-control-value"><span id="qValue">1.0</span></span>
+                    </div>
+                    <input type="range" class="dsp-slider" id="qSlider" min="0.3" max="10" step="0.1" value="1">
+                    <div class="dsp-slider-range">
+                        <span>0.3</span>
+                        <span>10</span>
+                    </div>
+                </div>
+
+                <!-- Order (HPF/LPF/APF) -->
+                <div class="dsp-control-group" id="orderControl">
+                    <div class="dsp-control-header">
+                        <span class="dsp-control-label">Slope</span>
+                    </div>
+                    <div class="dsp-order-selector">
+                        <button class="dsp-order-btn" data-order="1">6 dB/oct</button>
+                        <button class="dsp-order-btn" data-order="2">12 dB/oct</button>
+                        <button class="dsp-order-btn" data-order="3">18 dB/oct</button>
+                        <button class="dsp-order-btn active" data-order="4">24 dB/oct</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="dsp-info">
+            <div class="dsp-info-title">Tips</div>
+            <div class="dsp-info-content">
+                <strong>HPF:</strong> Subsonic protection. 24 dB/oct at 15-25 Hz is typical for ported boxes.<br>
+                <strong>PEQ:</strong> Parametric EQ for room mode correction. Use narrow Q (2-4) for nulls, wide Q (0.5-1) for broad shaping.<br>
+                <strong>LPF:</strong> Low-pass crossover to blend with mains. Usually handled by AVR, but useful for planning.<br>
+                <strong>APF:</strong> Allpass for phase alignment with mains. 2nd order at ~Fc/2 gives 90° at crossover.
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="dsp-playground.js"></script>
+</body>
+</html>

@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoxSmith</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='20' width='80' height='60' rx='5' fill='%2358a6ff' stroke='%23161b22' stroke-width='3'/><circle cx='50' cy='50' r='20' fill='%23161b22'/><circle cx='50' cy='50' r='8' fill='%2358a6ff'/></svg>">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- ============================================
+             DESIGN CONTROLS
+             ============================================ -->
+        <div class="design-controls">
+            <!-- Driver Row -->
+            <div class="driver-row">
+                <div class="driver-select-group">
+                    <label>Driver</label>
+                    <div class="driver-select-wrapper">
+                        <select id="driverSelectNew">
+                            <option value="">Select a driver...</option>
+                        </select>
+                        <button id="importDriverBtnNew">Browse Library</button>
+                    </div>
+                </div>
+                <div class="driver-specs">
+                    <div class="driver-spec">
+                        <span class="driver-spec-label">Fs</span>
+                        <span class="driver-spec-value" id="driverFsNew">--</span>
+                    </div>
+                    <div class="driver-spec">
+                        <span class="driver-spec-label">Qts</span>
+                        <span class="driver-spec-value" id="driverQtsNew">--</span>
+                    </div>
+                    <div class="driver-spec">
+                        <span class="driver-spec-label">Vas</span>
+                        <span class="driver-spec-value" id="driverVasNew">--</span>
+                    </div>
+                    <div class="driver-spec">
+                        <span class="driver-spec-label">Xmax</span>
+                        <span class="driver-spec-value" id="driverXmaxNew">--</span>
+                    </div>
+                    <div class="driver-spec">
+                        <span class="driver-spec-label">Pe</span>
+                        <span class="driver-spec-value" id="driverPeNew">--</span>
+                    </div>
+                    <div class="driver-spec">
+                        <span class="driver-spec-label">Sd</span>
+                        <span class="driver-spec-value" id="driverSdNew">--</span>
+                    </div>
+                    <div class="driver-spec driver-spec-derived">
+                        <span class="driver-spec-label">EBP<span class="spec-info">i<span class="tooltip">Efficiency Bandwidth Product (Fs/Qes).<br><br><strong>&lt;50:</strong> Favors sealed (high Qt, good transient response)<br><strong>50-90:</strong> Either works well<br><strong>&gt;90:</strong> Favors ported (low Qt, needs vent loading)</span></span></span>
+                        <span class="driver-spec-value" id="driverEbpNew">--</span>
+                    </div>
+                    <button class="driver-info-btn" id="driverInfoBtn" title="View all driver parameters">ⓘ</button>
+                </div>
+            </div>
+
+            <!-- Enclosure Config - All inline, dense layout -->
+            <div class="enclosure-row">
+                <div class="box-type-group">
+                    <div class="box-type-buttons">
+                        <button class="box-type-btn active" id="sealedBtnNew">Sealed</button>
+                        <button class="box-type-btn" id="portedBtnNew">Ported</button>
+                        <button class="box-type-btn" id="prBtnNew">PR</button>
+                    </div>
+                    <label class="isobaric-toggle" id="isobaricToggleLabel">
+                        <input type="checkbox" id="isobaricToggle">
+                        <span class="isobaric-checkbox"></span>
+                        <span class="isobaric-label">Isobaric<span class="spec-info">i<span class="tooltip"><strong>Compound driver configuration</strong><br><br>Two drivers in a shared chamber, acting as one.<br><br><strong>Effects:</strong><br>• ½ Vas (halves required box volume)<br>• −3dB sensitivity<br>• 2× power handling<br>• Lower distortion</span></span></span>
+                    </label>
+                    <div class="isobaric-wiring hidden" id="isobaricWiringGroup">
+                        <button class="wiring-btn active" id="isobaricSeriesBtn" title="Series: 2× impedance">Ser</button>
+                        <button class="wiring-btn" id="isobaricParallelBtn" title="Parallel: ½ impedance">Par</button>
+                    </div>
+                </div>
+
+                <div class="param-group">
+                    <label>Volume</label>
+                    <input type="range" id="volumeSliderNew" min="20" max="500" step="5" value="140">
+                    <span class="param-value"><span id="volumeDisplayNew">140</span> L</span>
+                </div>
+
+                <!-- Ported controls (inline) -->
+                <div class="param-group ported-only" id="tuningGroup">
+                    <label>Tuning</label>
+                    <input type="range" id="tuningSliderNew" min="15" max="50" step="1" value="28">
+                    <span class="param-value"><span id="tuningDisplayNew">28</span> Hz</span>
+                </div>
+
+                <div class="param-group ported-only" id="portGroup">
+                    <label>Port ⌀</label>
+                    <input type="range" id="portDiameterSliderNew" min="5" max="20" step="0.5" value="10">
+                    <span class="param-value"><span id="portDiameterDisplayNew">10</span> cm</span>
+                    <span class="port-calc" id="portCalcInline">→ <span id="portLengthInline">--</span>cm, <span id="portVelocityInline">--</span> m/s <span id="portStatusInline"></span></span>
+                    <button class="port-options-btn" id="portOptionsBtn" title="Port options">⚙</button>
+                </div>
+
+                <!-- PR controls (inline) -->
+                <div class="param-group pr-only hidden" id="prTuningGroup">
+                    <label>Tuning</label>
+                    <input type="range" id="prTuningSliderNew" min="15" max="50" step="1" value="28">
+                    <span class="param-value"><span id="prTuningDisplayNew">28</span> Hz</span>
+                </div>
+
+                <div class="param-group pr-only hidden" id="prSdGroup">
+                    <label>PR Sd</label>
+                    <input type="range" id="prSdSliderNew" min="100" max="1000" step="10" value="400">
+                    <span class="param-value"><span id="prSdDisplayNew">400</span> cm²</span>
+                </div>
+
+                <div class="param-group pr-only hidden" id="prXmaxGroup">
+                    <label>PR Xmax</label>
+                    <input type="range" id="prXmaxSliderNew" min="10" max="40" step="1" value="20">
+                    <span class="param-value"><span id="prXmaxDisplayNew">20</span> mm</span>
+                    <span class="pr-calc" id="prCalcInline">→ <span id="prMassInline">--</span>g</span>
+                </div>
+
+                <div class="param-group">
+                    <label>Power</label>
+                    <input type="range" id="powerSliderNew" min="100" max="3000" step="50" value="500">
+                    <span class="param-value"><span id="powerDisplayNew">500</span> W</span>
+                </div>
+            </div>
+
+
+            <!-- Port Options Popover (hidden by default) -->
+            <div class="port-options-popover hidden" id="portOptionsPopover">
+                <div class="popover-row">
+                    <span class="popover-label">Shape</span>
+                    <div class="popover-buttons">
+                        <button class="pop-btn active" id="portShapeCircular">●</button>
+                        <button class="pop-btn" id="portShapeRect">▬</button>
+                    </div>
+                </div>
+                <div class="popover-row">
+                    <span class="popover-label">Qty</span>
+                    <div class="popover-buttons">
+                        <button class="pop-btn active" data-qty="1">1</button>
+                        <button class="pop-btn" data-qty="2">2</button>
+                        <button class="pop-btn" data-qty="3">3</button>
+                    </div>
+                </div>
+                <div class="popover-row">
+                    <span class="popover-label">Flare</span>
+                    <div class="popover-buttons">
+                        <button class="pop-btn" id="portFlareNone">none</button>
+                        <button class="pop-btn active" id="portFlareOne">1 end</button>
+                        <button class="pop-btn" id="portFlareBoth">both</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================
+             RESULTS BAR
+             ============================================ -->
+        <div class="results-bar">
+            <div class="result-item">
+                <span class="result-label">F3</span>
+                <span class="result-value" id="f3ValueNew">--</span>
+                <span class="result-unit">Hz</span>
+            </div>
+            <div class="result-divider"></div>
+            <div class="result-item">
+                <span class="result-label" id="qtcLabel">Qtc</span>
+                <span class="result-value" id="qtcValueNew">--</span>
+            </div>
+            <div class="result-divider"></div>
+            <div class="result-item">
+                <span class="result-label">Sensitivity</span>
+                <span class="result-value" id="sensitivityValueNew">--</span>
+                <span class="result-unit">dB</span>
+            </div>
+            <div class="result-divider"></div>
+            <div class="result-item">
+                <span class="result-label">Max SPL @30Hz</span>
+                <span class="result-value" id="maxSplValueNew">--</span>
+                <span class="result-unit">dB</span>
+            </div>
+
+            <div class="port-info hidden" id="portInfoDisplay">
+                <div class="port-info-item">
+                    <span class="port-info-label">Port:</span>
+                    <span class="port-info-value" id="portDimensionsDisplay">--</span>
+                </div>
+                <div class="port-info-item">
+                    <span class="port-info-label">Velocity:</span>
+                    <span class="port-info-value" id="portVelocityDisplay">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================
+             ADVANCED OPTIONS (collapsed by default)
+             ============================================ -->
+        <div class="advanced-toggle" id="advancedToggle">
+            <span class="advanced-toggle-icon">▶</span>
+            <span class="advanced-toggle-text">Advanced: DSP, Room Gain, Target SPL</span>
+        </div>
+        <div class="advanced-panel" id="advancedPanel">
+            <div class="advanced-section">
+                <span class="advanced-section-label">Signal Chain</span>
+                <div class="advanced-control-row">
+                    <label class="toggle-btn compact" id="hpfToggle">
+                        <input type="checkbox">
+                        <span class="toggle-indicator"></span>
+                        <span class="toggle-text">HPF</span>
+                    </label>
+                    <input type="range" class="advanced-slider" id="hpfFreqSlider" min="10" max="40" value="20" step="1">
+                    <span class="advanced-value" id="hpfFreqValue">20 Hz</span>
+                </div>
+                <div class="advanced-control-row">
+                    <label class="toggle-btn compact" id="lpfToggle">
+                        <input type="checkbox">
+                        <span class="toggle-indicator"></span>
+                        <span class="toggle-text">LPF</span>
+                    </label>
+                    <input type="range" class="advanced-slider" id="lpfFreqSlider" min="40" max="120" value="80" step="5">
+                    <span class="advanced-value" id="lpfFreqValue">80 Hz</span>
+                </div>
+                <div class="advanced-control-row">
+                    <button class="advanced-btn" id="eqFlatGenerateBtn">Generate EQ</button>
+                    <span class="advanced-label">for</span>
+                    <select class="advanced-select" id="eqFlatSourceSelect">
+                        <option value="box">Box only</option>
+                        <option value="box+room" selected>Box + Room</option>
+                    </select>
+                    <span class="advanced-label">to</span>
+                    <input type="range" class="advanced-slider" id="eqFlatFreqSlider" min="15" max="40" value="25" step="1">
+                    <span class="advanced-value" id="eqFlatFreqValue">25 Hz</span>
+                    <button class="advanced-btn-small" id="eqFlatClearBtn" title="Clear EQ">✕</button>
+                </div>
+                <div class="advanced-control-row" id="eqFlatStatusRow">
+                    <label class="toggle-btn compact hidden" id="eqFlatToggle">
+                        <input type="checkbox" checked>
+                        <span class="toggle-indicator"></span>
+                        <span class="toggle-text" id="eqFlatToggleText">PEQ</span>
+                    </label>
+                    <span class="advanced-hint" id="eqFlatHint" style="margin-left: 0;">--</span>
+                </div>
+            </div>
+            <div class="advanced-section">
+                <span class="advanced-section-label">Room Gain</span>
+                <div class="advanced-control-row">
+                    <label class="toggle-btn compact" id="roomGainToggle">
+                        <input type="checkbox">
+                        <span class="toggle-indicator"></span>
+                        <span class="toggle-text">Room</span>
+                    </label>
+                    <span class="advanced-label">Gain</span>
+                    <input type="range" class="advanced-slider" id="roomGainSlider" min="0" max="9" value="6" step="1">
+                    <span class="advanced-value" id="roomGainValue">+6 dB</span>
+                </div>
+                <div class="advanced-control-row">
+                    <span class="advanced-label" style="margin-left: 70px;">From</span>
+                    <input type="range" class="advanced-slider" id="roomFreqSlider" min="20" max="100" value="30" step="5">
+                    <span class="advanced-value" id="roomFreqValue">30 Hz</span>
+                </div>
+                <div class="advanced-control-row">
+                    <span class="advanced-label" style="margin-left: 70px;">Shape</span>
+                    <select class="advanced-select" id="roomShapeSelect">
+                        <option value="shelf">Shelf</option>
+                        <option value="1st">1st order (6dB/oct)</option>
+                        <option value="2nd" selected>2nd order (12dB/oct)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="advanced-section">
+                <span class="advanced-section-label">Target</span>
+                <div class="advanced-control-row">
+                    <label class="toggle-btn compact" id="targetSplToggle">
+                        <input type="checkbox">
+                        <span class="toggle-indicator"></span>
+                        <span class="toggle-text">Target SPL</span>
+                    </label>
+                    <input type="range" class="advanced-slider" id="targetSplSlider" min="100" max="125" value="115" step="1">
+                    <span class="advanced-value" id="targetSplValue">115 dB</span>
+                </div>
+            </div>
+            <div class="advanced-section">
+                <span class="advanced-section-label">Real-World Adjustment</span>
+                <div class="advanced-control-row">
+                    <span class="advanced-label">Derating</span>
+                    <input type="range" class="advanced-slider" id="deratingSlider" min="-6" max="0" value="0" step="1">
+                    <span class="advanced-value" id="deratingValue">0 dB</span>
+                </div>
+                <div class="advanced-control-row">
+                    <span class="advanced-hint">Theoretical models are optimistic. Apply −3 to −6 dB for conservative estimates.</span>
+                </div>
+            </div>
+            <div class="advanced-section">
+                <button class="advanced-btn" id="dspPlaygroundBtn">Open DSP Playground</button>
+            </div>
+        </div>
+
+        <!-- ============================================
+             DESIGN SUMMARY
+             ============================================ -->
+        <div class="design-summary" id="designSummary">
+            <div class="summary-header">
+                <span class="summary-title" id="summaryTitle">Select a driver to begin</span>
+            </div>
+            <div class="summary-metrics" id="summaryMetrics">
+                <div class="summary-metric">
+                    <span class="metric-label">F3</span>
+                    <span class="metric-value" id="summaryF3">--</span>
+                </div>
+                <div class="summary-metric">
+                    <span class="metric-label">Max SPL</span>
+                    <span class="metric-value" id="summaryMaxSpl">--</span>
+                </div>
+                <div class="summary-metric">
+                    <span class="metric-label">Limiting</span>
+                    <span class="metric-value" id="summaryLimiting">--</span>
+                </div>
+                <div class="summary-metric ported-only" id="summaryPortMetric">
+                    <span class="metric-label">Port</span>
+                    <span class="metric-value" id="summaryPort">--</span>
+                </div>
+            </div>
+            <div class="summary-insights" id="summaryInsights">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <!-- ============================================
+             GRAPHS
+             ============================================ -->
+        <div class="graphs-area">
+            <div class="graph-toolbar">
+                <div class="toolbar-group">
+                    <span class="toolbar-label">Range</span>
+                    <input type="range" id="freqRangeSlider" min="0" max="3" step="1" value="1">
+                    <span class="toolbar-value" id="freqRangeValue">200 Hz</span>
+                </div>
+                <div class="toolbar-group toolbar-right">
+                    <button class="toolbar-btn" id="expandAllBtn" title="Expand all sections">Expand All</button>
+                    <button class="toolbar-btn" id="collapseAllBtn" title="Collapse all sections">Collapse All</button>
+                </div>
+            </div>
+            <div class="charts-grid" id="chartsGridNew">
+                <div class="chart-section-header">Core Response<span class="chart-info">i<span class="tooltip">Primary analysis: SPL capability, frequency response, excursion, and headroom.</span></span></div>
+
+                <div class="chart-container">
+                    <h3>Maximum SPL Output<span class="chart-info">i<span class="tooltip"><strong>Thermal limit:</strong> Max SPL at full power (Pe).<br><br><strong>Excursion limit:</strong> Max SPL if cone hits Xmax.<br><br><strong>Max SPL:</strong> The lower of thermal and excursion limits.</span></span></h3>
+                    <div class="chart-wrapper"><canvas id="maxSplChart"></canvas></div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Frequency Response<span class="chart-info">i<span class="tooltip"><strong>Raw:</strong> The system's acoustic response (Qtc determines shape).<br><br>With modifiers: In-room response including room gain and DSP.</span></span></h3>
+                    <div class="chart-wrapper"><canvas id="responseChart"></canvas></div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Sensitivity<span class="chart-info">i<span class="tooltip"><strong>Absolute SPL at 1W/1m.</strong><br><br>Shows the system's efficiency across frequency. Reference line is the driver's rated sensitivity.</span></span></h3>
+                    <div class="chart-wrapper"><canvas id="sensitivityChart"></canvas></div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Cone Excursion<span class="chart-info">i<span class="tooltip"><strong>Actual cone movement</strong> at selected power.<br><br>Xmax line shows driver's mechanical limit.</span></span></h3>
+                    <div class="chart-wrapper"><canvas id="excursionChart"></canvas></div>
+                </div>
+
+                <div class="chart-container">
+                    <h3>Headroom to Target<span class="chart-info">i<span class="tooltip"><strong>Can you hit your target SPL?</strong><br><br>Positive = achievable. Negative = need more power/Xmax/subs.</span></span></h3>
+                    <div class="chart-wrapper"><canvas id="headroomChart"></canvas></div>
+                </div>
+
+                <div class="chart-section collapsed" id="scenarioSection">
+                    <div class="chart-section-header">Scenario / Environment<span class="chart-info">i<span class="tooltip">DSP filters and room gain modeling. Configure in Advanced panel above.</span></span><span class="section-hint" id="scenarioHint"></span></div>
+                    <div class="chart-section-content">
+                        <div class="chart-container">
+                            <h3>DSP Magnitude<span class="chart-info">i<span class="tooltip"><strong>Combined DSP effect</strong> from signal chain filters (HPF, PEQ, etc.).</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="dspChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>DSP Phase<span class="chart-info">i<span class="tooltip"><strong>Phase shift</strong> introduced by DSP filters. Important for time alignment.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="dspPhaseChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Room Gain<span class="chart-info">i<span class="tooltip"><strong>Environmental boost</strong> from room placement (corner, wall, etc.).</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="environmentChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section collapsed" id="portSection">
+                    <div class="chart-section-header">Ported Box<span class="chart-info">i<span class="tooltip">Port air velocity, turbulence analysis, and cone/port output split.</span></span><span class="section-hint" id="portHint"></span></div>
+                    <div class="chart-section-content">
+                        <div class="chart-container">
+                            <h3>Port Velocity<span class="chart-info">i<span class="tooltip">Air velocity in port. High velocity causes chuffing noise.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="portVelocityChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Mach Number<span class="chart-info">i<span class="tooltip">Velocity as fraction of speed of sound. &gt;0.05 = audible compression.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="ventMachChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Reynolds Number<span class="chart-info">i<span class="tooltip">Flow turbulence indicator. &gt;50,000 = turbulent flow = noise.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="ventReynoldsChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Output Contribution<span class="chart-info">i<span class="tooltip">How output is shared between cone and port at each frequency.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="portContributionChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section collapsed" id="prSection">
+                    <div class="chart-section-header">Passive Radiator<span class="chart-info">i<span class="tooltip">PR excursion analysis and driver/PR sizing comparison.</span></span><span class="section-hint" id="prHint"></span></div>
+                    <div class="chart-section-content">
+                        <div class="chart-container">
+                            <h3>PR Excursion<span class="chart-info">i<span class="tooltip">Passive radiator cone movement at selected power.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="prExcursionChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Excursion Comparison<span class="chart-info">i<span class="tooltip">Driver vs PR excursion with Xmax limits. Shows if PR is properly sized.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="excursionComparisonChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Power Limits<span class="chart-info">i<span class="tooltip">Maximum power before driver or PR hits excursion limit. Shows which is the bottleneck.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="prPowerLimitChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Output Contribution<span class="chart-info">i<span class="tooltip">How output is shared between cone and PR at each frequency.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="prContributionChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section collapsed" id="electricalSection">
+                    <div class="chart-section-header">Electrical / Amplifier<span class="chart-info">i<span class="tooltip">Impedance, phase, current draw, and amplifier loading characteristics.</span></span></div>
+                    <div class="chart-section-content">
+                        <div class="chart-container">
+                            <h3>Impedance<span class="chart-info">i<span class="tooltip">Load the amplifier sees. Peaks at resonance.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="impedanceChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Impedance Phase<span class="chart-info">i<span class="tooltip">Phase angle of impedance. High angles stress amplifiers.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="impedancePhaseChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>EPDR (Amp Load)<span class="chart-info">i<span class="tooltip">Equivalent Peak Dissipation Resistance. Shows true amp stress.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="epdrChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Current Draw<span class="chart-info">i<span class="tooltip">RMS current at selected power. Check against amp specs.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="currentDrawChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Amplifier Load (VA)<span class="chart-info">i<span class="tooltip">Apparent power the amp must deliver (V × A).</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="ampLoadChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Thermal Dissipation<span class="chart-info">i<span class="tooltip">Heat generated in voice coil at selected power.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="thermalDissipationChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section collapsed" id="mechanicalSection">
+                    <div class="chart-section-header">Mechanical<span class="chart-info">i<span class="tooltip">Cone velocity and acceleration at selected power.</span></span></div>
+                    <div class="chart-section-content">
+                        <div class="chart-container">
+                            <h3>Cone Velocity<span class="chart-info">i<span class="tooltip">Speed of cone movement. Related to output capability.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="coneVelocityChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Cone Acceleration<span class="chart-info">i<span class="tooltip">Rate of velocity change. Higher = more force required.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="coneAccelChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section collapsed" id="timeDomainSection">
+                    <div class="chart-section-header">Time Domain<span class="chart-info">i<span class="tooltip">Phase, group delay, step and impulse response.</span></span></div>
+                    <div class="chart-section-content">
+                        <div class="chart-container">
+                            <h3>Phase<span class="chart-info">i<span class="tooltip">Phase response. Important for multi-sub alignment.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="phaseChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Group Delay<span class="chart-info">i<span class="tooltip">Time delay vs frequency. &gt;1 cycle at Fb is audible.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="groupDelayChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Step Response<span class="chart-info">i<span class="tooltip">System response to a step input. Shows transient behavior.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="stepResponseChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Impulse Response<span class="chart-info">i<span class="tooltip">System response to an impulse. Basis of all other responses.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="impulseResponseChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section collapsed" id="designToolsSection">
+                    <div class="chart-section-header">Design Tools<span class="chart-info">i<span class="tooltip">Volume comparisons, alignment analysis, and power/SPL relationships.</span></span></div>
+                    <div class="chart-section-content">
+                        <div class="chart-container">
+                            <h3>Volume Comparison<span class="chart-info">i<span class="tooltip">Compare response at different box volumes.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="volumeCompareChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Alignment Comparison<span class="chart-info">i<span class="tooltip">Compare sealed vs ported response shapes.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="alignmentCompareChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Power Required<span class="chart-info">i<span class="tooltip">Power needed to hit target SPL at each frequency.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="powerRequiredChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Maximum Power<span class="chart-info">i<span class="tooltip">Maximum usable power before hitting Xmax or thermal limits.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="maxPowerChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>SPL vs Power<span class="chart-info">i<span class="tooltip">How SPL increases with power at different frequencies.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="splVsPowerChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section collapsed" id="klippelSection">
+                    <div class="chart-section-header">Nonlinear (Klippel)<span class="chart-info">i<span class="tooltip">Bl and Kms nonlinearity effects. Requires Klippel parameters in driver data.</span></span></div>
+                    <div class="chart-section-content">
+                        <div class="chart-container">
+                            <h3>Bl Compression<span class="chart-info">i<span class="tooltip">Force factor reduction at high excursion. Causes output compression.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="compressionChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>THD Estimate<span class="chart-info">i<span class="tooltip">Estimated harmonic distortion from Bl and Kms nonlinearity.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="distortionChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Bl(x) Curve<span class="chart-info">i<span class="tooltip">Force factor vs displacement. Flat = linear motor.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="blCurveChart"></canvas></div>
+                        </div>
+
+                        <div class="chart-container">
+                            <h3>Kms(x) Curve<span class="chart-info">i<span class="tooltip">Suspension stiffness vs displacement. Rising = progressive.</span></span></h3>
+                            <div class="chart-wrapper"><canvas id="kmsCurveChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--
+        TECH DEBT: Hidden elements for backward compatibility
+
+        The new top-panel UI uses *New IDs (volumeSliderNew, etc.) and syncs
+        to these hidden elements via setupSyncedSlider in app.js. This allows:
+        1. Old setupSlider calls to continue working
+        2. Multiple sliders to share state (prTuningSliderNew and tuningSliderNew
+           both sync to tuningSlider, keeping them in sync)
+
+        TODO: Refactor to use state subscriptions instead of hidden element sync.
+        Then rename *New IDs to original names and delete this section.
+
+        Missing from new UI (features exist but no visible controls):
+        - qlSlider: Enclosure losses Q (currently defaults to 7)
+        - portWidthSlider, portHeightSlider: Rectangular port dimensions
+    -->
+    <div style="display: none;">
+        <!-- Sliders - state sync targets -->
+        <input id="volumeSlider">
+        <input id="tuningSlider">
+        <input id="portDiameterSlider">
+        <input id="prSdSlider">
+        <input id="prXmaxSlider">
+        <input id="powerSlider">
+
+        <!-- Features without new UI yet -->
+        <input id="qlSlider">
+        <input id="portWidthSlider">
+        <input id="portHeightSlider">
+        <span id="qlDisplay"></span>
+        <span id="portWidthDisplay"></span>
+        <span id="portHeightDisplay"></span>
+    </div>
+    <!-- Import Modal -->
+    <div class="modal-overlay" id="importModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Import Driver</h3>
+                <button class="modal-close" id="importModalClose">×</button>
+            </div>
+            <div class="modal-body">
+                <label>Paste driver JSON or T/S parameters:</label>
+                <textarea id="importJsonInput" placeholder='{"name": "Driver Name", "fs": 30, "qts": 0.4, ...}'></textarea>
+                <div class="modal-hint">
+                    Accepts JSON with T/S parameters. Required: name, fs, qts, vas, re.<br>
+                    Optional: qes, qms, xmax, pe, sd, bl, mms, sensitivity, le.
+                </div>
+                <div id="importPreview" class="modal-preview" style="display: none;"></div>
+                <div id="importError" class="modal-error" style="display: none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="cancel-btn" id="importCancelBtn">Cancel</button>
+                <button class="import-btn" id="importConfirmBtn" disabled>Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Driver Library Modal -->
+    <div class="modal-overlay driver-library-modal" id="driverLibraryModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Driver Library</h3>
+                <button class="modal-close" id="driverLibraryClose">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="driver-list-view" id="driverListView">
+                    <div class="library-header">
+                        <input type="text" class="library-search" id="driverSearch" placeholder="Search drivers...">
+                        <select class="library-filter" id="driverFilter">
+                            <option value="all">All Drivers</option>
+                            <option value="builtin">Built-in</option>
+                            <option value="custom">My Drivers</option>
+                        </select>
+                        <button class="library-btn secondary" id="driverImportBtn">Import JSON</button>
+                        <button class="library-btn" id="driverNewBtn">+ New Driver</button>
+                    </div>
+                    <div class="library-list" id="driverList"></div>
+                </div>
+                <div class="driver-edit" id="driverEditView">
+                    <div class="driver-detail-header">
+                        <button class="driver-detail-back" id="driverEditBack">← Back</button>
+                        <span class="driver-detail-title" id="driverEditTitle">Edit Driver</span>
+                        <span class="driver-card-badge" id="driverEditBadge" style="display: none;">Built-in</span>
+                    </div>
+                    <div class="driver-edit-content">
+                        <div class="driver-edit-grid" id="driverEditGrid"></div>
+                        <div id="driverEditError" class="modal-error" style="display: none; margin-top: 12px;"></div>
+                    </div>
+                    <div class="driver-detail-actions">
+                        <button class="library-btn" id="driverSaveBtn">Save Changes</button>
+                        <button class="library-btn" id="driverCopyBtn" style="display: none;">Copy & Edit</button>
+                        <button class="library-btn secondary" id="driverSelectFromFormBtn">Select Driver</button>
+                        <button class="library-btn secondary" id="driverExportFromFormBtn">Export JSON</button>
+                        <button class="library-btn secondary" id="driverFormDeleteBtn" style="color: #f85149; display: none;">Delete</button>
+                    </div>
+                </div>
+                <div class="driver-import" id="driverImportView">
+                    <div class="driver-detail-header">
+                        <button class="driver-detail-back" id="driverImportBack">← Back</button>
+                        <span class="driver-detail-title">Import Driver</span>
+                    </div>
+                    <div class="driver-import-content">
+                        <label>Paste driver JSON:</label>
+                        <textarea id="driverImportJson" style="width: 100%; height: 200px; padding: 12px; background: #0d1117; border: 1px solid #30363d; border-radius: 4px; color: #c9d1d9; font-family: monospace; font-size: 0.8125rem; resize: vertical;" placeholder='{"name": "Driver Name", "fs": 30, "qts": 0.4, ...}'></textarea>
+                        <div class="modal-hint">Required: name, fs, qts, vas. Optional: qes, qms, re, le, xmax, pe, sd, bl, mms, sensitivity.</div>
+                        <div id="driverImportPreview" class="modal-preview" style="display: none; margin-top: 12px;"></div>
+                        <div id="driverImportError" class="modal-error" style="display: none; margin-top: 12px;"></div>
+                    </div>
+                    <div class="driver-detail-actions">
+                        <button class="library-btn" id="driverImportConfirmBtn" disabled>Import Driver</button>
+                        <button class="library-btn secondary" id="driverImportCancelBtn">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Driver Info Modal -->
+    <div class="modal-overlay" id="driverInfoModal">
+        <div class="modal driver-info-modal">
+            <div class="modal-header">
+                <h3 id="driverInfoTitle">Driver Parameters</h3>
+                <button class="modal-close" id="driverInfoClose">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="driver-info-grid">
+                    <div class="driver-info-section">
+                        <h4>Thiele-Small</h4>
+                        <div class="driver-info-params" id="driverInfoTS"></div>
+                    </div>
+                    <div class="driver-info-section">
+                        <h4>Electro-Mechanical</h4>
+                        <div class="driver-info-params" id="driverInfoEM"></div>
+                    </div>
+                    <div class="driver-info-section">
+                        <h4>Limits</h4>
+                        <div class="driver-info-params" id="driverInfoLimits"></div>
+                    </div>
+                    <div class="driver-info-section">
+                        <h4>Derived</h4>
+                        <div class="driver-info-params" id="driverInfoDerived"></div>
+                    </div>
+                </div>
+                <div class="driver-info-warnings" id="driverInfoWarnings"></div>
+                <div class="driver-info-capabilities" id="driverInfoCapabilities"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="driverInfoEdit" class="modal-btn primary">Edit Driver</button>
+                <button id="driverInfoCloseBtn" class="modal-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DSP Playground Modal (iframe-based for full functionality) -->
+    <div class="dsp-modal-overlay" id="dspPlaygroundModal">
+        <iframe id="dspPlaygroundFrame" src="about:blank"></iframe>
+    </div>
+
+    <!-- Graph Modal (click to enlarge) -->
+    <div class="graph-modal-overlay" id="graphModal">
+        <div class="graph-modal-header">
+            <span class="graph-modal-title" id="graphModalTitle">Graph</span>
+            <button class="graph-modal-close" id="graphModalClose">×</button>
+        </div>
+        <div class="graph-modal-content">
+            <div class="graph-modal-canvas-wrapper">
+                <canvas id="graphModalCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
