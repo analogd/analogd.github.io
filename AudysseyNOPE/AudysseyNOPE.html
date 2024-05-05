@@ -1,0 +1,1976 @@
+<!doctype html>
+<html lang="EN" xmlns="http://www.w3.org/1999/html">
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Audyssey NOPE</title>
+    <link rel="icon" href="./favicon.ico" type="image/x-icon" />
+    <style>
+      body {
+        font-family: Roboto, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f2f5;
+        color: #333;
+      }
+      h1 {
+        margin: 0;
+        font-size: 2.5em;
+        color: #007bff;
+      }
+      h2 {
+        margin-top: 0;
+        font-size: 1.8em;
+        color: #007bff;
+      }
+      .tagline {
+        margin: 5px 0 20px;
+        font-size: 1.2em;
+        color: #666;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 1em;
+        color: #fff;
+        background-color: #007bff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      button:hover:not(:disabled) {
+        background-color: #0056b3;
+      }
+
+      header,
+      footer {
+        background-color: #fff;
+        margin: 5px;
+        padding: 12px 20px;
+        text-align: center;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        color: #999;
+      }
+
+      main {
+        padding: 20px;
+        text-align: center;
+      }
+
+      section {
+        max-width: 1000px;
+        background-color: #fff;
+        margin: 20px auto;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+
+      .foldable .config-content {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 10px;
+
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.5s ease-out;
+      }
+      .foldable .toggle-indicator {
+        cursor: pointer;
+      }
+      .foldable.expanded .toggle-indicator {
+        content: "-";
+      }
+
+      .progressbar-container {
+        width: 100%;
+        background-color: #ddd;
+        border-radius: 5px;
+      }
+      .progressbar {
+        width: 0;
+        height: 30px;
+        background-color: #4caf50;
+        text-align: center;
+        line-height: 30px;
+        color: white;
+        transition: width 0.5s ease-in-out;
+      }
+
+      p {
+        margin: 0 auto;
+        padding: 10px;
+        text-align: left;
+      }
+      li {
+        padding: 8px 0;
+        text-align: left;
+      }
+
+      #logContainer {
+        border-radius: 5px;
+        box-shadow:
+          0 1px 3px rgba(0, 0, 0, 0.12),
+          0 1px 2px rgba(0, 0, 0, 0.24);
+        padding: 10px;
+        overflow-y: auto;
+        font-family: monospace;
+        text-align: left;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        background: #f8f9fa;
+        border: 1px solid #ddd;
+        height: 600px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      tr:hover {
+        background-color: #f1f1f1;
+      }
+      input[type="number"] {
+        text-align: right;
+        width: 66px;
+        border: 1px solid #ddd;
+      }
+      .button-like {
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Welcome to Audyssey NOPE – High-Precision Audio Calibration and Room Correction using REW</header>
+
+    <main id="MainContent">
+      <section id="intro">
+        <h1>Audyssey NOPE</h1>
+        <div class="tagline">High-precision audio calibration and room correction with REW</div>
+
+        <p>
+          Audyssey NOPE leverages your Audyssey measurements and the power of
+          <a href="https://www.roomeqwizard.com/" target="_blank">Room EQ Wizard</a>
+          (<a href="https://www.avnirvana.com/threads/rew-api-beta-releases.12981/" target="_blank">beta version with REST API support</a>
+          required) to precisely calculate optimal levels, distances, crossovers, and correction filters for all speakers and subwoofers.
+        </p>
+        <p>
+          It uses measurements exported from the
+          <a href="https://www.denon.com/en-au/shop/avreceiver/audysseymulteqeditorapp" target="_blank">Audyssey MultEQ Editor app</a>
+          but performs all calculations and corrections independently for optimal results, completely bypassing Audyssey's own calculations
+          and estimations.
+        </p>
+        <p>
+          Customize by configuring a
+          <a href="https://github.com/analogd/analogd.github.io/tree/main/AudysseyNOPE/housecurves" target="_blank">house curve</a>
+          in REW before starting the process. The REW-savvy might also want to adjust some of the advanced settings below.
+        </p>
+        <p>
+          Audyssey NOPE is inspired by and started off as a shameless fork of
+          <a href="https://www.youtube.com/@ocaudiophile" target="_blank">@ocaudiophile</a>'s brilliant
+          <a href="https://github.com/ObsessiveCompulsiveAudiophile/AudysseyOne" target="_blank">AudysseyOne</a> project.
+        </p>
+        <div style="padding: 0 10%">
+          <h3>Key Features:</h3>
+          <ul>
+            <li>12dB/octave rolloff alignment for all speakers matching asymmetric 12/24 AVR bass management.</li>
+            <li>
+              The house curve is applied system-wide to all channels, not limited to the subwoofer range, and will not mess with levels like
+              when using Audyssey's curve editor.
+            </li>
+            <li>Audyssey's High Frequency Rolloff is not applied; the house curve is king.</li>
+            <li>Trace arithmetic-based correction filter calculations that will not boost regions that look like nulls.</li>
+            <li>
+              In the definitely modal region, filters are applied with precise adjustments because that is effective there. Then, above (and
+              overlapping) these, a gentle shelving adjustment is applied. Together, these adjustments aim to achieve a balanced sound up
+              into the lower midrange. The filters gradually fade in starting from half an octave outside the specified limits, reaching
+              full strength at half an octave inside the limits.
+            </li>
+            <li>Supports both single and as many subwoofers as your AVR supports (sorry, MiniDSP...).</li>
+            <li>Post-correction level matching algorithm designed to work in a wide variety of room environments.</li>
+            <li>Highly configurable, see below.</li>
+          </ul>
+        </div>
+        <br />
+        <button style="align-content: center">
+          <a href="https://analogd.github.io" target="_blank" style="color: white">Visit Project Homepage</a>
+        </button>
+      </section>
+
+      <section class="foldable" id="config">
+        <h2>Configuration <span class="toggle-indicator">[..]</span></h2>
+        <div class="config-content">
+          <p>
+            Generally, few should need to adjust these settings. They are provided for the curious and the brave. The default values are
+            chosen to work well with most systems.
+          </p>
+          <form id="configForm">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 280px">Setting</th>
+                  <th>Value</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Table rows will be generated here -->
+              </tbody>
+            </table>
+          </form>
+        </div>
+        <p>&nbsp;</p>
+      </section>
+
+      <section id="controls">
+        <h2>Operation</h2>
+        <button onclick="document.getElementById('uploadButton').click()">Select Audyssey file</button>
+        <input accept=".ady" id="uploadButton" onchange="uploadButton_clicked(this)" style="display: none" type="file" />
+        <button disabled id="extractButton" onclick="extractButton_clicked()">Extract Measurements</button>
+        <span class="button-like">(Drop them onto REW)</span>
+        <button disabled id="startButton" onclick="startButton_clicked()">Run Calculations</button>
+        <button disabled id="downloadResultsButton" onclick="downloadResults_clicked()">Create New Audyssey File</button>
+      </section>
+
+      <section>
+        <h2>Progress</h2>
+        <div class="progressbar-container">
+          <div class="progressbar" id="progressbar">0%</div>
+        </div>
+        <pre id="logContainer" style="text-align: left"></pre>
+        <button onclick="sendLogAsFile();">Download Log</button>
+      </section>
+    </main>
+
+    <footer>
+      © 2024 Daniel Nilsson. Neutral Optimized Playback Experience (NOPE).<br /><br />
+      <small>Last modified: <span id="lastModifiedTime"></span></small><br /><br />
+    </footer>
+
+    <!------------------------------------------------ SCRIPTS ---------------------------------------------------->
+
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+    <script id="UX-elements related stuff">
+      document.addEventListener("DOMContentLoaded", function () {
+        checkHost();
+        updateLastModifiedTime();
+
+        const foldableSections = document.querySelectorAll(".foldable h2");
+
+        foldableSections.forEach((sectionHeader) => {
+          sectionHeader.addEventListener("click", function () {
+            const section = this.parentElement;
+            const content = section.querySelector(".config-content");
+            section.classList.toggle("expanded");
+            if (section.classList.contains("expanded")) {
+              content.style.maxHeight = content.scrollHeight + "px";
+              this.querySelector(".toggle-indicator").textContent = "-";
+            } else {
+              content.style.maxHeight = "0";
+              this.querySelector(".toggle-indicator").textContent = "[..]";
+            }
+          });
+        });
+      });
+
+      function setProgress(percent) {
+        const progressBar = document.getElementById("progressbar");
+        progressBar.style.width = percent + "%";
+        progressBar.textContent = _REW.APIcalls + " calls to REW";
+      }
+
+      function setProgressCalls() {
+        document.getElementById("progressbar").textContent = _REW.APIcalls + " calls to REW";
+      }
+
+      function sendLogAsFile() {
+        const filename = `AudysseyNOPE_${new Date().toLocaleString("sv-SE").replace(" ", "_").replace(/[-:]/g, "")}.txt`;
+        sendFileToUser(filename, "data:text/plain;charset=utf-8," + encodeURIComponent(document.getElementById("logContainer").innerText));
+      }
+
+      function checkHost() {
+        const hostname = window.location.hostname;
+        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0") {
+          printLogLine();
+          console.log(`Audyssey NOPE is ready to go! Today is ${new Date().toISOString().split("T")[0]}.`);
+          console.log(`Make sure you have turned up max measurements in REW to 300, the default max of 30 will not suffice.`);
+        } else {
+          printLogLine();
+          console.log(
+            `Audyssey NOPE is not ready to go, you need to have this page saved to and opened from your computer or it will not be able to access your REW.`
+          );
+        }
+      }
+
+      function updateLastModifiedTime() {
+        const xhr = new XMLHttpRequest();
+        xhr.open("HEAD", window.location.href);
+        xhr.onload = () => {
+          if (xhr.status === 200) {
+            document.getElementById("lastModifiedTime").innerText = new Date(xhr.getResponseHeader("Last-Modified")).toLocaleString();
+          }
+        };
+        xhr.send();
+      }
+
+      // AUTOEXEC.BAT
+      (function () {
+        const logContainer = document.getElementById("logContainer");
+
+        function appendLog(level, originalFunc, args) {
+          const message = `${new Date().toLocaleTimeString("en-US", { hour12: false })} ${args.join(" ")}\n`;
+          logContainer.textContent += message;
+          logContainer.scrollTop = logContainer.scrollHeight;
+          originalFunc.apply(console, args);
+        }
+
+        ["warn", "info", "log", "error"].forEach((level) => {
+          const original = console[level];
+          console[level] = (...args) => appendLog(level.toUpperCase(), original, args);
+        });
+      })();
+
+      async function uploadButton_clicked(input) {
+        const startButton = document.getElementById("startButton");
+        if (input.files.length > 0) {
+          const reader = new FileReader();
+          reader.readAsText(input.files[0]);
+          await new Promise((resolve) => (reader.onloadend = resolve));
+          await _audyssey.loadFile(reader.result, input.files[0].name);
+          document.getElementById("extractButton").disabled = false;
+          startButton.disabled = false;
+        } else {
+          startButton.disabled = true;
+        }
+      }
+
+      async function extractButton_clicked() {
+        const zip = new JSZip();
+        const measurementFiles = _audyssey.extractMeasurementsInRewFormat();
+        measurementFiles.forEach((file) => zip.file(file.filename, file.content));
+        zip.generateAsync({ type: "blob" }).then(function (blob) {
+          const extractedMeasurementsZip = URL.createObjectURL(blob);
+          const extractedMeasurementsFilename =
+            _audyssey.originalFileName.substring(0, _audyssey.originalFileName.lastIndexOf(".")) + "_REW-measurements.zip";
+          sendFileToUser(extractedMeasurementsFilename, extractedMeasurementsZip);
+        });
+      }
+
+      async function startButton_clicked() {
+        await _REW.initialize();
+        if (!(await _REW.getHouseCurve())) {
+          if (!confirm("House curve not loaded in REW. Is this your intention?")) {
+            return;
+          }
+        }
+
+        const audysseyMeasurements = await _REW.getAllMeasurements();
+        const success = await checkMeasurementsLoaded(audysseyMeasurements);
+        if (!success) {
+          return;
+        }
+        document.getElementById("uploadButton").disabled = true;
+        window.scrollTo(0, document.body.scrollHeight);
+        await optimize(audysseyMeasurements);
+      }
+
+      async function downloadResults_clicked() {
+        printLogLine();
+        const newAudyssey = await _audyssey.createNewAudysseyFile(_titles, _levels, _crossovers, _distances, _filterResponses);
+        const blob = URL.createObjectURL(
+          new Blob([JSON.stringify(newAudyssey)], {
+            type: "application/json"
+          })
+        );
+        sendFileToUser(
+          _audyssey.originalFileName.substring(0, _audyssey.originalFileName.lastIndexOf(".")) +
+            "_processedByAudysseyNOPE_" +
+            new Date().toLocaleString("sv-SE").replace(" ", "_").replace(/[-:]/g, "") +
+            ".ady",
+          blob
+        );
+      }
+
+      async function checkMeasurementsLoaded(rewLoadedMeasurements) {
+        const numberOfMeasurementsInRew = Object.keys(rewLoadedMeasurements).length;
+        const numberOfMeasurementsInFile = _audyssey.numberOfMeasurements;
+        if (numberOfMeasurementsInFile !== numberOfMeasurementsInRew) {
+          alert(
+            `Number of measurements in the Audyssey file (${numberOfMeasurementsInFile}) does not match the number of measurements loaded in REW (${numberOfMeasurementsInRew}).`
+          );
+          return false;
+        }
+
+        const rewTitles = Object.values(rewLoadedMeasurements).map((m) => m.title);
+        for (const channel of _audyssey.detectedChannels) {
+          const fileTitle = channel["commandId"];
+          for (let i = 1; i <= _audyssey.numberOfMicrophonePositions; i++) {
+            const titleWithIndex = _audyssey.measurementFilename(fileTitle, i);
+            if (!rewTitles.some((title) => title === titleWithIndex)) {
+              alert(`Measurement with title ${titleWithIndex} not found in REW.`);
+              return false;
+            }
+          }
+        }
+
+        return true;
+      }
+
+      function sendFileToUser(filename, href) {
+        const downloadLink = document.createElement("a");
+        downloadLink.href = href;
+        downloadLink.download = filename;
+        downloadLink.style.display = "none";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(href);
+        console.log(`File sent: ${filename}`);
+      }
+    </script>
+
+    <!-------------------------------- CONFIGURATION ------------------------------------>
+
+    <script id="Configuration">
+      let CFG = {
+        SYSTEM_TARGET_LEVEL: {
+          value: 75,
+          label: "System Target Level (dB)",
+          description: "Target sound pressure level for the system"
+        },
+        LEVEL_PAIR_TOLERANCE: {
+          value: 1.0,
+          label: "Speaker Pair Level Fixing Limit (dB)",
+          description: "Maximum SPL difference between a pair of speakers for them to be adjusted to their mean"
+        },
+        SPK_TARGET_ADJUSTMENT: {
+          value: 1,
+          label: "Speakers Target Adjustment (dB)",
+          description: "Speaker pre-filter calculation target level adjustment, shifts target curve before filter creation"
+        },
+        XO_DETECTION_TOLERANCE: {
+          value: 1.0,
+          label: "Crossover Detection Tolerance (dB)",
+          description: "Maximum SPL difference from target curve still considered as reaching it"
+        },
+        SPK_MINIMUM_XO: {
+          value: 80,
+          label: "Minimum Crossover Frequency (Hz)",
+          description: "Minimum crossover frequency to use for any speaker, no matter what is detected"
+        },
+        SPK_MAXIMUM_XO: {
+          value: 150,
+          label: "Maximum Crossover Frequency (Hz)",
+          description: "Maximum crossover frequency to use for any speaker, no matter what is detected"
+        },
+        SPK_XO_ALIGN_FREQ: {
+          value: 1000,
+          label: "Speaker Crossover Align Frequency (Hz)",
+          description: "Center frequency for speaker level alignments when detecting crossovers"
+        },
+        SPK_XO_ALIGN_SPAN: {
+          value: 4,
+          label: "Speaker Crossover Align Span (octaves)",
+          description: "Span for speaker level alignments when detecting crossovers, half above and half below the center frequency"
+        },
+        SPK_FILTER_ALIGN_FREQ: {
+          value: 2000,
+          label: "Speaker Filter Align Frequency (Hz)",
+          description: "Center frequency for speaker filter level alignments"
+        },
+        SPK_FILTER_ALIGN_SPAN: {
+          value: 2,
+          label: "Speaker Filter Align Span (octaves)",
+          description: "Span for speaker filter level alignments, half above and half below the center frequency"
+        },
+        SPK_LEVEL_ALIGN_FREQ: {
+          value: 400,
+          label: "Speaker Level Align Frequency (Hz)",
+          description: "Center frequency for speaker level alignments"
+        },
+        SPK_LEVEL_ALIGN_SPAN: {
+          value: 2,
+          label: "Speaker Level Align Span (octaves)",
+          description: "Span for speaker level alignments, half above and half below the center frequency"
+        },
+        SPK_FILTER_LOWER_LIMIT: {
+          value: 20,
+          label: "Speaker Filters Lower Limit (Hz)",
+          description: "Lower frequency limit for filter creation arithmetic, is not a brick wall, there is a fade-in"
+        },
+        SPK_FILTER_UPPER_LIMIT: {
+          value: 300,
+          label: "Speaker Filters Upper Limit (Hz)",
+          description: "Upper frequency limit for filter creation arithmetic, is not a brick wall, there is a fade-in"
+        },
+        SPK_FILTER_MAX_GAIN: {
+          value: 5,
+          label: "Speaker Filters Max Gain (dB)",
+          description: "Maximum gain any one filter is allowed to apply, but the filters are mainly subtractive anyway"
+        },
+        SPK_SHELVING_LOWER_LIMIT: {
+          value: 100,
+          label: "Speaker Shelving Lower Limit (Hz)",
+          description: "Lower frequency limit for stage two broadband speaker response shelving."
+        },
+        SPK_SHELVING_UPPER_LIMIT: {
+          value: 1000,
+          label: "Speaker Shelving Upper Limit (Hz)",
+          description: "Upper frequency limit for stage two broadband speaker response shelving"
+        },
+        SPK_SHELVING_MAX_GAIN: {
+          value: 5,
+          label: "Speaker Shelving Max Gain (dB)",
+          description: "Maximum gain for stage two broadband speaker response shelving."
+        },
+        SUB_ALIGN_FREQ: {
+          value: 60,
+          label: "Subwoofers Align Frequency (Hz)",
+          description: "Center frequency for subwoofer level alignments"
+        },
+        SUB_ALIGN_SPAN: {
+          value: 1,
+          label: "Subwoofers Align Span (octaves)",
+          description: "Span for subwoofer level alignments, half above and half below the center frequency"
+        },
+        SUB_PRE_FILTER_TARGET_ADJUSTMENT: {
+          value: -2,
+          label: "Subwoofers Target Adjustment (dB)",
+          description: "Subwoofer pre-filter calculation target level adjustment, shifts target curve before filter creation"
+        },
+        SUB_FILTER_LOWER_LIMIT: {
+          value: 20,
+          label: "Subwoofer Filters Lower Limit (Hz)",
+          description: "Lower frequency limit for filter creation arithmetic, is not a brick wall, there is a fade-in"
+        },
+        SUB_FILTER_UPPER_LIMIT: {
+          value: 200,
+          label: "Subwoofer Filters Upper Limit (Hz)",
+          description: "Upper frequency limit for filter creation arithmetic, is not a brick wall, there is a fade-in"
+        },
+        SUB_FILTER_MAX_GAIN: {
+          value: 5,
+          label: "Subwoofer Filters Max Gain (dB)",
+          description: "Maximum gain any one filter is allowed to apply, but the filters are mainly subtractive anyway"
+        },
+        SUB_SHELVING_LOWER_LIMIT: {
+          value: 20,
+          label: "Subwoofers Shelving Lower Limit (Hz)",
+          description: "Lower frequency limit for stage two broadband subwoofer response shelving. (Upper = upper filter limit)"
+        },
+        SUB_SHELVING_MAX_GAIN: {
+          value: 5,
+          label: "Subwoofers Shelving Max Gain (dB)",
+          description: "Maximum gain for stage two broadband subwoofer response shelving."
+        }
+      };
+      const tbody = document.querySelector("#configForm tbody");
+      Object.keys(CFG).forEach((key) => {
+        const config = CFG[key];
+        const row = tbody.insertRow();
+        const cell1 = row.insertCell();
+        cell1.textContent = config.label;
+
+        const cell2 = row.insertCell();
+        const input = document.createElement("input");
+        input.id = key;
+        input.type = "number";
+        input.value = config.value;
+        input.addEventListener("change", function (event) {
+          CFG[key].value = parseInt(event.target.value, 10);
+          console.log(`Changed ${CFG[key].label} to ${CFG[key].value}`);
+        });
+        cell2.appendChild(input);
+
+        const cell3 = row.insertCell();
+        cell3.textContent = config.description;
+        cell3.className = "description";
+      });
+
+      function printLogLine() {
+        console.info("=".repeat(111));
+      }
+
+      function printSettings() {
+        console.log("Current configuration:");
+        for (const key in CFG) {
+          console.log(`${CFG[key].label}: ${CFG[key].value}`);
+          //console.log(`- ${CFG[key].description}`);
+        }
+      }
+    </script>
+
+    <!-------------------------------- Calculated values ------------------------------------>
+
+    <script id="Calculated values">
+      // These are the calculated values that will be used to create the new Audyssey file.
+      // Arrays 0-based, with values from index 1 onwards = should match the vector average graph numbers in REW.
+      let _titles;
+      let _filters;
+      let _filterResponses;
+      let _levels;
+      let _distances;
+      let _crossovers;
+    </script>
+
+    <!-------------------------------- Audyssey file handling ------------------------------------>
+
+    <script id="Audyssey file">
+      const _audyssey = {
+        AVR_SELECTABLE_CROSSOVERS: [40, 60, 80, 90, 100, 110, 120, 150, 180, 200, 250],
+        // prettier-ignore
+        AVRS_WITH_BAD_SOUND_SETTING: ["X1300W", "X2300W", "X3300W", "X4300H", "X6300H", "X1400H", "X2400H",
+          "X3400H", "X4400H", "X6400H", "X1500H", "X2500H", "X3500H", "X4500H", "X6500H", "X8500H", "X1600H", "X2600H",
+          "X3600H", "X1700H", "X2700H", "X3700H", "X4700H", "X6700H", "SR5011", "SR6011", "SR7011", "SR5012", "SR6012",
+          "SR7012", "SR8012", "SR5013", "SR6013", "SR7013", "SR5014", "SR6014", "SR5015", "SR6015", "SR7015", "SR8015",
+          "AV7703", "AV7704", "AV7705", "AV7706", "AV8805", "NR1607", "NR1608", "NR1711"],
+        // prettier-ignore
+        HIGH_FREQUENCY_ROLLOFF_1_INVERTED: [
+          [3000, 0.011],[3150, 0.016],[3350, 0.038],[3550, 0.057],[3750, 0.086],[4000, 0.139],[4250, 0.208],
+          [4500, 0.288],[4750, 0.377],[5000, 0.473],[5300, 0.591],[5600, 0.710],[6000, 0.872],[6300, 0.993],
+          [6700, 1.151],[7100, 1.307],[7500, 1.449],[8000, 1.587],[8500, 1.701],[9000, 1.802],[9500, 1.902],
+          [10000, 2.005],[10600, 2.137],[11200, 2.303],[11800, 2.515],[12500, 2.810],[13200, 3.128],[14000, 3.518],
+          [15000, 4.063],[16000, 4.735],[17000, 5.522],[18000, 6.281],[19000, 6.876],[20000, 7.225]],
+        SPEAKER_FRIENDS: [
+          [0, "FL", "front left", 2],
+          [1, "C", "center"],
+          [2, "FR", "front right", 0],
+          [5, "SRA", "surround right", 13],
+          [8, "SBR", "surround back right", 10],
+          [10, "SBL", "surround back left", 8],
+          [13, "SLA", "surround left", 5],
+          [18, "FHR", "front height right", 40],
+          [19, "TFR", "top front right", 39],
+          [21, "TMR", "top middle right", 37],
+          [22, "TRR", "top rear right", 36],
+          [25, "RHR", "rear height right", 33],
+          [33, "RHL", "rear height left", 25],
+          [36, "TRL", "top rear left", 22],
+          [37, "TML", "top middle left", 21],
+          [39, "TFL", "top front left", 19],
+          [40, "FHL", "front height left", 18],
+          [42, "UNKNOWN", "<unknown>"], //voice of god, auro?
+          [54, "SW1", "subwoofer"],
+          [54, "SWMIX", "subwoofer one"], // 54 is SW1 or SWMIX depending on >1 sub
+          [55, "SWMIX", "subwoofer two"],
+          [56, "SWMIX", "subwoofer three"], // guessing.. subs 2..n might all be type 55?
+          [57, "SWMIX", "subwoofer four"] // guessing..
+          // TODO use these longer names for graphs and output more
+        ].map(([enChannelType, commandId, name, friend = undefined]) => ({
+          enChannelType,
+          commandId,
+          name,
+          friend
+        })),
+
+        originalFileContents: undefined,
+        originalFileName: undefined,
+        detectedChannels: undefined,
+        subwoofers: undefined,
+        speakers: undefined,
+        systemDelay: undefined,
+        numberOfMeasurements: undefined,
+        numberOfMicrophonePositions: undefined,
+        hasSpeedOfSoundBug: undefined,
+
+        isSubwoofer: function (channel) {
+          return channel["commandId"].startsWith("SW");
+        },
+        isSpeaker: function (channel) {
+          return !this.isSubwoofer(channel);
+        },
+        loadFile(fileContents, fileName) {
+          this.originalFileName = fileName;
+          this.originalFileContents = fileContents;
+
+          const json = JSON.parse(fileContents);
+          this.detectedChannels = json["detectedChannels"];
+          this.systemDelay = json["systemDelay"];
+          this.numberOfMeasurements = json["detectedChannels"]
+            .map((channel) => channel["responseData"])
+            .reduce((acc, val) => acc + Object.keys(val).length, 0);
+          this.hasSpeedOfSoundBug = this.AVRS_WITH_BAD_SOUND_SETTING.includes(json["targetModelName"].slice(-6));
+
+          if (!this.detectedChannels || this.detectedChannels.length < 1) {
+            error("No channels detected in Audyssey file!");
+          }
+
+          // Subwoofers
+          this.subwoofers = this.detectedChannels.filter((channel) => this.isSubwoofer(channel));
+          this.speakers = this.detectedChannels.filter((channel) => this.isSpeaker(channel));
+          if (this.subwoofers.length < 1) {
+            error("No subwoofer detected in Audyssey file!");
+          }
+          if (this.subwoofers.length > 1) {
+            console.info("Multiple subwoofers detected, switching to Sub EQ HT multi-subwoofer mode.");
+          }
+          const subwoofersFoundByChannelType = this.detectedChannels.filter((channel) => Number(channel["enChannelType"]) >= 54);
+          if (this.subwoofers.length !== subwoofersFoundByChannelType.length) {
+            const allChannelIds = this.detectedChannels.map((channel) => channel["commandId"]);
+            const allChannelTypes = this.detectedChannels.map((channel) => channel["enChannelType"]);
+            error(
+              `Subwoofers detected by commandId (${this.subwoofers.length}) does not match subwoofers detected by channelType (${subwoofersFoundByChannelType.length}): ${allChannelIds.join(
+                ", "
+              )} vs ${allChannelTypes.join(", ")}`
+            );
+          }
+
+          const channelMicPositionsCounts = this.detectedChannels
+            .filter((channel) => !channel["commandId"].startsWith("SW") || channel["enChannelType"] === 54)
+            .map((channel) => Object.keys(channel["responseData"]).length);
+          if (!channelMicPositionsCounts.every((count) => count === channelMicPositionsCounts[0])) {
+            error("Number of measurements for each channel not equal: " + channelMicPositionsCounts.join(", "));
+          }
+          if (channelMicPositionsCounts[0] < 3 || channelMicPositionsCounts[0] > 8) {
+            error("Number of measurements in each channel must be between 3 and 8.");
+          }
+          this.numberOfMicrophonePositions = channelMicPositionsCounts[0];
+
+          const numberOfSpeakers = this.detectedChannels.filter((channel) => !channel["commandId"].startsWith("SW")).length;
+          const numberOfMeasurements = this.numberOfMicrophonePositions * (numberOfSpeakers + 1);
+          const numberOfSubwoofers = this.subwoofers.length;
+          if (this.detectedChannels.length !== numberOfSpeakers + numberOfSubwoofers) {
+            error("Detected channels do not match number of speakers and subwoofers.");
+          }
+
+          printLogLine();
+          console.log(
+            `Audyssey file loaded: ${fileName}: ${numberOfMeasurements} measurements, ${this.numberOfMicrophonePositions} per channel and 1 for subs combined for ${numberOfSpeakers} regular speaker(s) and ${numberOfSubwoofers} subwoofer(s).`
+          );
+        },
+        // TODO not really the right place for this?
+        measurementFilename: function (commandId, index) {
+          // Name of each original measurement in REW
+          return commandId + "#" + Number(index);
+        },
+        commandIdFromFilename: function (filename) {
+          return filename.slice(0, -2);
+        },
+        extractMeasurementsInRewFormat() {
+          return Object.entries(this.detectedChannels).flatMap(([_, { responseData, commandId }]) =>
+            Object.entries(responseData).map(([index, magnitudes]) => ({
+              length: magnitudes.length,
+              max: Math.max(...magnitudes),
+              min: Math.min(...magnitudes),
+              // TODO should not choose filename here
+              filename: this.measurementFilename(commandId, Number(index) + 1) + ".txt",
+              content: [
+                "* Impulse Response data saved by REW",
+                // "0 // Peak value before normalisation",
+                // "0 // Peak index",
+                `${magnitudes.length} // Response length`,
+                `${1 / 48000} // Sample interval (seconds)`,
+                //"0.0 // Start time (seconds)",
+                "* Data start",
+                magnitudes.join("\n")
+              ].join("\n")
+            }))
+          );
+        },
+        createNewAudysseyFile: async function (titles, levels, crossovers, distances, filterResponses) {
+          const newAudyssey = JSON.parse(this.originalFileContents);
+          console.info(`Creating new Audyssey file!`);
+          newAudyssey.dynamicVolume = false;
+          newAudyssey.lfc = false;
+          newAudyssey.dynamicEq = false;
+          newAudyssey.enTargetCurveType = 1; // High Frequency Rolloff 1
+          newAudyssey.title = "Audyssey NOPE-optimized!";
+
+          if (this.hasSpeedOfSoundBug) {
+            const avr = newAudyssey["targetModelName"];
+            console.warn(`Speed of sound bug for your AVR ${avr} has been compensated for.`);
+          }
+
+          for (const [index, title] of titles.entries()) {
+            if (!title) {
+              continue; // skip first
+            }
+            const channel = newAudyssey.detectedChannels.find((channel) => title === channel["commandId"]);
+
+            // Create fake perfect response so Audyssey won't try tp correct anything
+            for (const key in channel["responseData"]) {
+              channel["responseData"][key] = new Array(channel["responseData"][key].length - 1).fill("0");
+              channel["responseData"][key].unshift("1");
+            }
+
+            // Write the filter points, 20-20k
+            const filterResponse = filterResponses[index];
+            channel.customTargetCurvePoints = [];
+            let capping = false;
+            channel.customTargetCurvePoints.push("{20,0}");
+            const startIdx = _REW.indexForFrequency(filterResponse, 20) + 1;
+            const endFrequency = isSubwoofer(channel["commandId"]) ? 250 : 20000;
+            for (let i = startIdx; i < filterResponse.decodedMagnitude.length; i++) {
+              const frequency = _REW.frequencyForIndex(filterResponse, i);
+              if (frequency >= endFrequency) {
+                break;
+              }
+              let magnitude = filterResponse.decodedMagnitude[i];
+              if (magnitude > 9) {
+                capping = true;
+                magnitude = 9;
+              } else if (magnitude < -20) {
+                capping = true;
+                magnitude = -20;
+              }
+
+              channel.customTargetCurvePoints.push(`{${frequency},${magnitude}}`);
+            }
+            channel.customTargetCurvePoints.push(`{${endFrequency},0}`);
+            if (capping) {
+              console.warn(`Capped filter response for ${channel["commandId"]} to -20 to +9 dB.`);
+            }
+
+            // Negate the "high frequency rolloff 1" that Audyssey will add, 20-20k
+            channel.customTargetCurvePoints = channel.customTargetCurvePoints.map((point) => {
+              const [freq, mag] = point
+                .substring(1, point.length - 1)
+                .split(",")
+                .map(Number);
+              const newMag = mag + this.interpolateMagnitude(freq, this.HIGH_FREQUENCY_ROLLOFF_1_INVERTED);
+              return `{${freq},${newMag}}`;
+            });
+
+            // Now delays and levels, we set custom for all, which is a hard override
+            channel.customLevel = Number(levels[index]);
+            channel.customDistance = Number((this.hasSpeedOfSoundBug ? (distances[index] * 300) / 343 : distances[index]).toFixed(2));
+
+            if (!isSubwoofer(channel["commandId"])) {
+              channel.frequencyRangeRolloff = halfOctaveAbove(
+                Math.max(CFG.SPK_FILTER_UPPER_LIMIT.value, CFG.SPK_SHELVING_UPPER_LIMIT.value)
+              );
+              channel.midrangeCompensation = false;
+              channel.customSpeakerType = "S";
+              channel["channelReport"].customEnSpeakerConnect = 1;
+              channel.customCrossover = crossovers[index].toFixed(0); // string! haha, the Audyssey file format is so weird, it comes as '15' for 150, but 150 works..
+            } else {
+              channel.frequencyRangeRolloff = 250;
+            }
+          }
+
+          // Handle Sub EQ HT multi-subwoofer mode
+          const subs = newAudyssey.detectedChannels.filter((channel) => isSubwoofer(channel["commandId"]));
+          for (const sub of subs) {
+            if (sub === subs[0]) {
+              continue; // skip the first sub, it's already done
+            }
+            sub.customLevel = Number(subs[0].customLevel) + Number(sub["trimAdjustment"]);
+            sub.customDistance = Number(subs[0].customDistance) - Number(sub["delayAdjustment"]);
+          }
+
+          return newAudyssey;
+        },
+        interpolateMagnitude: function (frequency, rolloffPoints) {
+          // Sort rolloff points by frequency for interpolation
+          const sortedPoints = [...rolloffPoints].sort(([f1], [f2]) => f1 - f2);
+          // Find two surrounding points for interpolation
+          for (let i = 0; i < sortedPoints.length - 1; i++) {
+            const [f1, mag1] = sortedPoints[i];
+            const [f2, mag2] = sortedPoints[i + 1];
+
+            if (frequency >= f1 && frequency <= f2) {
+              // Logarithmic interpolation
+              const logF1 = Math.log(f1);
+              const logF2 = Math.log(f2);
+              const logFrequency = Math.log(frequency);
+
+              const t = (logFrequency - logF1) / (logF2 - logF1);
+
+              // Linear interpolation in the log domain
+              return Math.exp((1 - t) * Math.log(mag1) + t * Math.log(mag2));
+            }
+          }
+
+          // If the frequency is out of bounds, use the nearest endpoint
+          if (frequency < sortedPoints[0][0]) {
+            return sortedPoints[0][1];
+          } else {
+            return sortedPoints[sortedPoints.length - 1][1];
+          }
+        }
+      };
+    </script>
+
+    <!-------------------------------- REW API ------------------------------------>
+
+    <script id="REW API">
+      const _REW = {
+        APIcalls: 0,
+        baseurl: "http://localhost:4735",
+        measurementsUrl: "http://localhost:4735/measurements/",
+        initialized: false,
+        initializing: false,
+
+        // === GENERIC ===
+
+        initialize: async function () {
+          this.initializing = true;
+          if (!(await this.isRunning())) {
+            error("Could not connect to REW. Is it running? API started?");
+          }
+          const version = (await this.version()).message;
+          if (!version.includes("API")) {
+            error(`REW version ${version} detected. This tool needs a beta version with REST API support.`);
+          }
+          const blocking = await this.hasBlockingSupport();
+          if (!blocking) {
+            error(`REW version ${version} detected. This tool needs a beta version (29+) with blocking support.`);
+          }
+          await this.enableBlockingMode();
+          this.initialized = true;
+          this.initializing = false;
+        },
+        inhibitGraphUpdates: async function () {
+          // TODO upcoming feature to avoid graph updates during processing, use when released, should speed up processing
+          await this.fetchAtomic(this.baseurl + "/application/inhibit-graph-updates", "POST", "true");
+        },
+        enableGraphUpdates: async function () {
+          await this.fetchAtomic(this.baseurl + "/application/inhibit-graph-updates", "POST", "false");
+        },
+        enableBlockingMode: async function () {
+          await this.fetchAtomic(this.baseurl + "/application/blocking", "POST", "true");
+        },
+        hasBlockingSupport: async function () {
+          return await fetch(this.baseurl + "/application/blocking")
+            .then((response) => response.ok)
+            .catch(() => false);
+        },
+        isRunning: async function () {
+          return await fetch(this.baseurl + "/version")
+            .then((response) => response.ok)
+            .catch(() => false);
+        },
+        version: async function () {
+          return await this.fetchAtomic(this.baseurl + "/version");
+        },
+        setHouseCurve: async function (path) {
+          await this.fetchAtomic(this.baseurl + "/eq/house-curve", "POST", path);
+        },
+        getHouseCurve: async function () {
+          return (await this.fetchAtomic(this.baseurl + "/eq/house-curve"))["message"];
+        },
+
+        // === MEASUREMENTS ===
+
+        enableIRWindows: async function (index, fdwWidthCycles) {
+          // TODO REW bug, there is no way to disable IR windows once enabled
+          await this.fetchAtomic(this.measurementsUrl + index + "/ir-windows", "PUT", {
+            addFDW: true,
+            fdwWidthCycles
+          });
+        },
+        setTitle: async function (index, title) {
+          await this.fetchAtomic(this.measurementsUrl + index, "PUT", { title });
+        },
+        getSplOffsetdB: async function (index) {
+          return Number((await this.fetchAtomic(this.measurementsUrl + index))["splOffsetdB"]);
+        },
+        getAlignSPLOffsetdB: async function (index) {
+          let result = Number((await this.fetchAtomic(this.measurementsUrl + index))["alignSPLOffsetdB"]);
+          // This here is a sanity check, to catch unreliable REW API responses. This is most often where it's obvious something weird has happened.
+          // For this tool, we're working between 75 and 120 dB, should never have to shift anything areound more than half of that.
+          // TODO I actually think a level of robustness is reached so that this check is no longer needed
+          if (Math.abs(result) > 30) {
+            error(
+              `Unreliable SPL offset value ${result} for measurement ${index}. Apparently need yet some more waiting to avoid REW unreliability.`
+            );
+          }
+          return result;
+        },
+        getAllMeasurements: async function () {
+          return await this.fetchAtomic(this.measurementsUrl);
+        },
+        setTargetShapeFlat: async function (index) {
+          await this.fetchAtomic(this.measurementsUrl + index + `/target-settings`, "POST", { shape: "None" });
+        },
+        setTargetShapeSmallSpeaker: async function (index, HPFHz, slope) {
+          await this.fetchAtomic(this.measurementsUrl + index + `/target-settings`, "POST", {
+            shape: "Bass limited",
+            bassManagementSlopedBPerOctave: slope,
+            bassManagementCutoffHz: HPFHz
+          });
+        },
+        setTargetShapeSubwoofer: async function (index, LFCutoffHz, LFCutoffSlope, LPFHz, LPFSlope) {
+          await this.fetchAtomic(this.measurementsUrl + index + `/target-settings`, "POST", {
+            shape: "Subwoofer",
+            bassManagementSlopedBPerOctave: LPFSlope,
+            bassManagementCutoffHz: LPFHz,
+            lowFreqSlopedBPerOctave: LFCutoffSlope,
+            lowFreqCutoffHz: LFCutoffHz
+          });
+        },
+        delete: async function (index) {
+          return await this.fetchAtomic(this.measurementsUrl + index, "DELETE");
+        },
+
+        /**
+         * Process commands for /measurements/process-measurements
+         * [
+         *   "Align SPL",
+         *   "Time align",
+         *   "Align IR start",
+         *   "Cross corr align",
+         *   "Vector average",
+         *   "RMS average",
+         *   "dB average",
+         *   "Magn plus phase average",
+         *   "dB plus phase average",
+         *   "Smooth",
+         *   "Arithmetic",
+         *   "Remove IR delays"
+         * ]
+         */
+        processMeasurements: async function (indices, processName, parameters = null) {
+          return await this.fetchWithWait(this.measurementsUrl + `process-measurements`, processName, {
+            processName,
+            measurementIndices: indices,
+            ...(parameters !== null && { parameters })
+          });
+        },
+        alignSPL: async function (indices, frequencyHz, spanOctaves) {
+          await this.processMeasurements(indices, "Align SPL", {
+            targetdB: "average",
+            frequencyHz: frequencyHz,
+            spanOctaves: spanOctaves
+          });
+          // Make aligning SPL behave like before blocking mode was introduced.
+          return await Promise.all(
+            indices.map(async (index) => ({
+              index,
+              offset: await this.getAlignSPLOffsetdB(index)
+            }))
+          );
+        },
+        add: async function (a, b) {
+          let result = await this.processMeasurements([a, b], "Arithmetic", {
+            function: "A + B"
+          });
+          return Number(Object.keys(result)[0]);
+        },
+        divide: async function (a, b) {
+          let result = await this.processMeasurements([a, b], "Arithmetic", {
+            function: "A / B",
+            regularisation: "0",
+            lowerLimit: "0",
+            upperLimit: "0"
+          });
+          return Number(Object.keys(result)[0]);
+        },
+        multiply: async function (a, b) {
+          let result = await this.processMeasurements([a, b], "Arithmetic", {
+            function: "A * B"
+          });
+          // TODO REW bug, can't get this to work without a wait
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return Number(Object.keys(result)[0]);
+        },
+        // TODO fix all calls
+        createInverted: async function (index, lowerLimit, upperLimit, maxGain, excludeNotches = true) {
+          let result = await this.processMeasurements([index, index], "Arithmetic", {
+            function: "1 / A",
+            maxGain: maxGain,
+            lowerLimit: lowerLimit,
+            upperLimit: upperLimit,
+            autoTarget: false,
+            targetLevel: 0,
+            excludeNotches
+          });
+          return Number(Object.keys(result)[0]);
+        },
+        crossCorrelate: async function (indices) {
+          const results = await this.processMeasurements(indices, "Cross corr align");
+          return Object.entries(results).map(([index, data]) => {
+            let seconds = parseFloat(data["Adjustment (seconds)"]);
+            return {
+              index: Number(index),
+              adjustmentMetres: Number(seconds * 343),
+              adjustmentSeconds: Number(seconds)
+            };
+          });
+        },
+        createVectorAverage: async function (indices) {
+          const result = await this.processMeasurements(indices, "Vector average");
+          return Number(Object.keys(result)[0]);
+        },
+
+        /**
+         * EQ commands for /measurements/{index}/eq/command
+         * [
+         *   "Calculate target level",
+         *   "Match target",
+         *   "Optimise gains",
+         *   "Optimise gains and Qs",
+         *   "Optimise gains, Qs and Fcs",
+         *   "Generate predicted measurement",
+         *   "Generate filters measurement",
+         *   "Generate target measurement"
+         * ]
+         */
+        EQCommand: async function (command, index, parameters = null) {
+          return await this.fetchWithWait(this.measurementsUrl + index + `/eq/command`, command, {
+            command,
+            ...(parameters !== null && { parameters })
+          });
+        },
+        EQGenerateTargetMeasurement: async function (index) {
+          return Number(Object.keys(await this.EQCommand("Generate target measurement", index))[0]);
+        },
+
+        /**
+         * Measurement commands for /measurements/{index}/command
+         * [
+         *   "Save",
+         *   "Minimum phase version",
+         *   "Excess phase version",
+         *   "Mic in box correction",
+         *   "Response copy",
+         *   "Response magnitude copy",
+         *   "Merge cal data to IR",
+         *   "Trim IR to windows",
+         *   "Smooth",
+         *   "Generate waterfall",
+         *   "Generate equalised waterfall",
+         *   "Generate spectrogram",
+         *   "Generate equalised spectrogram",
+         *   "Estimate IR delay",
+         *   "Offset t=0",
+         *   "Add SPL offset",
+         *   "Generate RT60"
+         * ]
+         */
+        measurementCommand: async function (command, index, parameters) {
+          return await this.fetchWithWait(this.measurementsUrl + index + `/command`, command, {
+            command,
+            ...(parameters !== null && { parameters })
+          });
+        },
+        smooth: async function (index, smoothing) {
+          let result = await this.measurementCommand("Smooth", index, { smoothing: smoothing });
+          // TODO REW bug, can't get this to work without a wait
+          await new Promise((resolve) => setTimeout(resolve, 250));
+          return result;
+        },
+        addSPLOffset: async function (index, offset) {
+          // TODO this leaves no trace in the measurement that it has been done, try to work away from using this method
+          return await this.measurementCommand("Add SPL offset", index, { offset: offset });
+        },
+        createResponseCopy: async function (index) {
+          const result = await this.measurementCommand("Response copy", index);
+          // TODO REW bug, can't get this to work without a wait
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return Number(Object.keys(result)[0]);
+        },
+        createMinimumPhaseVersion: async function (index) {
+          let result = await this.measurementCommand("Minimum phase version", index, {
+            "include cal": false,
+            "append lf tail": false,
+            "append hf tail": false,
+            "frequency warping": false,
+            "replicate data": true
+          });
+          // TODO REW bug, can't get this to work without a wait
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          return Number(Object.keys(result)[0]);
+        },
+        estimateIRDelay: async function (index) {
+          let result = await this.measurementCommand("Estimate IR delay", index);
+          return {
+            seconds: Number(Object.values(result)[0]["seconds"]),
+            metres: Number(Object.values(result)[0]["metres"])
+          };
+        },
+        getFrequencyResponse: async function (index) {
+          const measurement = await this.fetchAtomic(this.measurementsUrl + index + `/frequency-response`);
+          measurement.decodedMagnitude = this.decodeToFloat32Array(measurement["magnitude"]);
+          if (measurement["phase"]) {
+            measurement.decodedPhase = this.decodeToFloat32Array(measurement["phase"]);
+          }
+          return measurement;
+        },
+        decodeToFloat32Array: function (base64Encoded) {
+          const bytes = Uint8Array.from(atob(base64Encoded), (c) => c.charCodeAt(0));
+          const buffer = bytes.buffer;
+          const floatArray = new Float32Array(buffer);
+          const dataView = new DataView(buffer);
+          for (let i = 0; i < floatArray.length; i++) {
+            floatArray[i] = dataView.getFloat32(i * 4);
+          }
+          return floatArray;
+        },
+        setTargetLevel: async function (index, level) {
+          return await this.fetchAtomic(this.measurementsUrl + index + `/target-level`, "POST", level);
+        },
+
+        // ======================== Extended functionality ========================
+        applyTargetShapeAsFilter: async function (index) {
+          await this.setTargetLevel(index, "0");
+          const bassManagementCurve = await this.EQGenerateTargetMeasurement(index);
+          const bassManagementCurveMP = await this.createMinimumPhaseVersion(bassManagementCurve);
+          const responseAfterBassManagement = await this.multiply(index, bassManagementCurveMP);
+
+          await this.smooth(responseAfterBassManagement, "Psy");
+          await this.delete(bassManagementCurveMP);
+          await this.delete(bassManagementCurve);
+          return responseAfterBassManagement - 2;
+        },
+        indexForFrequency: function (measurement, frequency) {
+          if (measurement["ppo"]) {
+            return Math.round(measurement["ppo"] * Math.log2(frequency / measurement["startFreq"]));
+          } else {
+            return Math.round((frequency - measurement["startFreq"]) / measurement["freqStep"]);
+          }
+        },
+        frequencyForIndex: function (measurement, index) {
+          if (measurement["ppo"]) {
+            return measurement["startFreq"] * Math.pow(2, index / measurement["ppo"]);
+          } else {
+            return measurement["startFreq"] + index * measurement["freqStep"];
+          }
+        },
+        magnitudeAtFrequency: function (measurement, frequency) {
+          const index = this.indexForFrequency(measurement, frequency);
+          return measurement.decodedMagnitude[index];
+        },
+
+        // ======================== Helper functions ========================
+        fetchWithWait: async function (requestUrl, processNameOrCommand, body) {
+          const response = await this.fetchAtomic(requestUrl, "POST", body);
+          if (response.message.startsWith("{")) {
+            const message = JSON.parse(response.message);
+            return message.results ? message.results : message.message;
+          }
+          return response.message;
+        },
+        fetchAtomic: async function (requestUrl, method = "GET", body = null) {
+          if (!this.initialized && !this.initializing) {
+            error("REW API not initialized.");
+          }
+          // TODO A bit ugly, updating UI from here..
+          setProgressCalls(++this.APIcalls);
+          if (method !== "GET" && method !== "DELETE") {
+            if (body === null || body === undefined) {
+              error("No body provided for request to " + requestUrl + " " + method);
+            }
+          } else {
+            if (body) {
+              error("Body provided for GET request to " + requestUrl);
+            }
+          }
+          while (requestUrl.endsWith("/")) {
+            requestUrl = requestUrl.slice(0, -1);
+          }
+          const response = await fetch(requestUrl, {
+            method,
+            headers: { "Content-Type": "application/json" },
+            ...(body != null && {
+              body: body === "" ? '""' : JSON.stringify(body)
+            })
+          });
+          if (!response.ok || response.status !== 200) {
+            error(
+              `Error fetching result, got status ${response.status}: ${response.statusText} for ${requestUrl} ${method} ${JSON.stringify(body)}`
+            );
+          }
+          return await response.json();
+        }
+      };
+    </script>
+
+    <!-------------------------------- Actual program logic ------------------------------------>
+
+    <script id="Actual program logic">
+      /**
+       * REW is not always reliable, sometimes runs fail due to calls not being done when they should be.
+       * It's better now with the blocking API, but still happens. I've tried to add some waits
+       * that seem to make 95% of the problems go away, but that's only tested on my own system.
+       * Added this function to make it easier to catch these problems in the future if they arise, instead of
+       * somebody using the tool and getting weird results.
+       */
+      async function sanityCheckThatRewDidNotFail() {
+        if (_REW.APIcalls < 400) {
+          error("Too few API calls made to REW, something went wrong.");
+        }
+        const allMeasurements = await _REW.getAllMeasurements();
+        for (const [index, measurement] of Object.entries(allMeasurements)) {
+          await _REW.smooth(index, "1/1");
+          const frequencyResponse = await _REW.getFrequencyResponse(index);
+          await _REW.smooth(index, "None");
+          if (measurement.title.includes("filter")) {
+            const index500Hz = _REW.indexForFrequency(frequencyResponse, 500);
+            const level500Hz = frequencyResponse.decodedMagnitude[index500Hz];
+            if (Math.abs(level500Hz) > 1) {
+              // TODO fix this, might just be a high curtain! Or shelving filter!
+              console.error(`Level at 500 Hz for graph ${index}: ${measurement.title} is ${level500Hz} dB, should be around 0 dB.`);
+            }
+          } else if (measurement.title.includes("SW")) {
+            const index50Hz = _REW.indexForFrequency(frequencyResponse, 50);
+            const level50Hz = frequencyResponse.decodedMagnitude[index50Hz];
+            if (Math.abs(level50Hz - CFG.SYSTEM_TARGET_LEVEL.value) > 20) {
+              console.error(
+                `Level at 50 Hz for subwoofer graph ${index}: ${measurement.title} is ${level50Hz} dB, should be around ${CFG.SYSTEM_TARGET_LEVEL.value} + house curve dB.`
+              );
+            }
+          } else {
+            const index500Hz = _REW.indexForFrequency(frequencyResponse, 500);
+            const level500Hz = frequencyResponse.decodedMagnitude[index500Hz];
+            if (Math.abs(level500Hz - CFG.SYSTEM_TARGET_LEVEL.value) > 20) {
+              console.error(
+                `Level at 100 Hz for speaker graph ${index}: ${measurement.title} is ${level500Hz} dB, should be around ${CFG.SYSTEM_TARGET_LEVEL.value} dB.`
+              );
+            }
+          }
+        }
+      }
+
+      async function optimize(audysseyMeasurements) {
+        try {
+          const startTime = Date.now();
+
+          printLogLine();
+          printSettings();
+          setProgress(10);
+
+          printLogLine();
+          _titles = await convertToOneVectorAveragePerChannel(
+            audysseyMeasurements,
+            _audyssey.detectedChannels.length - _audyssey.subwoofers.length + 1,
+            _audyssey.numberOfMicrophonePositions
+          );
+          setProgress(20);
+
+          printLogLine();
+          const estimated = await estimateIRDelays(_titles, _audyssey.systemDelay);
+          setProgress(25);
+
+          printLogLine();
+          _distances = await alignDistances(_titles, estimated);
+          setProgress(26);
+
+          printLogLine();
+          const targetCurve = await createSystemTargetCurve();
+          setProgress(28);
+
+          printLogLine();
+          const calculatedCrossovers = await calculateCrossovers(_titles, targetCurve);
+          setProgress(35);
+
+          printLogLine();
+          _crossovers = synchronizeCrossoverPairs(_titles, calculatedCrossovers);
+          setProgress(40);
+
+          // TODO question user if selected crossovers are okay, if not, let them select from a list of possible crossovers, for each speaker?
+          // When this is added, synchronize should select highest xo initially.
+          // Leave graphs in REW until decided!
+
+          printLogLine();
+          const generated = await generateFilters(_titles, _crossovers);
+          const targets = generated.targets;
+          const correcteds = generated.finals;
+          _filters = generated.combinedFilters;
+          _filterResponses = generated.filterResponses;
+          setProgress(55);
+
+          setProgress(70);
+
+          printLogLine();
+          const calculatedLevels = await analyzeLevels(_titles, targets, correcteds);
+          setProgress(80);
+
+          printLogLine();
+          _levels = await synchronizeLevelPairs(_titles, correcteds, calculatedLevels);
+          setProgress(81);
+
+          printLogLine();
+          console.log("Simulating how the system should perform with the calculated filters + expected AVR behaviour...");
+          const simulated = await simulateAVR(correcteds, _crossovers, _titles);
+          setProgress(90);
+
+          printLogLine();
+          console.log("All calculations done, now just a couple of sanity checks, because the REW API is sometimes unreliable...");
+          // TODO await sanityCheckThatRewDidNotFail();
+          setProgress(95);
+
+          printLogLine();
+          console.log("Applying reasonable smoothing to the all curves to make inspecting them easier...");
+          for (const [index, _] of _titles.entries()) {
+            if (!index) {
+              continue; // skip first
+            }
+            await _REW.smooth(index, "1/12");
+            await _REW.smooth(correcteds[index], "1/12");
+          }
+          for (const index of simulated) {
+            await _REW.smooth(index, "Psy");
+          }
+          setProgress(100);
+
+          const message = `All done! Now we just need to save the results to a new Audyssey file. Time taken: ${((Date.now() - startTime) / 1000).toFixed(0)} seconds. Check the last ${simulated.length} graphs in REW for the final estimated in-room actual results.`;
+          console.log(message);
+          alert(message);
+          document.getElementById("downloadResultsButton").disabled = false;
+        } catch (error) {
+          error(error, "- cannot continue!");
+        }
+      }
+
+      async function convertToOneVectorAveragePerChannel(measurements, numberOfChannels, micPositions) {
+        console.info(`Converting ${Object.keys(measurements).length} impulse response measurements to vector averages...`);
+
+        let titles = new Array(numberOfChannels + 1).fill(undefined);
+        let alignments = new Array(numberOfChannels + 1).fill(undefined);
+        for (let i = 1; i <= numberOfChannels; i++) {
+          const indexSequence = Array.from({ length: micPositions }, (_, index) => (i - 1) * micPositions + index + 1);
+          const crossCorrelationAlignmentAdjustments = await _REW.crossCorrelate(indexSequence);
+          for (const adjustment of crossCorrelationAlignmentAdjustments) {
+            const index = adjustment.index;
+            const adjustmentSeconds = adjustment.adjustmentSeconds;
+            const splOffsetdB = await _REW.getSplOffsetdB(index);
+            console.log(
+              `${measurements[index].title} at ${splOffsetdB.toFixed(2)} dB SPL time aligned by ${withSign((adjustmentSeconds * 1000).toFixed(2))} ms, ${withSign(
+                (adjustmentSeconds * 343).toFixed(2)
+              )} meters.`
+            );
+          }
+          alignments[i] = crossCorrelationAlignmentAdjustments.map(({ adjustmentSeconds }) => adjustmentSeconds);
+
+          const newVectorAverageIndex = await _REW.createVectorAverage(indexSequence);
+          titles[i] = _audyssey.commandIdFromFilename(measurements[indexSequence[0]].title);
+          await _REW.setTitle(newVectorAverageIndex, titles[i]);
+          const sequenceTitles = indexSequence.map((index) => measurements[index].title);
+          const splOffsetdB = await _REW.getSplOffsetdB(newVectorAverageIndex);
+          console.log(sequenceTitles + " vector average created as " + titles[i] + " at " + splOffsetdB.toFixed(2) + " dB SPL.");
+        }
+
+        console.log(`New titles: ${titles.slice(1).join(", ")}`);
+        console.log(`Alignment spans corrected before averaging:`);
+        for (const [index, title] of titles.entries()) {
+          if (!index) {
+            continue; // skip first
+          }
+          const span = Math.max(...alignments[index]) - Math.min(...alignments[index]);
+          const spanMetres = span * 343;
+          const warning = spanMetres > 1 ? " Large span, intended?" : "";
+          console.log(`${title}: ${(span * 1000).toFixed(2)} ms, ${spanMetres.toFixed(2)} meters.${warning}`);
+        }
+
+        console.log(`Removing ${_audyssey.numberOfMeasurements} original measurements...`);
+        for (let i = 1; i <= _audyssey.numberOfMeasurements; i++) {
+          // TODO delete earlier to speed up REW
+          await _REW.delete(1);
+        }
+
+        return titles;
+      }
+
+      async function estimateIRDelays(titles, systemDelay) {
+        console.info("Disregarding whatever Audyssey thought the speaker distances were, starting analysis with IR delay estimation...");
+        let indexOfClosest = undefined;
+        let distanceToClosest = Infinity;
+        const estimated = new Array(titles.length);
+        for (const [index, title] of titles.entries()) {
+          if (!index || isSubwoofer(title)) {
+            continue; // skip first and subs
+          }
+          estimated[index] = (await _REW.estimateIRDelay(index))["metres"];
+          estimated[index] -= (systemDelay / 48000) * 343;
+          console.log(`${title}: ${estimated[index].toFixed(2)} metres`);
+          if (!indexOfClosest || estimated[index] < distanceToClosest) {
+            distanceToClosest = estimated[index];
+            indexOfClosest = index;
+          }
+        }
+        const title = titles[indexOfClosest];
+        console.info(`The closest speaker is ${title} with an estimated distance of ${distanceToClosest.toFixed(2)} meters.`);
+        return { indexOfClosest, distanceToClosest };
+      }
+
+      async function alignDistances(titles, estimated) {
+        console.info(
+          `Calculating relative speaker distances by cross-correlation time alignment of all channels to ${titles[estimated.indexOfClosest]}.`
+        );
+        const closestIndex = estimated.indexOfClosest;
+        const closestDistance = estimated.distanceToClosest;
+        const closestFirstArray = [closestIndex];
+        for (let i = 1; i < titles.length; i++) {
+          if (i === closestIndex) {
+            continue;
+          }
+          closestFirstArray.push(i);
+        }
+
+        const correlated = await _REW.crossCorrelate(closestFirstArray);
+        let distances = new Array(titles.length);
+        for (const { index, adjustmentMetres, adjustmentSeconds } of correlated) {
+          distances[index] = adjustmentMetres + closestDistance;
+          console.log(
+            `${titles[index]} time aligned by ${withSign((adjustmentSeconds * 1000).toFixed(2))} ms = ${withSign(adjustmentMetres.toFixed(2))} meters.`
+          );
+        }
+
+        const maxDiffAligned = Math.max(...distances.slice(1)) - Math.min(...distances.slice(1));
+        if (maxDiffAligned > 6) {
+          console.warn(`Aligned distances had a large spread: ${maxDiffAligned.toFixed(2)} meters.`);
+        }
+
+        console.log(`Final distances calculated (closest + relative), adjusted by offset if configured:`);
+        for (const [index, title] of titles.entries()) {
+          if (!index) {
+            continue; // skip first
+          }
+          let message = `${title}: ${distances[index].toFixed(2)} meters`;
+          if (_audyssey.hasSpeedOfSoundBug) {
+            message += ` (will compensate for AVR speed of sound bug and set to ${((distances[index] * 300) / 343).toFixed(2)} meters in the Audyssey file)`;
+          }
+          console.log(message + ".");
+        }
+        return distances;
+      }
+
+      async function createSystemTargetCurve() {
+        console.info(`Creating system target curve at ${CFG.SYSTEM_TARGET_LEVEL.value} dB SPL...`);
+        const any = 1;
+        const copy = await _REW.createResponseCopy(any);
+        await _REW.setTargetShapeFlat(copy);
+        await _REW.setTargetLevel(copy, CFG.SYSTEM_TARGET_LEVEL.value);
+        const systemTargetCurve = await _REW.EQGenerateTargetMeasurement(copy);
+        await _REW.setTitle(systemTargetCurve, "System target");
+        await _REW.smooth(systemTargetCurve, "Psy");
+        await _REW.delete(copy);
+        return systemTargetCurve - 1;
+      }
+
+      async function calculateCrossovers(titles, systemTargetCurve) {
+        console.info(`Calculating crossovers...`);
+
+        // TODO consider calculating rolloff for subs aswell, and warn if trying to boost down low?
+
+        const crossovers = new Array(titles.length).fill(undefined);
+        for (const [index, title] of titles.entries()) {
+          if (!index || isSubwoofer(title)) {
+            continue; // skip first and subs
+          }
+          const copy = await _REW.createResponseCopy(index);
+          await _REW.smooth(copy, "Psy");
+          const copyTarget = await _REW.createResponseCopy(systemTargetCurve);
+          await _REW.smooth(copyTarget, "Psy");
+          // TODO should maybe just use EQ window's calculate target level for this? or really wide span?
+          await _REW.alignSPL([copy, copyTarget], CFG.SPK_XO_ALIGN_FREQ.value, CFG.SPK_XO_ALIGN_SPAN.value);
+          const response = await _REW.getFrequencyResponse(copy);
+          const responseTarget = await _REW.getFrequencyResponse(copyTarget);
+          crossovers[index] = findCrossover(title, response, responseTarget);
+          await _REW.delete(copyTarget);
+          await _REW.delete(copy);
+        }
+        console.info(`Crossovers calculated:`);
+        for (const [index, title] of titles.entries()) {
+          if (!index || isSubwoofer(title)) {
+            continue; // skip first and subs
+          }
+          console.log(`${title}: ${crossovers[index]} Hz.`);
+        }
+        return crossovers;
+      }
+
+      function findCrossover(title, response, systemTargetCurveResponse) {
+        let xo;
+        for (let freq = 10; freq <= _audyssey.AVR_SELECTABLE_CROSSOVERS[_audyssey.AVR_SELECTABLE_CROSSOVERS.length - 1]; freq++) {
+          const magnitudeSpeaker = _REW.magnitudeAtFrequency(response, freq);
+          const magnitudeTarget = _REW.magnitudeAtFrequency(systemTargetCurveResponse, freq);
+          const diff = Math.abs(magnitudeSpeaker - magnitudeTarget);
+          if (diff <= CFG.XO_DETECTION_TOLERANCE.value) {
+            console.log(
+              `${title} Detected usable output for configured house curve down to ${freq} Hz with ${CFG.XO_DETECTION_TOLERANCE.value} dB tolerance.`
+            );
+            xo = freq;
+            break;
+          }
+        }
+        if (!xo) {
+          console.warn(`${title} could not find a crossover frequency in the range 10-250 Hz, setting to 250.`);
+          return 250;
+        }
+
+        if (xo < CFG.SPK_MINIMUM_XO.value) {
+          console.info(`${title} Forcing crossover frequency up to ${CFG.SPK_MINIMUM_XO.value} Hz.`);
+          return CFG.SPK_MINIMUM_XO.value;
+        }
+
+        if (xo > CFG.SPK_MAXIMUM_XO.value) {
+          console.info(`${title} Forcing crossover frequency down to ${CFG.SPK_MAXIMUM_XO.value} Hz.`);
+          return CFG.SPK_MAXIMUM_XO.value;
+        }
+
+        let closest = _audyssey.AVR_SELECTABLE_CROSSOVERS[0];
+        for (let i = 1; i < _audyssey.AVR_SELECTABLE_CROSSOVERS.length; i++) {
+          if (Math.abs(_audyssey.AVR_SELECTABLE_CROSSOVERS[i] - xo) < Math.abs(closest - xo)) {
+            closest = _audyssey.AVR_SELECTABLE_CROSSOVERS[i];
+          }
+        }
+        if (closest !== xo) {
+          console.info(`${title} Setting crossover to closest selectable AVR crossover frequency: ${closest} Hz.`);
+        }
+        return closest;
+      }
+
+      function synchronizeCrossoverPairs(titles, calculatedCrossovers) {
+        // For each friend pair, set the crossover to the lower of the two
+        // TODO not obvious that this is the best way to do it, but it's a start - we could also use the mean, the higher of the two, or maybe recalc against vector average...
+        console.log(`Checking pairs of channels and synchronizing crossovers (AVR only supports one crossover per pair)...`);
+        for (const [index, title] of titles.entries()) {
+          if (!index || isSubwoofer(title)) {
+            continue; // skip first and subs
+          }
+          const friendEnChannelType = getFriendEnChannelTypeByCommandId(title);
+          if (friendEnChannelType !== undefined) {
+            const commandId = getFriendCommandIdByEnChannelType(friendEnChannelType);
+            const friendIndex = Object.keys(titles).find((key) => titles[key] === commandId);
+            const myCrossover = calculatedCrossovers[index];
+            const friendCrossover = calculatedCrossovers[friendIndex];
+            if (friendCrossover < myCrossover) {
+              calculatedCrossovers[index] = friendCrossover;
+              console.log(`${title} crossover set to ${calculatedCrossovers[index]} Hz to match ${commandId}.`);
+            }
+          }
+        }
+        console.log(`Crossovers synchronized:`);
+        for (const [index, title] of titles.entries()) {
+          if (!index || isSubwoofer(title)) {
+            continue; // skip first and subs
+          }
+          console.log(`${title}: ${calculatedCrossovers[index]} Hz.`);
+        }
+        return calculatedCrossovers;
+      }
+
+      async function generateFilters(titles, crossovers) {
+        const filters = new Array(titles.length).fill(undefined);
+        const correcteds = new Array(titles.length).fill(undefined);
+        const targets = new Array(titles.length).fill(undefined);
+        const shelvingFilters = new Array(titles.length).fill(undefined);
+        const shelveds = new Array(titles.length).fill(undefined);
+        const combinedFilters = new Array(titles.length).fill(undefined);
+        const finals = new Array(titles.length).fill(undefined);
+        const filterResponses = new Array(titles.length).fill(undefined);
+
+        console.info(`Creating room correction filters for all channels...`);
+
+        console.info(
+          `Speaker filters will be faded in between ${halfOctaveBelow(Math.min(CFG.SPK_FILTER_LOWER_LIMIT.value, CFG.SPK_SHELVING_LOWER_LIMIT.value))} Hz ` +
+            `and ${halfOctaveAbove(Math.max(CFG.SPK_FILTER_UPPER_LIMIT.value, CFG.SPK_SHELVING_UPPER_LIMIT.value))} Hz ` +
+            `with full effect between ${halfOctaveAbove(Math.min(CFG.SPK_FILTER_LOWER_LIMIT.value, CFG.SPK_SHELVING_LOWER_LIMIT.value))} Hz ` +
+            `and ${halfOctaveBelow(Math.max(CFG.SPK_FILTER_UPPER_LIMIT.value, CFG.SPK_SHELVING_UPPER_LIMIT.value))} Hz.`
+        ); // TODO explain that this is with shelving filters
+        console.info(`Subwoofer filters will be faded in from ${halfOctaveBelow(CFG.SUB_FILTER_LOWER_LIMIT.value)} Hz.`);
+
+        for (const [index, title] of titles.entries()) {
+          if (!index) {
+            continue; // skip first
+          }
+          let target;
+          let preFilterShift;
+          let shifted;
+
+          const copy = await _REW.createResponseCopy(index);
+
+          // First alignment is to find the right level for creating filters
+          if (isSubwoofer(title)) {
+            await _REW.setTargetLevel(copy, CFG.SYSTEM_TARGET_LEVEL.value);
+            await _REW.setTargetShapeSubwoofer(copy, 10, 24, 250, 24);
+            target = await _REW.EQGenerateTargetMeasurement(copy);
+            console.log(`${title} Target curve created with no slope except at reasonable extremes.`);
+            await _REW.smooth(target, "Psy"); // Disrespect jagged target curves
+            shifted = await _REW.alignSPL([copy, target], CFG.SUB_ALIGN_FREQ.value, CFG.SUB_ALIGN_SPAN.value);
+            if (CFG.SUB_PRE_FILTER_TARGET_ADJUSTMENT.value) {
+              // Stage 2 really needed when doing this...
+              await _REW.addSPLOffset(target, CFG.SUB_PRE_FILTER_TARGET_ADJUSTMENT.value);
+              preFilterShift = CFG.SUB_PRE_FILTER_TARGET_ADJUSTMENT.value;
+            }
+          } else {
+            await _REW.setTargetLevel(copy, CFG.SYSTEM_TARGET_LEVEL.value);
+            await _REW.setTargetShapeSmallSpeaker(copy, crossovers[index], 12);
+            target = await _REW.EQGenerateTargetMeasurement(copy);
+            console.log(`${title} Target curve created with a 12dB/octave slope at ${crossovers[index]} Hz.`);
+            await _REW.smooth(target, "Psy"); // Disrespect jagged target curves
+            shifted = await _REW.alignSPL([copy, target], CFG.SPK_FILTER_ALIGN_FREQ.value, CFG.SPK_FILTER_ALIGN_SPAN.value);
+            if (CFG.SPK_TARGET_ADJUSTMENT.value) {
+              // Stage 2 really needed when doing this...
+              await _REW.addSPLOffset(target, CFG.SPK_TARGET_ADJUSTMENT.value);
+              preFilterShift = CFG.SPK_TARGET_ADJUSTMENT.value;
+            }
+          }
+          const responseOffset = shifted.find((s) => s.index === copy).offset;
+          const targetOffset = shifted.find((s) => s.index === target).offset;
+
+          const titleSuffix = isSubwoofer(title) ? "" : "(" + crossovers[index] + ")";
+
+          const copyMP = await _REW.createMinimumPhaseVersion(copy);
+          targets[index] = await _REW.createMinimumPhaseVersion(target); // TODO smooth? algo still chases un-smoothed target!
+          await _REW.setTitle(targets[index], title + " target" + titleSuffix);
+          let filter;
+          let dividedMPs;
+          if (isSubwoofer(title)) {
+            dividedMPs = await _REW.divide(copyMP, targets[index]);
+            filter = await _REW.createInverted(
+              dividedMPs,
+              CFG.SUB_FILTER_LOWER_LIMIT.value,
+              CFG.SUB_FILTER_UPPER_LIMIT.value,
+              CFG.SUB_FILTER_MAX_GAIN.value
+            );
+          } else {
+            dividedMPs = await _REW.divide(copyMP, targets[index]);
+            filter = await _REW.createInverted(
+              dividedMPs,
+              CFG.SPK_FILTER_LOWER_LIMIT.value,
+              CFG.SPK_FILTER_UPPER_LIMIT.value,
+              CFG.SPK_FILTER_MAX_GAIN.value
+            );
+          }
+          await _REW.setTitle(filter, title + " filter" + titleSuffix);
+          filters[index] = await _REW.createMinimumPhaseVersion(filter);
+
+          correcteds[index] = await _REW.multiply(copy, filters[index]);
+          await _REW.setTitle(correcteds[index], title + " corrected" + titleSuffix);
+          console.log(`${title} Simulated response after correction created.`);
+
+          await _REW.delete(filter);
+          await _REW.delete(dividedMPs);
+          await _REW.delete(copyMP);
+          await _REW.delete(target);
+          targets[index] -= 2;
+          filters[index] -= 4;
+          correcteds[index] -= 4;
+
+          // Stage 2, shelving filters
+
+          // TODO we could re-align SPL here...
+
+          const correctedMP = await _REW.createMinimumPhaseVersion(correcteds[index]);
+          await _REW.smooth(correctedMP, "1/1");
+          await _REW.smooth(targets[index], "1/1");
+          const dividedMPs2 = await _REW.divide(correctedMP, targets[index]);
+          let shelvingFilter = await _REW.createInverted(
+            dividedMPs2,
+            CFG.SPK_SHELVING_LOWER_LIMIT.value,
+            isSubwoofer(title) ? CFG.SUB_FILTER_UPPER_LIMIT.value : CFG.SPK_SHELVING_UPPER_LIMIT.value,
+            isSubwoofer(title) ? CFG.SUB_SHELVING_MAX_GAIN.value : CFG.SPK_SHELVING_MAX_GAIN.value,
+            false
+          );
+
+          shelvingFilters[index] = await _REW.createMinimumPhaseVersion(shelvingFilter);
+          await _REW.setTitle(shelvingFilters[index], title + " shelving filter");
+          //
+          //
+          shelveds[index] = await _REW.multiply(correcteds[index], shelvingFilters[index]);
+          await _REW.setTitle(shelveds[index], title + " shelved");
+          console.log(`${title} Simulated response after shelving created.`);
+          await _REW.delete(shelvingFilter);
+          await _REW.delete(dividedMPs2);
+          await _REW.delete(correctedMP);
+          shelvingFilters[index] -= 3;
+          shelveds[index] -= 3;
+
+          const combinedFilter = await _REW.multiply(filters[index], shelvingFilters[index]);
+          await _REW.setTitle(combinedFilter, title + " combined filter");
+          combinedFilters[index] = await _REW.createMinimumPhaseVersion(combinedFilter); // TODO not needed!
+          filterResponses[index] = await _REW.getFrequencyResponse(combinedFilters[index]);
+          finals[index] = await _REW.multiply(copy, combinedFilters[index]);
+          await _REW.setTitle(finals[index], title + " final" + titleSuffix);
+          await _REW.delete(combinedFilter);
+          combinedFilters[index] -= 1;
+          finals[index] -= 1;
+
+          // Undo shifting
+          await _REW.addSPLOffset(finals[index], -responseOffset);
+          await _REW.addSPLOffset(correcteds[index], -responseOffset);
+          await _REW.addSPLOffset(shelveds[index], -responseOffset);
+          await _REW.addSPLOffset(targets[index], -targetOffset - preFilterShift);
+        }
+        return { targets, filters, correcteds, shelvingFilters, shelveds, combinedFilters, finals, filterResponses };
+      }
+
+      async function analyzeLevels(titles, targets, correcteds) {
+        console.log(`Analyzing levels over chosen frequency ranges for corrected responses...`);
+        let levels = new Array(titles.length).fill(undefined);
+        let speakerSum = 0;
+        let speakerCount = 0;
+        for (const [index, title] of titles.entries()) {
+          if (!index) {
+            continue; // skip first
+          }
+          const corrected = correcteds[index];
+          const target = targets[index];
+          const correctedCopy = await _REW.createResponseCopy(corrected);
+          const targetCopy = await _REW.createResponseCopy(target);
+          await _REW.smooth(correctedCopy, "1/1");
+          await _REW.smooth(targetCopy, "1/1");
+          let shifted;
+          if (isSubwoofer(title)) {
+            shifted = await _REW.alignSPL([correctedCopy, targetCopy], CFG.SUB_ALIGN_FREQ.value, CFG.SUB_ALIGN_SPAN.value);
+          } else {
+            shifted = await _REW.alignSPL([correctedCopy, targetCopy], CFG.SPK_LEVEL_ALIGN_FREQ.value, CFG.SPK_LEVEL_ALIGN_SPAN.value);
+          }
+          const correctedOffset = shifted.find((s) => s.index === correctedCopy).offset;
+          const targetOffset = shifted.find((s) => s.index === targetCopy).offset;
+
+          const correctedTotalOffset = correctedOffset - targetOffset;
+          levels[index] = correctedTotalOffset;
+          if (!isSubwoofer(title)) {
+            speakerSum += correctedTotalOffset;
+            ++speakerCount;
+          }
+          await _REW.delete(targetCopy);
+          await _REW.delete(correctedCopy);
+        }
+        console.log(`Levels analyzed:`);
+        const speakerAverageOffset = speakerSum / speakerCount;
+        for (const [index, _] of titles.entries()) {
+          if (!index) {
+            continue; // skip first
+          }
+          levels[index] = levels[index] - speakerAverageOffset;
+          console.log(
+            `${titles[index]} level: ${withSign(toPointFive(levels[index]).toFixed(1))} dB, rounded from ${withSign(levels[index].toFixed(2))} dB.`
+          );
+          await _REW.addSPLOffset(correcteds[index], speakerAverageOffset + levels[index]);
+          await _REW.addSPLOffset(index, speakerAverageOffset + levels[index]);
+        }
+
+        // TODO measure and understand this magic 120 number (REW estimate). OCA does a -42 manoeuvre here, but I don't understand why.
+        const systemLevel = toPointFive(120 + speakerAverageOffset);
+        const systemOffset = systemLevel - CFG.SYSTEM_TARGET_LEVEL.value;
+        console.log(
+          `Estimated system calibration level: ${systemLevel.toFixed(1)} dB, offset from ${CFG.SYSTEM_TARGET_LEVEL.value} dB target: ${withSign(systemOffset.toFixed(1))} dB.`
+        );
+
+        return levels;
+      }
+
+      async function synchronizeLevelPairs(titles, correcteds, calculatedLevels) {
+        // For each friend pair, set the level to the higher of the two
+        console.log(`Checking pairs of channels and synchronizing levels if they are close...`);
+        const synchronizedLevels = calculatedLevels.map((x) => toPointFive(x).toFixed(1));
+        for (const [index, title] of titles.entries()) {
+          if (!index || isSubwoofer(title)) {
+            continue; // skip first and subs
+          }
+          const friendEnChannelType = getFriendEnChannelTypeByCommandId(title);
+          if (friendEnChannelType) {
+            const friendCommandId = getFriendCommandIdByEnChannelType(friendEnChannelType);
+            const friendIndex = Object.keys(titles).find((key) => titles[key] === friendCommandId);
+            const myLevel = synchronizedLevels[index];
+            const friendLevel = synchronizedLevels[friendIndex];
+            let diff = Math.abs(calculatedLevels[index] - calculatedLevels[friendIndex]);
+            if (myLevel !== friendLevel && diff <= CFG.LEVEL_PAIR_TOLERANCE.value) {
+              const newLevel = toPointFive((calculatedLevels[index] + calculatedLevels[friendIndex]) / 2).toFixed(1);
+              console.log(`${title} and ${friendCommandId} levels are close, setting both to ${withSign(newLevel)} dB.`);
+              const myChange = newLevel - myLevel;
+              const friendChange = newLevel - friendLevel;
+              await _REW.addSPLOffset(correcteds[index], myChange);
+              await _REW.addSPLOffset(correcteds[friendIndex], friendChange);
+              synchronizedLevels[index] = newLevel;
+              synchronizedLevels[friendIndex] = newLevel;
+            }
+          }
+        }
+        console.log(`Levels synchronized:`);
+        for (const [index, title] of titles.entries()) {
+          if (!index) {
+            continue; // skip first
+          }
+          console.log(`${title}: ${withSign(synchronizedLevels[index])} dB.`);
+        }
+        return synchronizedLevels;
+      }
+
+      async function simulateAVR(correcteds, crossovers, titles) {
+        console.info(`Simulating AVR bass management behaviour for ${correcteds.length} measurements...`);
+        let simulated = [];
+        const houseCurve = await _REW.getHouseCurve();
+        await _REW.setHouseCurve("");
+        for (const [index, title] of titles.entries()) {
+          if (!index) {
+            continue; // skip first
+          }
+          const corrected = correcteds[index];
+          if (isSubwoofer(title)) {
+            const uniqueCrossovers = [...new Set(crossovers.filter((x) => x !== undefined))];
+            for (const crossover of uniqueCrossovers) {
+              console.log(`${title} Simulating a low-pass filter with 24dB/octave slope at ${crossover} Hz.`);
+              await _REW.setTargetShapeSubwoofer(corrected, 0, 24, crossover, 24);
+              const response = await _REW.applyTargetShapeAsFilter(corrected);
+              simulated.push(response);
+              await _REW.setTitle(response, title + " after AVR @ " + crossover + "Hz");
+            }
+          } else {
+            const crossover = crossovers[index];
+            console.log(`${title} Simulating a high-pass filter with 12dB/octave slope at ${crossover} Hz.`);
+            await _REW.setTargetShapeSmallSpeaker(corrected, crossover, 12);
+            const response = await _REW.applyTargetShapeAsFilter(corrected);
+            simulated.push(response);
+            await _REW.setTitle(response, title + " after AVR @ " + crossover + "Hz");
+          }
+        }
+        await _REW.setHouseCurve(houseCurve);
+        return simulated;
+      }
+
+      // ======================== Helper functions ========================
+      function error(message) {
+        console.error(message);
+        alert(message);
+        throw new Error(message);
+      }
+
+      function halfOctaveAbove(frequency) {
+        return Math.round(frequency * Math.sqrt(2));
+      }
+
+      function halfOctaveBelow(frequency) {
+        return Math.round(frequency / Math.sqrt(2));
+      }
+
+      function isSubwoofer(title) {
+        return title.startsWith("SW");
+      }
+
+      function withSign(number) {
+        return number > 0 ? "+" + number : number;
+      }
+
+      function toPointFive(number) {
+        return Math.round(number * 2) / 2;
+      }
+
+      function getFriendEnChannelTypeByCommandId(commandId) {
+        const byCommandId = _audyssey.SPEAKER_FRIENDS.reduce((acc, val) => {
+          acc[val.commandId] = val;
+          return acc;
+        }, {});
+        return byCommandId[commandId].friend;
+      }
+      function getFriendCommandIdByEnChannelType(enChannelType) {
+        const byEnChannelType = _audyssey.SPEAKER_FRIENDS.reduce((acc, val) => {
+          acc[val.enChannelType] = val;
+          return acc;
+        }, {});
+        return byEnChannelType[enChannelType].commandId;
+      }
+    </script>
+  </body>
+</html>

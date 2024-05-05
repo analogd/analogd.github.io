@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audyssey Curve and Crossover Optimizer</title>
+    <link rel="icon" href="./favicon.ico" type="image/x-icon" />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7f9fc;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        box-sizing: border-box;
+      }
+      footer {
+        margin-top: 40px;
+        font-size: 0.9em;
+        color: #999;
+      }
+
+      .container {
+        display: flex;
+        flex-grow: 1;
+        gap: 20px;
+      }
+
+      .left-panel,
+      .right-panel {
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .left-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .right-panel {
+        flex: 2;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        align-items: center;
+      }
+
+      h1 {
+        color: #0056b3;
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      form {
+        padding: 20px;
+        background: #f7f9fc;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      label {
+        margin-bottom: 10px;
+        font-weight: bold;
+      }
+
+      input[type="file"],
+      input[type="checkbox"] {
+        margin-bottom: 20px;
+      }
+
+      button {
+        background-color: #0056b3;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      .graph-select-container {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        margin-bottom: 20px;
+      }
+
+      .graph-container {
+        width: 100%;
+        height: 300px;
+      }
+
+      .crossover-select-container {
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .crossover-select {
+        width: 100%;
+        padding: 5px;
+        font-size: 1em;
+        box-sizing: border-box;
+      }
+
+      #graphs {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        align-items: center;
+      }
+
+      @media (min-width: 768px) {
+        #graphs {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          width: 100%;
+        }
+      }
+
+      .placeholder {
+        text-align: center;
+        font-size: 1.2em;
+        color: #999;
+        grid-column: 1 / -1;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-top: 20px;
+        font-size: 1em;
+        color: #007bff;
+        text-decoration: none;
+      }
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <a class="back-link" href="../"><< Back to Home</a>
+    </header>
+
+    <main>
+      <h1>Audyssey Curve and Crossover Optimizer (kind of untested! do not use..)</h1>
+      <div class="container">
+        <div class="left-panel">
+          <form id="audyssey-form">
+            <label for="audyssey-file">Select Audyssey file (.ady):</label>
+            <input type="file" id="audyssey-file" accept=".ady" />
+            <label for="house-curve"
+              >Select house curve (.txt): (<small><a href="./Harman Target.txt" download>Harman Target</a></small
+              >)</label
+            >
+            <input type="file" id="house-curve" accept=".txt" />
+            <label for="freq-response"
+              >Select further adjustments (.txt): (<small
+                ><a href="./Anti-Audyssey High Frequency Rolloff 1.txt" download>Anti HFR1</a></small
+              >)</label
+            >
+            <input type="file" id="freq-response" accept=".txt" />
+            <button type="button" id="upload-button">Upload and Process</button>
+            <button type="button" id="download-button" disabled>Download Fixed Audyssey File</button>
+          </form>
+        </div>
+        <div class="right-panel">
+          <div id="graphs">
+            <div class="placeholder">Graphs will be displayed here once the files are processed.</div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const files = {};
+
+        // TODO ensure we don't mess up levels, clear trimAdjustment!
+        // TODO add input field to also set curtain for all channels (except the copy-subs)
+        // TODO test it out, that the generated files actually work
+
+        document.getElementById("audyssey-file").addEventListener("change", handleFileSelect);
+        document.getElementById("house-curve").addEventListener("change", handleFileSelect);
+        document.getElementById("freq-response").addEventListener("change", handleFileSelect);
+        document.getElementById("upload-button").addEventListener("click", processFiles);
+
+        const AVR_SELECTABLE_CROSSOVERS = [40, 60, 80, 90, 100, 110, 120, 150, 180, 200, 250];
+
+        const SPEAKER_FRIENDS = [
+          [0, "FL", "front left", 2],
+          [1, "C", "center"],
+          [2, "FR", "front right", 0],
+          [5, "SRA", "surround right", 13],
+          [8, "SBR", "surround back right", 10],
+          [10, "SBL", "surround back left", 8],
+          [13, "SLA", "surround left", 5],
+          [18, "FHR", "front height right", 40],
+          [19, "TFR", "top front right", 39],
+          [21, "TMR", "top middle right", 37],
+          [22, "TRR", "top rear right", 36],
+          [25, "RHR", "rear height right", 33],
+          [33, "RHL", "rear height left", 25],
+          [36, "TRL", "top rear left", 22],
+          [37, "TML", "top middle left", 21],
+          [39, "TFL", "top front left", 19],
+          [40, "FHL", "front height left", 18],
+          [42, "UNKNOWN", "<unknown>"],
+          [54, "SW1", "subwoofer"],
+          [54, "SWMIX", "subwoofer one"],
+          [55, "SWMIX", "subwoofer two"],
+          [56, "SWMIX", "subwoofer three"],
+          [57, "SWMIX", "subwoofer four"]
+        ];
+
+        const _enChannelTypes = SPEAKER_FRIENDS.map(([enChannelType, commandId, name, friend = undefined]) => ({
+          enChannelType,
+          commandId,
+          name,
+          friend
+        }));
+
+        const _enChannelTypesByCommandId = _enChannelTypes.reduce((acc, val) => {
+          acc[val.commandId] = val;
+          return acc;
+        }, {});
+
+        const _enChannelTypesByChannelType = _enChannelTypes.reduce((acc, val) => {
+          acc[val.enChannelType] = val;
+          return acc;
+        }, {});
+
+        document.addEventListener("DOMContentLoaded", () => {
+          const graphs = document.getElementById("graphs");
+          if (!document.querySelector(".placeholder")) {
+            const placeholder = document.createElement("div");
+            placeholder.classList.add("placeholder");
+            placeholder.textContent = "Graphs will be displayed here once the files are processed.";
+            graphs.appendChild(placeholder);
+          }
+        });
+
+        function handleFileSelect(event) {
+          files[event.target.id] = event.target.files[0];
+        }
+
+        async function processFiles() {
+          const graphs = document.getElementById("graphs");
+          graphs.innerHTML = "";
+
+          try {
+            const audysseyContent = await readFile(files["audyssey-file"]);
+            const audysseyData = JSON.parse(audysseyContent);
+
+            let houseCurveData = [];
+            let freqResponseData = [];
+
+            if (files["house-curve"]) {
+              const houseCurveContent = await readFile(files["house-curve"]);
+              houseCurveData = parseCSV(houseCurveContent);
+            }
+
+            if (files["freq-response"]) {
+              const freqResponseContent = await readFile(files["freq-response"]);
+              freqResponseData = parseCSV(freqResponseContent);
+            }
+
+            const speakerChannels = audysseyData.detectedChannels.filter((channel) => !channel.commandId.startsWith("SW"));
+            const subwooferChannels = audysseyData.detectedChannels.filter((channel) => channel.commandId.startsWith("SW"));
+            const speakerPairs = pairSpeakerChannels(speakerChannels);
+            const subwooferCount = subwooferChannels.length;
+
+            const commonFrequencies = generateCommonFrequencies(20, 20000, 1000);
+            const interpolatedHouseCurve = interpolateCurve(houseCurveData, commonFrequencies);
+            const interpolatedFreqResponseCurve = interpolateCurve(freqResponseData, commonFrequencies);
+
+            const placeholder = document.querySelector(".placeholder");
+            if (placeholder) {
+              placeholder.remove();
+            }
+
+            speakerPairs.forEach((pair) => {
+              const container = document.createElement("div");
+              container.classList.add("graph-select-container");
+
+              const graphContainer = document.createElement("div");
+              graphContainer.classList.add("graph-container");
+              graphContainer.setAttribute("data-channel-id", pair.commandId);
+              container.appendChild(graphContainer);
+
+              const selectContainer = document.createElement("div");
+              selectContainer.classList.add("crossover-select-container");
+              const selectLabel = document.createElement("label");
+              selectLabel.textContent = `Select crossover for ${pair.commandId.replace(" and ", " & ")}:`;
+              selectContainer.appendChild(selectLabel);
+
+              const select = document.createElement("select");
+              select.classList.add("crossover-select");
+              select.setAttribute("data-channel-id", pair.commandId);
+              AVR_SELECTABLE_CROSSOVERS.forEach((value) => {
+                const option = document.createElement("option");
+                option.value = value.toFixed(0);
+                option.text = value.toFixed(0);
+                select.appendChild(option);
+              });
+              select.value = "80";
+              select.addEventListener("change", (event) => {
+                updateGraph(pair, commonFrequencies, interpolatedHouseCurve, interpolatedFreqResponseCurve, event.target.value);
+              });
+              selectContainer.appendChild(select);
+              container.appendChild(selectContainer);
+              graphs.appendChild(container);
+
+              const rolloffCurve = generateButterworthRolloff(parseFloat(select.value), commonFrequencies);
+              const combinedCurve = commonFrequencies.map((frequency, index) => ({
+                frequency,
+                magnitude: (interpolatedHouseCurve[index] || 0) + (interpolatedFreqResponseCurve[index] || 0) + (rolloffCurve[index] || 0)
+              }));
+
+              visualizeCurve(
+                pair.commandId,
+                graphContainer,
+                commonFrequencies,
+                interpolatedHouseCurve,
+                interpolatedFreqResponseCurve,
+                rolloffCurve,
+                combinedCurve,
+                [Math.log10(20), Math.log10(20000)]
+              );
+            });
+
+            subwooferChannels.forEach((channel) => {
+              const container = document.createElement("div");
+              container.classList.add("graph-select-container");
+
+              const graphContainer = document.createElement("div");
+              graphContainer.classList.add("graph-container");
+              graphContainer.setAttribute("data-channel-id", channel.commandId);
+              container.appendChild(graphContainer);
+              graphs.appendChild(container);
+
+              const combinedCurve = commonFrequencies.map((frequency, index) => ({
+                frequency,
+                magnitude: (interpolatedHouseCurve[index] || 0) + (interpolatedFreqResponseCurve[index] || 0)
+              }));
+
+              visualizeCurve(
+                channel.commandId,
+                graphContainer,
+                commonFrequencies,
+                interpolatedHouseCurve,
+                interpolatedFreqResponseCurve,
+                [],
+                combinedCurve,
+                [Math.log10(20), Math.log10(300)]
+              );
+            });
+
+            enableDownloadButton(audysseyData);
+          } catch (error) {
+            console.error("Error processing files:", error);
+          }
+        }
+
+        function pairSpeakerChannels(channels) {
+          const pairs = [];
+          const used = new Set();
+
+          channels.forEach((channel) => {
+            if (used.has(channel.commandId)) return;
+            const friendId = _enChannelTypesByCommandId[channel.commandId]?.friend;
+            if (friendId !== undefined) {
+              const friendChannel = channels.find((ch) => _enChannelTypesByChannelType[friendId].commandId === ch.commandId);
+              if (friendChannel) {
+                pairs.push({ commandId: `${channel.commandId} and ${friendChannel.commandId}`, channels: [channel, friendChannel] });
+                used.add(channel.commandId);
+                used.add(friendChannel.commandId);
+              } else {
+                pairs.push({ commandId: channel.commandId, channels: [channel] });
+              }
+            } else {
+              pairs.push({ commandId: channel.commandId, channels: [channel] });
+            }
+          });
+
+          return pairs;
+        }
+
+        function visualizeCurve(id, container, commonFrequencies, houseCurve, freqResponse, rolloffCurve, combinedCurve, range) {
+          const data = [];
+
+          if (houseCurve.length > 0) {
+            data.push({
+              x: commonFrequencies,
+              y: houseCurve,
+              mode: "lines",
+              name: "House Curve",
+              hovertemplate: "%{x:.0f}, %{y:.2f}<extra></extra>"
+            });
+          }
+
+          if (freqResponse.length > 0) {
+            data.push({
+              x: commonFrequencies,
+              y: freqResponse,
+              mode: "lines",
+              name: "Adjustment Curve",
+              hovertemplate: "%{x:.0f}, %{y:.2f}<extra></extra>"
+            });
+          }
+
+          if (rolloffCurve.length > 0) {
+            data.push({
+              x: commonFrequencies,
+              y: rolloffCurve,
+              mode: "lines",
+              name: "High-Pass Rolloff",
+              hovertemplate: "%{x:.0f}, %{y:.2f}<extra></extra>"
+            });
+          }
+
+          data.push({
+            x: commonFrequencies,
+            y: combinedCurve.map((point) => point.magnitude),
+            mode: "lines",
+            name: "Correction Curve",
+            hovertemplate: "%{x:.0f}, %{y:.2f}<extra></extra>",
+            line: {
+              width: 4
+            }
+          });
+
+          const layout = {
+            title: `Custom target curve for ${id}`,
+            xaxis: {
+              title: "Frequency (Hz)",
+              type: "log",
+              tickmode: "array",
+              tickvals: [10, 20, 30, 50, 100, 200, 300, 500, 1000, 2000, 3000, 5000, 10000, 20000],
+              ticktext: ["10", "20", "30", "50", "100", "200", "300", "500", "1000", "2000", "3000", "5000", "10000", "20000"],
+              range: range,
+              autorange: false
+            },
+            yaxis: {
+              title: "Magnitude (dB)",
+              range: [-20, 20],
+              autorange: false
+            },
+            legend: {
+              orientation: "v",
+              x: 1,
+              xanchor: "left",
+              y: 1,
+              yanchor: "top"
+            }
+          };
+
+          Plotly.newPlot(container, data, layout);
+        }
+
+        function updateGraph(pair, commonFrequencies, houseCurve, freqResponse, crossoverFrequency) {
+          const rolloffCurve = generateButterworthRolloff(parseFloat(crossoverFrequency), commonFrequencies);
+          const combinedCurve = commonFrequencies.map((frequency, index) => ({
+            frequency,
+            magnitude: (houseCurve[index] || 0) + (freqResponse[index] || 0) + (rolloffCurve[index] || 0)
+          }));
+          const graphContainer = document.querySelector(`.graph-container[data-channel-id="${pair.commandId}"]`);
+          visualizeCurve(pair.commandId, graphContainer, commonFrequencies, houseCurve, freqResponse, rolloffCurve, combinedCurve);
+        }
+
+        function generateButterworthRolloff(cutoffFrequency, commonFrequencies) {
+          const rolloff = [];
+          commonFrequencies.forEach((f) => {
+            const omega = f / cutoffFrequency;
+            const magnitude = 20 * Math.log10(1 / Math.sqrt(1 + Math.pow(omega, -4)));
+            rolloff.push(magnitude);
+          });
+          return rolloff;
+        }
+
+        async function readFile(file) {
+          return new Promise((resolve, reject) => {
+            if (!(file instanceof Blob)) {
+              reject(new TypeError("Argument is not a Blob"));
+              return;
+            }
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
+          });
+        }
+
+        function parseCSV(content) {
+          const lines = content
+            .split("\n")
+            .map((line) => line.trim())
+            .filter((line) => line && !isNaN(line.charAt(0)));
+          return lines.map((line) => {
+            const parts = line.split(/[\s,]+/);
+            return {
+              frequency: parseFloat(parts[0]),
+              magnitude: parseFloat(parts[1])
+            };
+          });
+        }
+
+        function generateCommonFrequencies(start, end, numPoints) {
+          const frequencies = [];
+          const logStart = Math.log10(start);
+          const logEnd = Math.log10(end);
+          const logStep = (logEnd - logStart) / (numPoints - 1);
+          for (let i = 0; i < numPoints; i++) {
+            frequencies.push(Math.round(Math.pow(10, logStart + i * logStep)));
+          }
+          return [...new Set(frequencies)].sort((a, b) => a - b);
+        }
+
+        function interpolateCurve(curve, commonFrequencies) {
+          if (curve.length === 0) return commonFrequencies.map(() => 0);
+          const interpolated = [];
+          let curveIndex = 0;
+          for (const frequency of commonFrequencies) {
+            while (curveIndex < curve.length - 1 && curve[curveIndex + 1].frequency <= frequency) {
+              curveIndex++;
+            }
+            if (curveIndex === curve.length - 1 || curve[curveIndex].frequency === frequency) {
+              interpolated.push(curve[curveIndex].magnitude);
+            } else {
+              const f1 = curve[curveIndex].frequency;
+              const f2 = curve[curveIndex + 1].frequency;
+              const m1 = curve[curveIndex].magnitude;
+              const m2 = curve[curveIndex + 1].magnitude;
+              const interpolatedMagnitude = m1 + ((frequency - f1) / (f2 - f1)) * (m2 - m1);
+              interpolated.push(interpolatedMagnitude);
+            }
+          }
+          return interpolated;
+        }
+
+        function enableDownloadButton(audysseyData) {
+          const downloadButton = document.getElementById("download-button");
+          downloadButton.disabled = false;
+          downloadButton.onclick = () => downloadFile(audysseyData);
+        }
+
+        function downloadFile(audysseyData) {
+          const blob = new Blob([JSON.stringify(audysseyData, null, 2)], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "fixed_audyssey_file.ady";
+          a.click();
+          URL.revokeObjectURL(url);
+        }
+      </script>
+    </main>
+    <footer>&copy; 2024 Daniel Nilsson. All rights reserved.</footer>
+  </body>
+</html>

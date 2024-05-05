@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audyssey NOPE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
+    <style>
+      body {
+        font-family: "Roboto", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f0f2f5;
+        color: #333;
+      }
+      .container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+      }
+      .header,
+      .footer {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 2.5em;
+        color: #007bff;
+      }
+      .header p {
+        margin: 5px 0 20px;
+        font-size: 1.2em;
+        color: #666;
+      }
+      .section {
+        padding: 20px;
+        margin-bottom: 20px;
+        border-bottom: 1px solid #eaeaea;
+      }
+      .section h2 {
+        margin-top: 0;
+        font-size: 1.8em;
+        color: #007bff;
+      }
+      .buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+      }
+      button {
+        padding: 10px 20px;
+        font-size: 1em;
+        color: #fff;
+        background-color: #007bff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      button:hover:not(:disabled) {
+        background-color: #0056b3;
+      }
+      .log {
+        font-family: monospace;
+        background: #f8f9fa;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        height: 150px;
+        overflow-y: auto;
+      }
+      .center {
+        text-align: center;
+      }
+      .download-log {
+        text-align: right;
+        margin-top: 10px;
+      }
+      .footer p {
+        margin: 5px 0;
+        color: #999;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+        font-weight: bold;
+      }
+      tr:hover {
+        background-color: #f1f1f1;
+      }
+      .config-description {
+        font-size: 0.9em;
+        color: #666;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Audyssey NOPE</h1>
+        <p>Optimize your Audyssey-system with REW!</p>
+        <p>testing testing</p>
+      </div>
+
+      <div class="section">
+        <h2>Configuration</h2>
+        <p class="config-description">
+          Honestly, few should touch these settings. They are here for the curious and the brave. The default values are chosen to work well
+          with most systems to the best of my knowledge.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Setting</th>
+              <th>Value</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Speaker Align Frequency</td>
+              <td>400</td>
+              <td>Center frequency (in Hz) for speaker level alignments</td>
+            </tr>
+            <tr>
+              <td>Speaker Align Span</td>
+              <td>2</td>
+              <td>Span in octaves for speaker level alignments, half above and half below the center frequency</td>
+            </tr>
+            <tr>
+              <td>Speaker Target Adjustment</td>
+              <td>1</td>
+              <td>Speaker pre-filter calculation target level adjustment (in dB)</td>
+            </tr>
+            <tr>
+              <td>Subwoofer Align Frequency</td>
+              <td>60</td>
+              <td>Center frequency (in Hz) for subwoofer level alignments</td>
+            </tr>
+            <tr>
+              <td>Subwoofer Align Span</td>
+              <td>1</td>
+              <td>Span in octaves for subwoofer level alignments, half above and half below the center frequency</td>
+            </tr>
+            <tr>
+              <td>Subwoofer Target Adjustment</td>
+              <td>-2</td>
+              <td>Subwoofer pre-filter calculation target level adjustment (in dB)</td>
+            </tr>
+            <tr>
+              <td>Minimum Crossover Frequency</td>
+              <td>80</td>
+              <td>Minimum crossover frequency (in Hz) to use for any speaker, no matter what is detected</td>
+            </tr>
+            <tr>
+              <td>Maximum Crossover Frequency</td>
+              <td>150</td>
+              <td>Maximum crossover frequency (in Hz) to use for any speaker, no matter what is detected</td>
+            </tr>
+            <tr>
+              <td>Filter Lower Limit, Speakers</td>
+              <td>20</td>
+              <td>Lower frequency limit (in Hz) for filter creation arithmetic</td>
+            </tr>
+            <tr>
+              <td>Filter Upper Limit, Speakers</td>
+              <td>250</td>
+              <td>Upper frequency limit (in Hz) for filter creation arithmetic</td>
+            </tr>
+            <tr>
+              <td>Filter Max Gain, Speakers</td>
+              <td>5</td>
+              <td>Maximum gain (in dB) any one filter is allowed to apply</td>
+            </tr>
+            <tr>
+              <td>Filter Lower Limit, Subs</td>
+              <td>10</td>
+              <td>Lower frequency limit (in Hz) for filter creation arithmetic</td>
+            </tr>
+            <tr>
+              <td>Filter Upper Limit, Subs</td>
+              <td>200</td>
+              <td>Upper frequency limit (in Hz) for filter creation arithmetic</td>
+            </tr>
+            <tr>
+              <td>Filter Max Gain, Subs</td>
+              <td>5</td>
+              <td>Maximum gain (in dB) any one filter is allowed to apply</td>
+            </tr>
+            <tr>
+              <td>System Target Level</td>
+              <td>75</td>
+              <td>Target sound pressure level (in dB) for the system</td>
+            </tr>
+            <tr>
+              <td>Audyssey Subwoofers Curtain Frequency</td>
+              <td>250</td>
+              <td>Frequency (in Hz) to set as Audyssey curtain for subwoofers</td>
+            </tr>
+            <tr>
+              <td>Audyssey Speakers Curtain Frequency</td>
+              <td>350</td>
+              <td>Frequency (in Hz) to set as Audyssey curtain for speakers</td>
+            </tr>
+            <tr>
+              <td>Crossover Detection Tolerance</td>
+              <td>1</td>
+              <td>How far below the system target curve (in dB) a response can be at a certain frequency and still count as reaching it</td>
+            </tr>
+            <tr>
+              <td>Speaker Pair Level Fixing Limit</td>
+              <td>1</td>
+              <td>How far off a speaker pair can be from each other (in dB) for the levels to be adjusted to their mean</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <h2>Operation</h2>
+        <div class="buttons">
+          <button>Select Audyssey file</button>
+          <button disabled>Extract measurements</button>
+          <button disabled>Start optimization</button>
+        </div>
+        <div class="center">
+          <p>(Drop'em onto REW)</p>
+        </div>
+        <div class="center">
+          <button disabled>Generate new Audyssey file</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2>System Log</h2>
+        <div class="log">
+          <p>10:37:56 Audyssey NOPE is ready to go! Today is 2024-05-18.</p>
+          <p>10:37:56 If you haven't turned up max measurements in REW to 300, this tool will likely fail.</p>
+        </div>
+        <div class="download-log">
+          <button>Download log</button>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>Neutral Optimized Playback Experience © 2024 Daniel Nilsson</p>
+        <p>Last modified: 2024-05-18 01:53:36</p>
+      </div>
+    </div>
+  </body>
+</html>

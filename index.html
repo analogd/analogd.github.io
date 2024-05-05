@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Monorepo</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f5f5f5;
+      }
+      .container {
+        text-align: center;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        font-size: 2.5em;
+        color: #333;
+      }
+      p {
+        font-size: 1.2em;
+        color: #666;
+      }
+      .gallery {
+        margin-bottom: 20px;
+      }
+      .gallery {
+        white-space: nowrap;
+        text-align: center; /* Optional: Center the images horizontally */
+      }
+
+      .gallery img {
+        max-width: 200px;
+        white-space: nowrap;
+        margin: 10px;
+        cursor: pointer;
+        border: 2px solid #ddd;
+      }
+      .lightbox {
+        display: none;
+        position: fixed;
+        z-index: 999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        justify-content: center;
+        align-items: center;
+      }
+      .lightbox img {
+        max-width: 90%;
+        max-height: 90%;
+      }
+      .lightbox:target {
+        display: flex;
+      }
+      .projects {
+        margin-top: 20px;
+        text-align: left;
+      }
+      .project {
+        margin-bottom: 20px;
+      }
+      .project-link {
+        font-size: 1.2em;
+        color: #007bff;
+        text-decoration: none;
+      }
+      .project-link:hover {
+        text-decoration: underline;
+      }
+      .project-description {
+        font-size: 1em;
+        color: #666;
+        margin: 5px 0 0 10px;
+      }
+      .github-link {
+        display: block;
+        margin-top: 20px;
+        font-size: 1em;
+        color: #333;
+        text-decoration: none;
+        border: 1px solid #007bff;
+        padding: 10px 20px;
+        border-radius: 5px;
+      }
+      .github-link:hover {
+        background-color: #007bff;
+        color: #fff;
+      }
+      main {
+        display: block;
+      }
+      footer {
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #999;
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="container">
+        <h1>Welcome to My Monorepo</h1>
+        <p>I sometimes tinker with things. Explore the projects hosted here:</p>
+
+        <!-- Gallery Section -->
+        <div class="gallery">
+          <a href="#img1"><img src="./screenshot1.jpg" alt="Screenshot 1" /></a>
+          <a href="#img2"><img src="./screenshot2.jpg" alt="Screenshot 2" /></a>
+          <a href="#img3"><img src="./screenshot3.jpg" alt="Screenshot 3" /></a>
+          <a href="#img4"><img src="./screenshot4.jpg" alt="Screenshot 4" /></a>
+        </div>
+
+        <!-- Lightbox for Gallery -->
+        <div id="img1" class="lightbox">
+          <a href="#"><img src="./screenshot1.jpg" alt="Screenshot 1" /></a>
+        </div>
+        <div id="img2" class="lightbox">
+          <a href="#"><img src="./screenshot2.jpg" alt="Screenshot 2" /></a>
+        </div>
+        <div id="img3" class="lightbox">
+          <a href="#"><img src="./screenshot3.jpg" alt="Screenshot 3" /></a>
+        </div>
+        <div id="img4" class="lightbox">
+          <a href="#"><img src="./screenshot4.jpg" alt="Screenshot 4" /></a>
+        </div>
+
+        <div class="projects">
+          <div class="project">
+            <a class="project-link" href="./AudysseyCurveAndCrossoverOptimizer">Audyssey Curve and Crossover Optimizer</a>
+            <p class="project-description">
+              Add a house curve, not just for the sub, without messing up your levels, and fix the missing high-pass slopes for your
+              Audyssey system calibrations.
+            </p>
+          </div>
+          <div class="project">
+            <a class="project-link" href="./AudysseyNOPE">Audyssey NOPE</a>
+            <p class="project-description">Totally replace all of Audyssey's calculations by leveraging the power of REW.</p>
+          </div>
+          <div class="project">
+            <a class="project-link" href="./AudusseyFileAnalyzer">Audyssey File Analyzer</a>
+            <p class="project-description">Decode and visualize Audyssey files.</p>
+          </div>
+        </div>
+        <a class="github-link" href="https://github.com/analogd/analogd.github.io" target="_blank">Visit on GitHub</a>
+      </div>
+    </main>
+    <footer>&copy; 2024 Daniel Nilsson. All rights reserved.</footer>
+    <script>
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          window.location.hash = "";
+        }
+      });
+    </script>
+  </body>
+</html>

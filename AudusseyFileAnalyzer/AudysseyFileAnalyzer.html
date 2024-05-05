@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Audyssey .ady File Analyzer</title>
+    <link rel="icon" href="./favicon.ico" type="image/x-icon" />
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      footer {
+        margin-top: 40px;
+        font-size: 0.9em;
+        color: #999;
+        text-align: center;
+      }
+      .container {
+        max-width: 800px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        text-align: center;
+      }
+      .drop-zone {
+        border: 2px dashed #ccc;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        margin-bottom: 20px;
+      }
+      .drop-zone.dragover {
+        border-color: #000;
+      }
+      #fileInput {
+        display: none;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      .plot {
+        margin-top: 20px;
+      }
+      .field {
+        margin-bottom: 10px;
+      }
+      .log-box {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-bottom: 20px;
+        height: 150px;
+        overflow-y: auto;
+        background-color: #f9f9f9;
+      }
+      .back-link {
+        display: inline-block;
+        margin-top: 20px;
+        font-size: 1em;
+        color: #007bff;
+        text-decoration: none;
+      }
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <a class="back-link" href="../"><< Back to Home</a>
+    </header>
+    <main>
+      <div class="container">
+        <h1>Audyssey .ady File Analyzer</h1>
+        <div id="dropZone" class="drop-zone">Drag and drop your .ady file here or click to upload</div>
+        <input type="file" id="fileInput" accept=".ady" />
+        <div id="logBox" class="log-box"></div>
+        <div id="generalInfo" class="section"></div>
+        <div id="channelsContainer"></div>
+      </div>
+
+      <script>
+        const SPEAKER_FRIENDS = [
+          [0, "FL", "front left", 2],
+          [1, "C", "center"],
+          [2, "FR", "front right", 0],
+          [5, "SRA", "surround right", 13],
+          [8, "SBR", "surround back right", 10],
+          [10, "SBL", "surround back left", 8],
+          [13, "SLA", "surround left", 5],
+          [18, "FHR", "front height right", 40],
+          [19, "TFR", "top front right", 39],
+          [21, "TMR", "top middle right", 37],
+          [22, "TRR", "top rear right", 36],
+          [25, "RHR", "rear height right", 33],
+          [33, "RHL", "rear height left", 25],
+          [36, "TRL", "top rear left", 22],
+          [37, "TML", "top middle left", 21],
+          [39, "TFL", "top front left", 19],
+          [40, "FHL", "front height left", 18],
+          [42, "UNKNOWN", "<unknown>"],
+          [54, "SW1", "subwoofer"],
+          [54, "SWMIX", "subwoofer one"],
+          [55, "SWMIX", "subwoofer two"],
+          [56, "SWMIX", "subwoofer three"],
+          [57, "SWMIX", "subwoofer four"]
+        ];
+
+        const _enChannelTypes = SPEAKER_FRIENDS.map(([enChannelType, commandId, name, friend = undefined]) => ({
+          enChannelType,
+          commandId,
+          name,
+          friend
+        }));
+
+        const _enChannelTypesByChannelType = _enChannelTypes.reduce((acc, val) => {
+          acc[val.enChannelType] = val;
+          return acc;
+        }, {});
+
+        const dropZone = document.getElementById("dropZone");
+        const fileInput = document.getElementById("fileInput");
+        const logBox = document.getElementById("logBox");
+        const generalInfo = document.getElementById("generalInfo");
+        const channelsContainer = document.getElementById("channelsContainer");
+
+        dropZone.addEventListener("click", () => fileInput.click());
+        dropZone.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          dropZone.classList.add("dragover");
+        });
+        dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+        dropZone.addEventListener("drop", (e) => {
+          e.preventDefault();
+          dropZone.classList.remove("dragover");
+          const file = e.dataTransfer.files[0];
+          if (file) {
+            handleFile(file);
+          }
+        });
+        fileInput.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (file) {
+            handleFile(file);
+          }
+        });
+
+        function logMessage(message) {
+          const logEntry = document.createElement("div");
+          logEntry.textContent = message;
+          logBox.appendChild(logEntry);
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function handleFile(file) {
+          // Clear plots and general information before reading the new file
+          clearPlotsAndInfo();
+
+          logMessage(`Reading file (${file.name}, ${(file.size / 1024).toFixed(2)} KB)...`);
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            logMessage("File read successfully.");
+            const content = e.target.result;
+            const data = JSON.parse(content);
+            data.fileName = file.name; // Add file name to the data object
+            displayData(data);
+            plotAllGraphs(data);
+          };
+          reader.readAsText(file);
+        }
+
+        function clearPlotsAndInfo() {
+          generalInfo.innerHTML = "";
+          channelsContainer.innerHTML = "";
+        }
+
+        function displayData(data) {
+          logMessage("Displaying general information...");
+          const { detectedChannels, fileName, ...generalData } = data; // Destructure fileName
+          generalInfo.innerHTML = `
+    <h2>General Information</h2>
+    ${generateField("File Name", fileName)}
+    ${generateFields(generalData, ["enAmpAssignType", "detectedChannels", "interfaceVersion", "ampAssignInfo", "systemDelay", "upgradeInfo", "adcLineup"])}
+  `;
+
+          channelsContainer.innerHTML = ""; // Clear previous data
+
+          detectedChannels.forEach((channel, index) => {
+            const channelInfo = _enChannelTypesByChannelType[channel.enChannelType] || { commandId: "Unknown", name: "Unknown" };
+            const channelName = channelInfo.name;
+            const longName = channelInfo.commandId;
+
+            logMessage(`Processing Channel ${index + 1} - ${channelName}...`);
+
+            const channelDiv = document.createElement("div");
+            channelDiv.classList.add("section");
+            channelDiv.innerHTML = `
+      <h2>Channel ${index + 1} - ${channelName} (${longName})</h2>
+      ${generateFields(channel, ["customTargetCurvePoints", "responseData", "channelReport"])}
+      ${channel["channelReport"] ? generateChannelReport(channel["channelReport"]) : ""}
+      <div id="plot-custom-${index}" class="plot"></div>
+      <div id="plot-response-${index}" class="plot"></div>
+    `;
+
+            channelsContainer.appendChild(channelDiv);
+
+            // Initialize plots with placeholder message
+            Plotly.newPlot(`plot-custom-${index}`, [], { title: "Custom Target Curve - No Data Available Yet" });
+            Plotly.newPlot(`plot-response-${index}`, [], { title: "Response Data - No Data Available Yet" });
+          });
+
+          logMessage("All channels processed. Building plots...");
+          plotAllGraphs(data); // Ensure graphs are plotted after displaying data
+        }
+
+        function plotAllGraphs(data) {
+          const { detectedChannels } = data;
+          detectedChannels.forEach((channel, index) => {
+            const channelInfo = _enChannelTypesByChannelType[channel.enChannelType] || { commandId: "Unknown", name: "Unknown" };
+            const channelName = channelInfo.name;
+            const isSubwoofer = channelName.toLowerCase().includes("subwoofer");
+
+            if (channel.customTargetCurvePoints && channel.customTargetCurvePoints.length > 0) {
+              logMessage(`Plotting Custom Target Curve for Channel ${index + 1}...`);
+
+              const freqs = [];
+              const magnitudes = [];
+
+              channel.customTargetCurvePoints.forEach((item) => {
+                const parsed = item.slice(1, -1).split(",").map(Number);
+                freqs.push(parsed[0]);
+                magnitudes.push(parsed[1]);
+              });
+
+              const trace = {
+                x: freqs,
+                y: magnitudes,
+                mode: "lines+markers",
+                name: `${channelName} Custom Target Curve`
+              };
+
+              const tickvals = [];
+              const ticktext = [];
+              for (let i = 10; i <= 20000; i *= 10) {
+                for (let j = 1; j < 10; j++) {
+                  if (i * j >= 20 && (!isSubwoofer || i * j <= 300)) {
+                    tickvals.push(i * j);
+                    ticktext.push(`${i * j}`);
+                  }
+                }
+                if (i >= 20 && (!isSubwoofer || i <= 300)) {
+                  tickvals.push(i);
+                  ticktext.push(`${i}`);
+                }
+              }
+
+              const layout = {
+                title: `Custom Target Curve - ${channelName}`,
+                xaxis: {
+                  title: "Frequency (Hz)",
+                  type: "log",
+                  tickvals: tickvals,
+                  ticktext: ticktext,
+                  range: [Math.log10(20), Math.log10(isSubwoofer ? 300 : 20000)]
+                },
+                yaxis: {
+                  title: "Magnitude (dB)",
+                  range: [-20, 20]
+                }
+              };
+
+              Plotly.newPlot(`plot-custom-${index}`, [trace], layout);
+            } else {
+              Plotly.newPlot(`plot-custom-${index}`, [], { title: `Custom Target Curve - ${channelName} - No Data Available` });
+            }
+
+            if (channel.responseData) {
+              logMessage(`Plotting Response Data for Channel ${index + 1}...`);
+
+              const traces = Object.entries(channel.responseData).map(([key, magnitudes]) => {
+                const xValues = magnitudes.map((_, i) => i * (1 / 48000)); // Assuming sample rate of 48000 Hz
+                return {
+                  x: xValues,
+                  y: magnitudes,
+                  mode: "lines",
+                  name: `${channelName} Response Data ${key}`
+                };
+              });
+
+              const layout = {
+                title: `Response Data - ${channelName}`,
+                xaxis: {
+                  title: "Time (seconds)"
+                },
+                yaxis: {
+                  title: "Magnitude"
+                }
+              };
+
+              Plotly.newPlot(`plot-response-${index}`, traces, layout);
+            } else {
+              Plotly.newPlot(`plot-response-${index}`, [], { title: `Response Data - ${channelName} - No Data Available` });
+            }
+          });
+
+          logMessage("All plots completed.");
+        }
+
+        function generateFields(obj, excludeKeys = []) {
+          return Object.keys(obj)
+            .filter((key) => !excludeKeys.includes(key))
+            .map((key) => generateField(key, JSON.stringify(obj[key])))
+            .join("");
+        }
+
+        function generateField(label, value) {
+          return `<div class="field"><strong>${label}:</strong> ${value}</div>`;
+        }
+
+        function generateChannelReport(report) {
+          return `
+          <h3>Channel Report</h3>
+          ${Object.keys(report)
+            .map((key) => generateField(key, JSON.stringify(report[key])))
+            .join("")}
+        `;
+        }
+      </script>
+    </main>
+    <footer>&copy; 2024 Daniel Nilsson. All rights reserved.</footer>
+  </body>
+</html>
