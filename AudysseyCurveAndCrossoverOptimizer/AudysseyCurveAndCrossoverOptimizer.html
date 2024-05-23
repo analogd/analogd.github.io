@@ -104,13 +104,16 @@
         height: 300px;
       }
 
-      .crossover-select-container {
+      .crossover-curtain-container {
+        display: flex;
+        justify-content: space-between;
         width: 100%;
         margin-top: 10px;
       }
 
-      .crossover-select {
-        width: 100%;
+      .crossover-select,
+      .curtain-input {
+        width: 48%;
         padding: 5px;
         font-size: 1em;
         box-sizing: border-box;
@@ -158,7 +161,7 @@
     </header>
 
     <main>
-      <h1>Audyssey Curve and Crossover Optimizer (kind of untested! do not use..)</h1>
+      <h1>Audyssey Curve and Crossover Optimizer - work in progress, not working yet</h1>
       <div class="container">
         <div class="left-panel">
           <form id="audyssey-form">
@@ -175,7 +178,7 @@
               >)</label
             >
             <input type="file" id="freq-response" accept=".txt" />
-            <button type="button" id="upload-button">Upload and Process</button>
+            <button type="button" id="upload-button" disabled>Upload and Process</button>
             <button type="button" id="download-button" disabled>Download Fixed Audyssey File</button>
           </form>
         </div>
@@ -188,10 +191,6 @@
 
       <script>
         const files = {};
-
-        // TODO ensure we don't mess up levels, clear trimAdjustment!
-        // TODO add input field to also set curtain for all channels (except the copy-subs)
-        // TODO test it out, that the generated files actually work
 
         document.getElementById("audyssey-file").addEventListener("change", handleFileSelect);
         document.getElementById("house-curve").addEventListener("change", handleFileSelect);
@@ -255,6 +254,13 @@
 
         function handleFileSelect(event) {
           files[event.target.id] = event.target.files[0];
+          updateButtonStates();
+        }
+
+        function updateButtonStates() {
+          const uploadButton = document.getElementById("upload-button");
+          const fileSelected = Object.keys(files).length > 0;
+          uploadButton.disabled = !fileSelected;
         }
 
         async function processFiles() {
@@ -302,10 +308,7 @@
               container.appendChild(graphContainer);
 
               const selectContainer = document.createElement("div");
-              selectContainer.classList.add("crossover-select-container");
-              const selectLabel = document.createElement("label");
-              selectLabel.textContent = `Select crossover for ${pair.commandId.replace(" and ", " & ")}:`;
-              selectContainer.appendChild(selectLabel);
+              selectContainer.classList.add("crossover-curtain-container");
 
               const select = document.createElement("select");
               select.classList.add("crossover-select");
@@ -318,9 +321,34 @@
               });
               select.value = "80";
               select.addEventListener("change", (event) => {
-                updateGraph(pair, commonFrequencies, interpolatedHouseCurve, interpolatedFreqResponseCurve, event.target.value);
+                updateGraph(
+                  pair,
+                  commonFrequencies,
+                  interpolatedHouseCurve,
+                  interpolatedFreqResponseCurve,
+                  event.target.value,
+                  document.querySelector(`.curtain-input[data-channel-id="${pair.commandId}"]`).value
+                );
               });
               selectContainer.appendChild(select);
+
+              const curtainInput = document.createElement("input");
+              curtainInput.type = "number";
+              curtainInput.classList.add("curtain-input");
+              curtainInput.setAttribute("data-channel-id", pair.commandId);
+              curtainInput.value = "20000";
+              curtainInput.addEventListener("input", (event) => {
+                updateGraph(
+                  pair,
+                  commonFrequencies,
+                  interpolatedHouseCurve,
+                  interpolatedFreqResponseCurve,
+                  select.value,
+                  event.target.value
+                );
+              });
+              selectContainer.appendChild(curtainInput);
+
               container.appendChild(selectContainer);
               graphs.appendChild(container);
 
@@ -340,6 +368,13 @@
                 combinedCurve,
                 [Math.log10(20), Math.log10(20000)]
               );
+
+              // Update the Audyssey data with the custom crossover and curtain frequency for each channel
+              pair.channels.forEach((channel) => {
+                channel.customCrossover = parseFloat(select.value);
+                channel.customTargetCurvePoints = combinedCurve.map((point) => `{${point.frequency},${point.magnitude}}`);
+                channel.curtainFrequency = parseFloat(curtainInput.value);
+              });
             });
 
             subwooferChannels.forEach((channel) => {
@@ -367,6 +402,9 @@
                 combinedCurve,
                 [Math.log10(20), Math.log10(300)]
               );
+
+              // Update the Audyssey data with the custom target curve for the subwoofer
+              channel.customTargetCurvePoints = combinedCurve.map((point) => `{${point.frequency},${point.magnitude}}`);
             });
 
             enableDownloadButton(audysseyData);
@@ -471,7 +509,7 @@
           Plotly.newPlot(container, data, layout);
         }
 
-        function updateGraph(pair, commonFrequencies, houseCurve, freqResponse, crossoverFrequency) {
+        function updateGraph(pair, commonFrequencies, houseCurve, freqResponse, crossoverFrequency, curtainFrequency = 20000) {
           const rolloffCurve = generateButterworthRolloff(parseFloat(crossoverFrequency), commonFrequencies);
           const combinedCurve = commonFrequencies.map((frequency, index) => ({
             frequency,
@@ -479,6 +517,13 @@
           }));
           const graphContainer = document.querySelector(`.graph-container[data-channel-id="${pair.commandId}"]`);
           visualizeCurve(pair.commandId, graphContainer, commonFrequencies, houseCurve, freqResponse, rolloffCurve, combinedCurve);
+
+          // Update the Audyssey data with the custom crossover and curtain frequency for each channel
+          pair.channels.forEach((channel) => {
+            channel.customCrossover = parseFloat(crossoverFrequency);
+            channel.customTargetCurvePoints = combinedCurve.map((point) => ({ x: point.frequency, y: point.magnitude }));
+            channel.curtainFrequency = parseFloat(curtainFrequency);
+          });
         }
 
         function generateButterworthRolloff(cutoffFrequency, commonFrequencies) {
@@ -562,7 +607,8 @@
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          a.download = "fixed_audyssey_file.ady";
+          const originalFileName = files["audyssey-file"].name.replace(/\.[^/.]+$/, "");
+          a.download = `${originalFileName}_curve_and_crossover_optimized.ady`;
           a.click();
           URL.revokeObjectURL(url);
         }
