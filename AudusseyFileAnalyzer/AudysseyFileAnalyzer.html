@@ -124,11 +124,11 @@
           return acc;
         }, {});
 
-        const dropZone = document.getElementById("dropZone");
-        const fileInput = document.getElementById("fileInput");
         const logBox = document.getElementById("logBox");
         const generalInfo = document.getElementById("generalInfo");
         const channelsContainer = document.getElementById("channelsContainer");
+        const dropZone = document.getElementById("dropZone");
+        const fileInput = document.getElementById("fileInput");
 
         dropZone.addEventListener("click", () => fileInput.click());
         dropZone.addEventListener("dragover", (e) => {
@@ -280,10 +280,10 @@
               Plotly.newPlot(`plot-custom-${index}`, [], { title: `Custom Target Curve - ${channelName} - No Data Available` });
             }
 
-            if (channel.responseData) {
+            if (channel["responseData"]) {
               logMessage(`Plotting Response Data for Channel ${index + 1}...`);
 
-              const traces = Object.entries(channel.responseData).map(([key, magnitudes]) => {
+              const traces = Object.entries(channel["responseData"]).map(([key, magnitudes]) => {
                 const xValues = magnitudes.map((_, i) => i * (1 / 48000)); // Assuming sample rate of 48000 Hz
                 return {
                   x: xValues,
