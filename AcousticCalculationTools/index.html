@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acoustic Calculation Tools</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Acoustic Calculation Tools</h1>
+    </header>
+    <main>
+        <section id="room-dimensions">
+            <h2>Room Dimensions</h2>
+            <form id="dimensions-form">
+                <label for="room-length">Room Length (cm):</label>
+                <input type="number" id="room-length" required>
+                <label for="room-width">Room Width (cm):</label>
+                <input type="number" id="room-width" required>
+                <label for="room-height">Room Height (cm):</label>
+                <input type="number" id="room-height" required>
+            </form>
+        </section>
+        
+        <section id="speaker-positions">
+            <h2>Speaker Positions</h2>
+            <label for="l-speaker-height">Left Speaker Height (cm):</label>
+            <input type="number" id="l-speaker-height" required>
+            <label for="l-speaker-distance">Left Speaker Distance to Nearest Side Wall (cm):</label>
+            <input type="number" id="l-speaker-distance" required>
+            <label for="c-speaker-height">Center Speaker Height (cm):</label>
+            <input type="number" id="c-speaker-height" required>
+            <label for="c-speaker-distance-left">Center Speaker Distance to Left Wall (cm):</label>
+            <input type="number" id="c-speaker-distance-left" required>
+            <label for="c-speaker-distance-right">Center Speaker Distance to Right Wall (cm):</label>
+            <input type="number" id="c-speaker-distance-right" required>
+            <label for="r-speaker-height">Right Speaker Height (cm):</label>
+            <input type="number" id="r-speaker-height" required>
+            <label for="r-speaker-distance">Right Speaker Distance to Nearest Side Wall (cm):</label>
+            <input type="number" id="r-speaker-distance" required>
+        </section>
+
+        <section id="results">
+            <h2>Results</h2>
+            <div id="modal-frequencies-result"></div>
+            <div id="sbir-result"></div>
+            <div id="illustration"></div>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
