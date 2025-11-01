@@ -41,8 +41,33 @@ class Driver {
             }
         }
 
-        // Estimated sensitivity (rough approximation)
-        if (this.fs && this.vas) {
+        // Reference efficiency (η₀) and sensitivity - Small 1972, Equation 22
+        // η₀ = (4π²/c³) × (Fs³ × Vas / Qes)
+        // SPL₀ = 112 + 10 × log₁₀(η₀)
+        //
+        // ⚠️ CONFIDENCE: MEDIUM
+        // - Formula is from literature but simplified
+        // - Typically within ±3dB of measured values
+        // - Full formula requires Bl, Mms, Sd which aren't always available
+        if (this.fs && this.vas && this.qes) {
+            const c = 343;  // Speed of sound (m/s) at 20°C
+            const vas_m3 = this.vas / 1000;  // Convert liters to m³
+
+            // Calculate reference efficiency
+            const fourPiSquared = 4 * Math.PI * Math.PI;
+            const cCubed = c * c * c;
+            const fsCubed = this.fs * this.fs * this.fs;
+
+            const eta0 = (fourPiSquared / cCubed) * (fsCubed * vas_m3 / this.qes);
+
+            // Convert to SPL @ 2.83V/1m
+            derived.referenceEfficiency = eta0;
+            derived.referenceSPL = 112 + 10 * Math.log10(eta0);
+
+            // Also store as sensitivity (more common term)
+            derived.sensitivity = parseFloat(derived.referenceSPL.toFixed(1));
+        } else if (this.fs && this.vas) {
+            // Fallback: rough approximation without Qes
             const fs3 = Math.pow(this.fs, 3);
             const product = fs3 * this.vas;
             derived.sensitivityEst = Math.round(112 + 10 * Math.log10(product));

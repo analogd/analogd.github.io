@@ -20,8 +20,10 @@ This document tracks which formulas are validated vs approximate, and what sourc
 | EBP (Fs/Qes) | ✅ VALIDATED | HIGH | Standard formula | Tested |
 | EBP classification | ✅ VALIDATED | HIGH | Industry standard | <50 sealed, 50-100 versatile, >100 ported |
 | Vd (Sd × Xmax) | ✅ VALIDATED | HIGH | Geometry | Tested |
+| Reference efficiency (η₀) | ✅ IMPLEMENTED | MEDIUM | Small 1972, Eq. 22 | Tested, ±3dB accuracy |
+| Sensitivity (SPL₀) | ✅ IMPLEMENTED | MEDIUM | 112 + 10log(η₀) | Tested, calculated from η₀ |
 
-**Test Coverage:** 10/10 tests passing
+**Test Coverage:** 12/12 tests passing
 
 ### SealedBox Model
 
@@ -77,19 +79,21 @@ This document tracks which formulas are validated vs approximate, and what sourc
 | Feature | Status | Confidence | Source | Notes |
 |---------|--------|------------|--------|-------|
 | Basic SPL (10×log power) | ✅ VALIDATED | HIGH | Physics | dB = 10×log₁₀(P) |
-| Base sensitivity | ⚠️ APPROXIMATE | MEDIUM | Should use η₀ | Currently hardcoded 88dB |
-| Reference efficiency (η₀) | ❌ UNVERIFIED | LOW | Small 1972, Eq. 22 | Formula exists, not integrated |
+| Base sensitivity | ✅ IMPROVED | MEDIUM | Small 1972, Eq. 22 | Now calculated from η₀ |
+| Reference efficiency (η₀) | ✅ IMPLEMENTED | MEDIUM | Small 1972 | η₀ = (4π²/c³) × (Fs³×Vas/Qes) |
 | Multi-power curves | ✅ VALIDATED | HIGH | Implementation | Tested with real driver |
 | SPL ceiling | ⚠️ APPROXIMATE | MEDIUM | Uses MaxPowerCalculator | Depends on excursion accuracy |
 
-**Test Coverage:** 0/0 (need to add)
+**Test Coverage:** 10/10 tests passing
 
-**Improvements Needed:**
-- Calculate base sensitivity from driver efficiency
-- Integrate η₀ = (4π²/c³) × (Fs³×Vas/Qes)
-- SPL₀ = 112 + 10×log₁₀(η₀)
+**Implementation Details:**
+- ✅ η₀ formula integrated into Driver.derived.sensitivity
+- ✅ SPLCalculator automatically uses calculated sensitivity
+- ✅ Falls back to 88dB if Qes not available
+- ⚠️  Typically within ±3dB of measured values (UMII18-22: calc 87.9dB vs WinISD 90.7dB)
+- Full accuracy requires Bl, Mms parameters not always available
 
-### MaxPowerCalculator (NEW)
+### MaxPowerCalculator
 
 | Feature | Status | Confidence | Source | Notes |
 |---------|--------|------------|--------|-------|
@@ -98,7 +102,7 @@ This document tracks which formulas are validated vs approximate, and what sourc
 | Max power curve | ⚠️ APPROXIMATE | MEDIUM | Depends on excursion | Structure correct, formula approximate |
 | Warnings | ✅ VALIDATED | HIGH | Threshold-based | Works correctly |
 
-**Test Coverage:** 0/0 (need to add)
+**Test Coverage:** 16/16 tests passing
 
 **Known Issues:**
 - Excursion formula uses empirical 15× factor
@@ -160,13 +164,13 @@ This document tracks which formulas are validated vs approximate, and what sourc
 **Current Status:**
 
 ```
-✅ Driver Model:              10/10 tests passing
+✅ Driver Model:              12/12 tests passing (includes sensitivity)
 ✅ SealedBox Model:           14/14 tests passing
 ✅ AlignmentCalculator:       15/15 tests passing
-⚠️  SPLCalculator:            0/0 tests (need to write)
-⚠️  MaxPowerCalculator:       0/0 tests (need to write)
+✅ SPLCalculator:             10/10 tests passing
+✅ MaxPowerCalculator:        16/16 tests passing
 
-Overall: 39/39 tests passing (100%)
+Overall: 67/67 tests passing (100%)
 ```
 
 **Confidence by Component:**

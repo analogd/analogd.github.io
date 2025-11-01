@@ -116,12 +116,15 @@
     <script src="../models/PortedBox.js"></script>
     <script src="../calculators/AlignmentCalculator.js"></script>
     <script src="../calculators/SPLCalculator.js"></script>
+    <script src="../calculators/MaxPowerCalculator.js"></script>
 
     <!-- Load test framework and tests -->
     <script src="TestFramework.js"></script>
     <script src="Driver.test.js"></script>
     <script src="SealedBox.test.js"></script>
     <script src="AlignmentCalculator.test.js"></script>
+    <script src="SPLCalculator.test.js"></script>
+    <script src="MaxPowerCalculator.test.js"></script>
 
     <script>
         // Intercept console output
@@ -167,6 +170,8 @@
             runner.addSuite(createDriverTests());
             runner.addSuite(createSealedBoxTests());
             runner.addSuite(createAlignmentCalculatorTests());
+            runner.addSuite(createSPLCalculatorTests());
+            runner.addSuite(createMaxPowerCalculatorTests());
 
             // Run tests
             const summary = await runner.runAll();

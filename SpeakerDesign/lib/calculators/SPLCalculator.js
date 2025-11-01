@@ -1,8 +1,23 @@
 // SPL and limiting factor calculations
 class SPLCalculator {
+    // Get base sensitivity for driver (calculated or default)
+    static _getBaseSensitivity(box, options = {}) {
+        if (options.baseSensitivity) {
+            return options.baseSensitivity;
+        }
+
+        // Use calculated sensitivity if available
+        if (box.driver.derived && box.driver.derived.sensitivity) {
+            return box.driver.derived.sensitivity;
+        }
+
+        // Fallback to conservative estimate
+        return 88;
+    }
+
     // Calculate absolute SPL for a box design
     static calculateSPL(box, power, frequency, options = {}) {
-        const baseSensitivity = options.baseSensitivity || 88;  // dB @ 1W/1m
+        const baseSensitivity = this._getBaseSensitivity(box, options);
 
         // Power gain in dB
         const powerGain = 10 * Math.log10(power);
@@ -15,7 +30,7 @@ class SPLCalculator {
 
     // Calculate SPL sweep across frequency range
     static calculateSPLSweep(box, power, startFreq, endFreq, points, options = {}) {
-        const baseSensitivity = options.baseSensitivity || 88;
+        const baseSensitivity = this._getBaseSensitivity(box, options);
         const powerGain = 10 * Math.log10(power);
 
         const sweep = box.sweep(startFreq, endFreq, points);
@@ -29,7 +44,7 @@ class SPLCalculator {
 
     // Generate multi-power frequency response curves
     static generateMultiPowerCurves(box, powerLevels, startFreq = 10, endFreq = 200, points = 100, options = {}) {
-        const baseSensitivity = options.baseSensitivity || 88;
+        const baseSensitivity = this._getBaseSensitivity(box, options);
 
         const sweep = box.sweep(startFreq, endFreq, points);
 
@@ -47,7 +62,7 @@ class SPLCalculator {
 
     // Calculate SPL ceiling (max achievable SPL at each frequency)
     static calculateSPLCeiling(box, startFreq = 10, endFreq = 200, points = 50) {
-        const baseSensitivity = 88; // Will be driver-specific later
+        const baseSensitivity = this._getBaseSensitivity(box, {});
         const frequencies = [];
         const ceiling = [];
 
@@ -78,7 +93,7 @@ class SPLCalculator {
     static calculateThermalLimit(driver, power, options = {}) {
         if (!driver.canCalculateThermalLimit()) return null;
 
-        const baseSensitivity = options.baseSensitivity || 88;
+        const baseSensitivity = options.baseSensitivity || driver.derived?.sensitivity || 88;
         const continuousPower = driver.pe * 0.7;  // 70% of Pe for thermal headroom
 
         const thermalLimitSPL = baseSensitivity + 10 * Math.log10(continuousPower);
@@ -98,7 +113,7 @@ class SPLCalculator {
         const driver = box.driver;
         if (!driver.canCalculateExcursion()) return null;
 
-        const baseSensitivity = options.baseSensitivity || 88;
+        const baseSensitivity = this._getBaseSensitivity(box, options);
 
         // Excursion-limited SPL increases with frequency
         let excursionSPL;

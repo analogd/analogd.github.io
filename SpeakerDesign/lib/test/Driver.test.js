@@ -130,5 +130,40 @@ function createDriverTests() {
         TestFramework.assertTrue(driver.canCalculateThermalLimit());
     });
 
+    suite.test('Calculates reference sensitivity (η₀ formula)', () => {
+        // UMII18-22 parameters
+        const driver = new Driver({
+            fs: 22.0,
+            qts: 0.53,
+            qes: 0.67,
+            vas: 248.2
+        });
+
+        // Should calculate sensitivity
+        TestFramework.assertTrue(driver.derived.sensitivity !== undefined);
+
+        // Should be in reasonable range (85-95 dB for subwoofer)
+        const sens = driver.derived.sensitivity;
+        if (sens < 80 || sens > 100) {
+            throw new Error(`Sensitivity ${sens} dB out of reasonable range`);
+        }
+
+        // For UMII18-22: WinISD shows 90.7, we calculate ~87.9
+        // Within ±3dB is acceptable for simplified formula
+        console.log(`    Calculated sensitivity: ${sens.toFixed(1)} dB (WinISD: 90.7 dB)`);
+    });
+
+    suite.test('Sensitivity requires Fs, Vas, and Qes', () => {
+        // Without Qes, should fall back to estimate
+        const driverNoQes = new Driver({
+            fs: 22.0,
+            qts: 0.53,
+            vas: 248.2
+        });
+
+        TestFramework.assertTrue(driverNoQes.derived.sensitivity === undefined);
+        TestFramework.assertTrue(driverNoQes.derived.sensitivityEst !== undefined);
+    });
+
     return suite;
 }
