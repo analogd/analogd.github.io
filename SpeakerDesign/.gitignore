@@ -40,3 +40,6 @@ temp/
 *-old.html
 *-backup.*
 *.bak
+
+# Archive (cleanup 2025-11-01)
+archive/
