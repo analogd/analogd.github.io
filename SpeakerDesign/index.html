@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaker Design Calculator</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Speaker Design Calculator</h1>
+            <p>Enclosure design tool using Thiele-Small parameters</p>
+        </header>
+
+        <div class="main-content">
+            <section class="input-section">
+                <h2>Driver Parameters</h2>
+                <form id="driver-form">
+                    <div class="form-group">
+                        <label for="fs">Fs (Hz):</label>
+                        <input type="number" id="fs" step="0.1" placeholder="Resonance frequency">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="qts">Qts:</label>
+                        <input type="number" id="qts" step="0.01" placeholder="Total Q">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vas">Vas (L):</label>
+                        <input type="number" id="vas" step="0.1" placeholder="Equivalent volume">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="re">Re (Ω):</label>
+                        <input type="number" id="re" step="0.1" placeholder="DC resistance">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="le">Le (mH):</label>
+                        <input type="number" id="le" step="0.01" placeholder="Voice coil inductance">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="xmax">Xmax (mm):</label>
+                        <input type="number" id="xmax" step="0.1" placeholder="Linear excursion">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sd">Sd (cm²):</label>
+                        <input type="number" id="sd" step="1" placeholder="Effective piston area">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pe">Pe (W):</label>
+                        <input type="number" id="pe" step="1" placeholder="Power handling">
+                    </div>
+                </form>
+
+                <h2>Enclosure Type</h2>
+                <div class="enclosure-type">
+                    <label><input type="radio" name="enclosure" value="sealed" checked> Sealed</label>
+                    <label><input type="radio" name="enclosure" value="ported"> Ported</label>
+                    <label><input type="radio" name="enclosure" value="bandpass"> Bandpass</label>
+                </div>
+
+                <button id="calculate-btn">Calculate</button>
+            </section>
+
+            <section class="results-section">
+                <h2>Results</h2>
+                <div id="results">
+                    <p>Enter driver parameters and click Calculate</p>
+                </div>
+
+                <h2>Frequency Response</h2>
+                <canvas id="response-chart"></canvas>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/ui.js"></script>
+</body>
+</html>
