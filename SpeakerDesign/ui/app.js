@@ -3,6 +3,16 @@
 // Debug mode - set to true to enable console logging
 const DEBUG = localStorage.getItem('debug') === 'true' || false;
 
+// User preferences
+const Preferences = {
+    get maxPowerCheckFreq() {
+        return parseFloat(localStorage.getItem('maxPowerCheckFreq') || '20');
+    },
+    set maxPowerCheckFreq(value) {
+        localStorage.setItem('maxPowerCheckFreq', value);
+    }
+};
+
 const App = {
     drivers: [],
     currentDriver: null,
@@ -235,6 +245,8 @@ const App = {
         }
 
         const enclosureType = document.getElementById('enclosureType').value;
+        const ampPower = parseFloat(document.getElementById('ampPower').value) || 500;
+        const checkFreq = Preferences.maxPowerCheckFreq;
 
         let alignments;
         if (enclosureType === 'sealed') {
@@ -243,16 +255,121 @@ const App = {
             alignments = AlignmentCalculator.calculatePortedAlignments(driver, { portDiameter: 10 });
         }
 
+        // Calculate detailed metrics for each alignment
+        const enrichedAlignments = alignments.map(a => {
+            const box = a.box;
+
+            // Calculate max safe power at check frequency
+            const maxPowerData = MaxPowerCalculator.calculateAtFrequency(box, checkFreq);
+            const maxPower = maxPowerData.maxPower;
+            const limitingFactor = maxPowerData.limitingFactor;
+
+            // Determine warnings
+            const warnings = [];
+            if (ampPower > maxPower * 1.1) {
+                warnings.push(`⚠️ ${ampPower}W exceeds ${limitingFactor} limit (${Math.round(maxPower)}W) @ ${checkFreq}Hz`);
+            }
+
+            // Response characteristic
+            let characteristic = '';
+            if (a.qtc < 0.6) characteristic = 'Underdamped (lean)';
+            else if (a.qtc < 0.68) characteristic = 'Tight/accurate';
+            else if (a.qtc < 0.75) characteristic = 'Flat response';
+            else if (a.qtc < 0.9) characteristic = 'Slight emphasis';
+            else characteristic = 'Emphasized bass';
+
+            // Recommendation
+            let recommendation = '';
+            if (a.name.includes('Butterworth')) recommendation = '✅ Recommended';
+            else if (a.name.includes('Bessel')) recommendation = '✅ Most accurate';
+            else if (a.name.includes('QB3')) recommendation = '✅ Deep bass';
+
+            return {
+                ...a,
+                maxPower,
+                limitingFactor,
+                warnings,
+                characteristic,
+                recommendation,
+                isSafe: ampPower <= maxPower
+            };
+        });
+
         const modal = document.getElementById('alignmentModal');
         const list = document.getElementById('alignmentsList');
 
-        list.innerHTML = alignments.map(a => `
-            <div class="alignment-option" onclick="App.selectAlignment(${a.vb}, ${a.fb || 0})">
-                <h4>${a.name}</h4>
-                <p>Volume: ${a.vb.toFixed(1)}L | Qtc: ${a.qtc.toFixed(3)} | F3: ${a.box.f3.toFixed(1)}Hz</p>
-                ${a.fb ? `<p>Tuning: ${a.fb.toFixed(1)}Hz | Port: ${a.portLength.toFixed(1)}cm</p>` : ''}
+        // Header with preferences
+        const header = `
+            <div style="margin-bottom: 20px; padding: 15px; background: #21262d; border-radius: 6px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h3 style="margin: 0 0 5px 0;">Standard Alignments Comparison</h3>
+                        <p style="margin: 0; color: #8b949e; font-size: 13px;">
+                            Your amp: ${ampPower}W | Checking power limits at:
+                            <input type="number" id="maxPowerFreqInput" value="${checkFreq}"
+                                   min="10" max="200" step="5"
+                                   style="width: 60px; background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 2px 5px; border-radius: 3px;"
+                                   onchange="Preferences.maxPowerCheckFreq = this.value; App.showAlignments();"> Hz
+                        </p>
+                    </div>
+                </div>
             </div>
-        `).join('');
+        `;
+
+        // Build comparison cards
+        const cards = enrichedAlignments.map(a => {
+            const warningBadge = !a.isSafe ?
+                `<div style="background: #f85149; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">POWER LIMIT</div>` :
+                `<div style="background: #238636; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">SAFE</div>`;
+
+            return `
+                <div class="alignment-card ${a.recommendation ? 'recommended' : ''}"
+                     onclick="App.selectAlignment(${a.vb}, ${a.fb || 0})"
+                     style="cursor: pointer; transition: all 0.2s;">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                        <h4 style="margin: 0; color: #58a6ff;">${a.name}</h4>
+                        ${warningBadge}
+                    </div>
+
+                    ${a.recommendation ? `<div style="color: #3fb950; font-size: 12px; margin-bottom: 8px;">${a.recommendation}</div>` : ''}
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; font-size: 13px;">
+                        <div>
+                            <div style="color: #8b949e;">F3 (Low Extension)</div>
+                            <div style="color: #c9d1d9; font-weight: bold;">${a.box.f3.toFixed(1)} Hz</div>
+                        </div>
+                        <div>
+                            <div style="color: #8b949e;">Box Volume</div>
+                            <div style="color: #c9d1d9; font-weight: bold;">${a.vb.toFixed(1)} L</div>
+                        </div>
+                        <div>
+                            <div style="color: #8b949e;">Max Power @ ${checkFreq}Hz</div>
+                            <div style="color: ${a.isSafe ? '#3fb950' : '#f85149'}; font-weight: bold;">
+                                ${Math.round(a.maxPower)}W (${a.limitingFactor})
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color: #8b949e;">Response</div>
+                            <div style="color: #c9d1d9; font-size: 12px;">${a.characteristic}</div>
+                        </div>
+                    </div>
+
+                    ${a.fb ? `
+                        <div style="padding-top: 8px; border-top: 1px solid #30363d; font-size: 12px; color: #8b949e;">
+                            Port: ${a.fb.toFixed(1)}Hz tuning, ${a.portLength.toFixed(0)}cm length
+                        </div>
+                    ` : ''}
+
+                    ${a.warnings.length > 0 ? `
+                        <div style="margin-top: 10px; padding: 8px; background: #f85149; border-radius: 3px; font-size: 12px;">
+                            ${a.warnings.join('<br>')}
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        list.innerHTML = header + `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px;">${cards}</div>`;
 
         modal.style.display = 'flex';
 
@@ -347,33 +464,31 @@ document.addEventListener('DOMContentLoaded', () => {
     App.init();
 });
 
-// Add alignment option styling
+// Add alignment card styling
 const style = document.createElement('style');
 style.textContent = `
-.alignment-option {
+.alignment-card {
     background: #1c2128;
     border: 1px solid #30363d;
     border-radius: 6px;
     padding: 15px;
-    margin-bottom: 10px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
-.alignment-option:hover {
+.alignment-card:hover {
     border-color: #58a6ff;
     background: #161b22;
+    transform: translateY(-2px);
 }
 
-.alignment-option h4 {
+.alignment-card.recommended {
+    border-color: #3fb950;
+}
+
+.alignment-card h4 {
     color: #58a6ff;
-    margin-bottom: 8px;
-}
-
-.alignment-option p {
-    color: #8b949e;
-    font-size: 13px;
-    margin: 4px 0;
+    margin: 0;
 }
 `;
 document.head.appendChild(style);
