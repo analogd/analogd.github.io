@@ -141,11 +141,12 @@ class SpeakerCalculations {
 
             for (const f of frequencies) {
                 const ratio = f / fc;
-                // Sealed box transfer function: H(f) = (f/fc)^2 / sqrt((1-(f/fc)^2)^2 + (f/(fc*Qtc))^2)
+                // Sealed box 2nd order high-pass: response relative to passband
+                // At high frequencies (f >> fc), response = 0dB
+                // Below fc, rolls off at 12dB/octave
                 const ratio2 = ratio * ratio;
-                const numerator = ratio2 * ratio2;
-                const denominator = (1 - ratio2) * (1 - ratio2) + ratio2 / (qtc * qtc);
-                const response = 10 * Math.log10(numerator / denominator);
+                const responseAmplitude = ratio2 / Math.sqrt((1 - ratio2) ** 2 + ratio2 / (qtc * qtc));
+                const response = 20 * Math.log10(responseAmplitude);
                 spl.push(baseSensitivity + response + powerGain);
 
                 // Thermal limit (flat across frequency)
@@ -153,13 +154,19 @@ class SpeakerCalculations {
                     thermalLimit.push(baseSensitivity + powerGain);
                 }
 
-                // Excursion limit (increases with frequency)
-                if (sd && xmax && power) {
-                    // Simplified: SPL from displacement at given frequency
-                    const vd = sd * xmax / Constants.UNITS.MM_TO_M; // Convert xmax to meters, result in liters
-                    const excursionSpl = Constants.SPL.VD_SPL_CONSTANT +
-                                        10 * Math.log10(vd * f * f) + powerGain;
-                    excursionLimit.push(excursionSpl);
+                // Excursion limit: max SPL before exceeding Xmax
+                // This is independent of input power - it's a physical limit
+                if (sd && xmax) {
+                    // SPL from Xmax displacement at frequency f
+                    // SPL ≈ baseSens + 20*log10(f/fc) at excursion limit
+                    // Simplified: assume excursion-limited SPL rises with frequency
+                    const xmaxM = xmax / Constants.UNITS.MM_TO_M;
+                    const sdM2 = sd / Constants.UNITS.CM2_TO_M2;
+                    // Displacement volume at Xmax
+                    const vdM3 = sdM2 * xmaxM;
+                    // SPL from volume velocity at 1m
+                    const excursionSpl = baseSensitivity + 20 * Math.log10(f / fc) + 10;
+                    excursionLimit.push(Math.min(excursionSpl, 140)); // Cap at realistic max
                 }
             }
         } else if (enclosure === 'ported') {
@@ -208,6 +215,85 @@ class SpeakerCalculations {
         if (excursionLimit.length > 0) result.excursionLimit = excursionLimit;
 
         return result;
+    }
+
+    // Calculate limiting factors at a specific frequency
+    static calculateLimitingFactors(params, enclosure, boxVolume, fb, power, testFreq = 25) {
+        const { sd, xmax, pe, re } = params;
+
+        if (!power || !sd || !xmax || !pe) {
+            return null;
+        }
+
+        const limits = {
+            frequency: testFreq,
+            power: power
+        };
+
+        // Calculate system SPL at test frequency
+        const response = this.calculateFrequencyResponse(params, enclosure, boxVolume, fb, power);
+        const freqIndex = response.frequencies.findIndex(f => f >= testFreq);
+        limits.systemSPL = freqIndex >= 0 ? response.spl[freqIndex] : null;
+
+        // Thermal limit: continuous power handling
+        // Assume continuous = 0.7 × Pe for thermal headroom
+        const thermalPower = pe * 0.7;
+        const thermalGain = 10 * Math.log10(power / thermalPower);
+        limits.thermalHeadroom = -thermalGain;
+        limits.thermalLimited = power > thermalPower;
+
+        // Excursion limit: calculate excursion at test frequency
+        // Simplified: Vd = Sd × Xpeak, Power ∝ Xpeak²
+        const voltage = Math.sqrt(power * re);
+        const fs = params.fs;
+        const qts = params.qts;
+
+        // Approximate excursion at frequency (very simplified)
+        // More accurate would need full impedance model
+        const freqRatio = testFreq / fs;
+        let excursionFactor;
+        if (enclosure === 'sealed') {
+            const alpha = params.vas / boxVolume;
+            const qtc = qts * Math.sqrt(alpha + 1);
+            const fc = fs * Math.sqrt(alpha + 1);
+            const ratio = testFreq / fc;
+            excursionFactor = 1 / Math.sqrt(ratio ** 4 + (ratio / qtc) ** 2);
+        } else {
+            // Ported: approximation
+            if (testFreq < fb) {
+                excursionFactor = (fb / testFreq) ** 2; // Unloaded below tuning
+            } else {
+                excursionFactor = 0.3; // Port controls excursion above tuning
+            }
+        }
+
+        const estimatedExcursion = excursionFactor * voltage * 0.5; // Very rough
+        limits.excursionPercent = (estimatedExcursion / xmax) * 100;
+        limits.excursionLimited = estimatedExcursion > xmax * 0.8; // 80% = distortion
+
+        // Port velocity limit (if ported)
+        if (enclosure === 'ported' && fb) {
+            const portVelocity = this.calculatePortVelocity(sd, xmax, fb, Constants.DEFAULT_PORT_DIAMETER_CM);
+            limits.portVelocity = portVelocity;
+            limits.portLimited = portVelocity > 15; // 15 m/s threshold
+        }
+
+        // Determine primary limiting factor
+        if (limits.excursionLimited) {
+            limits.limitingFactor = 'excursion';
+            limits.limitingMargin = -3 * (limits.excursionPercent / 100);
+        } else if (limits.thermalLimited) {
+            limits.limitingFactor = 'thermal';
+            limits.limitingMargin = limits.thermalHeadroom;
+        } else if (limits.portLimited) {
+            limits.limitingFactor = 'port';
+            limits.limitingMargin = -2;
+        } else {
+            limits.limitingFactor = 'none';
+            limits.limitingMargin = 0;
+        }
+
+        return limits;
     }
 
     // Calculate all common alignments for a driver

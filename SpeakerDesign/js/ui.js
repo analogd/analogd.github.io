@@ -45,16 +45,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Event delegation for dynamically created buttons
     setupEventDelegation();
 
-    // Help modal
+    // Help modal - use event delegation since content loads async
     document.getElementById('help-btn').addEventListener('click', openHelpModal);
-    document.querySelector('.modal-close').addEventListener('click', closeHelpModal);
     document.getElementById('help-modal').addEventListener('click', (e) => {
-        if (e.target.id === 'help-modal') closeHelpModal();
-    });
-
-    // Help tabs
-    document.querySelectorAll('.help-tab').forEach(tab => {
-        tab.addEventListener('click', () => switchHelpTab(tab.dataset.tab));
+        // Close button
+        if (e.target.classList.contains('modal-close')) {
+            closeHelpModal();
+        }
+        // Tab switching
+        if (e.target.classList.contains('help-tab')) {
+            switchHelpTab(e.target.dataset.tab);
+        }
+        // Click outside
+        if (e.target.id === 'help-modal') {
+            closeHelpModal();
+        }
     });
 
     // Filter panel
@@ -366,8 +371,21 @@ function updateAlignmentGraph() {
         }
 
         currentAlignments = alignments;
+
+        // Calculate limits for each alignment at 25Hz
+        alignments.forEach(alignment => {
+            alignment.limits = SpeakerCalculations.calculateLimitingFactors(
+                validation.validated,
+                enclosureType,
+                parseFloat(alignment.vb),
+                alignment.fb ? parseFloat(alignment.fb) : null,
+                power,
+                25 // Test frequency
+            );
+        });
+
         chart.updateMultiTrace(alignments, power);
-        renderAlignmentButtons(alignments);
+        renderAlignmentButtons(alignments, power);
 
         // Display warnings if any
         let resultsHtml = '';
@@ -611,7 +629,7 @@ function displayResults(html) {
     document.getElementById('results').innerHTML = html;
 }
 
-function renderAlignmentButtons(alignments) {
+function renderAlignmentButtons(alignments, power) {
     const container = document.getElementById('alignment-buttons');
     container.innerHTML = '';
 
@@ -686,6 +704,23 @@ function renderAlignmentButtons(alignments) {
         const parts = [];
         parts.push(`<strong>Build:</strong> ${boxCalc.externalDimensions.metric} (external)`);
         parts.push(`<span style="color: #888;">Internal: ${boxCalc.netInternalVolume}L → ${alignment.vb}L working after driver/bracing</span>`);
+
+        // Add limit info if available
+        if (power && alignment.limits) {
+            const limits = alignment.limits;
+            let limitText = `@ ${power}W, 25Hz: ${limits.systemSPL ? limits.systemSPL.toFixed(1) : '?'}dB`;
+
+            if (limits.limitingFactor !== 'none') {
+                const icon = limits.limitingFactor === 'excursion' ? '⚠️' :
+                            limits.limitingFactor === 'thermal' ? '🔥' : '💨';
+                const color = limits.limitingMargin < -2 ? '#e74c3c' : '#f39c12';
+                limitText += ` <span style="color: ${color};">${icon} ${limits.limitingFactor}</span>`;
+            } else {
+                limitText += ` <span style="color: #27ae60;">✓</span>`;
+            }
+
+            parts.push(limitText);
+        }
 
         dimRow.innerHTML = parts.join('<br>');
 
