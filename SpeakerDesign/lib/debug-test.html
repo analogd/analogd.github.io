@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Tests</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        .fail { color: #f48771; }
+        .pass { color: #4ec9b0; }
+        pre { background: #252526; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Debug Test Output</h1>
+    <div id="output"></div>
+
+    <script src="models/Driver.js"></script>
+    <script src="models/SealedBox.js"></script>
+    <script src="models/PortedBox.js"></script>
+    <script src="calculators/AlignmentCalculator.js"></script>
+    <script src="calculators/SPLCalculator.js"></script>
+    <script src="SpeakerPhysics.js"></script>
+    <script src="validation/reference-data.js"></script>
+    <script src="validation/Validator.js"></script>
+
+    <script>
+        let output = '';
+
+        function log(msg) {
+            output += msg + '\n';
+            console.log(msg);
+        }
+
+        try {
+            log('=== Test 1: UM18-22 Sealed Butterworth ===');
+            const ref = ReferenceData.um18_sealed_butterworth;
+            log('Reference data:');
+            log('  Expected Vb: ' + ref.box.vb + 'L');
+            log('  Expected Qtc: ' + ref.box.expectedQtc);
+            log('  Expected Fc: ' + ref.box.expectedFc + 'Hz');
+            log('  Expected F3: ' + ref.box.expectedF3 + 'Hz');
+            log('');
+
+            const driver = new Driver(ref.driver);
+            log('Driver created:');
+            log('  Fs: ' + driver.fs);
+            log('  Qts: ' + driver.qts);
+            log('  Vas: ' + driver.vas);
+            log('');
+
+            const alignments = AlignmentCalculator.calculateSealedAlignments(driver);
+            log('Found ' + alignments.length + ' alignments:');
+            alignments.forEach((a, i) => {
+                log('  ' + (i+1) + '. ' + a.name);
+                log('     Vb: ' + a.vb.toFixed(2) + 'L');
+                log('     Qtc: ' + a.qtc.toFixed(3));
+                log('     Fc: ' + a.box.fc.toFixed(1) + 'Hz');
+                log('     F3: ' + a.box.f3.toFixed(1) + 'Hz');
+            });
+            log('');
+
+            const butterworth = alignments.find(a => a.name.includes('Butterworth'));
+            if (butterworth) {
+                log('Butterworth alignment:');
+                log('  Actual Vb: ' + butterworth.vb.toFixed(2) + 'L (expected ' + ref.box.vb + 'L)');
+                log('  Diff: ' + (butterworth.vb - ref.box.vb).toFixed(2) + 'L');
+                log('  Actual Qtc: ' + butterworth.qtc.toFixed(3) + ' (expected ' + ref.box.expectedQtc + ')');
+                log('  Diff: ' + (butterworth.qtc - ref.box.expectedQtc).toFixed(3));
+                log('  Actual Fc: ' + butterworth.box.fc.toFixed(1) + 'Hz (expected ' + ref.box.expectedFc + 'Hz)');
+                log('  Diff: ' + (butterworth.box.fc - ref.box.expectedFc).toFixed(1) + 'Hz');
+                log('  Actual F3: ' + butterworth.box.f3.toFixed(1) + 'Hz (expected ' + ref.box.expectedF3 + 'Hz)');
+                log('  Diff: ' + (butterworth.box.f3 - ref.box.expectedF3).toFixed(1) + 'Hz');
+            }
+            log('');
+
+            log('=== Test 2: BC15SW76 Ported QB3 ===');
+            const ref2 = ReferenceData.bc15sw76_ported_qb3;
+            log('Reference data:');
+            log('  Expected Vb: ' + ref2.box.vb + 'L');
+            log('  Expected Fb: ' + ref2.box.fb + 'Hz');
+            log('  Expected F3: ' + ref2.box.expectedF3 + 'Hz');
+            log('  Expected port length: ' + ref2.box.expectedPortLength + 'cm');
+            log('');
+
+            const driver2 = new Driver(ref2.driver);
+            const portedAlignments = AlignmentCalculator.calculatePortedAlignments(driver2);
+            log('Found ' + portedAlignments.length + ' alignments:');
+            portedAlignments.forEach((a, i) => {
+                log('  ' + (i+1) + '. ' + a.name);
+                log('     Vb: ' + a.vb.toFixed(2) + 'L');
+                log('     Fb: ' + a.fb.toFixed(1) + 'Hz');
+                log('     Port length: ' + a.portLength.toFixed(1) + 'cm');
+            });
+
+            const qb3 = portedAlignments.find(a => a.name.includes('QB3'));
+            if (qb3) {
+                log('');
+                log('QB3 alignment:');
+                log('  Actual Vb: ' + qb3.vb.toFixed(2) + 'L (expected ' + ref2.box.vb + 'L)');
+                log('  Diff: ' + (qb3.vb - ref2.box.vb).toFixed(2) + 'L');
+                log('  Actual Fb: ' + qb3.fb.toFixed(1) + 'Hz (expected ' + ref2.box.fb + 'Hz)');
+                log('  Diff: ' + (qb3.fb - ref2.box.fb).toFixed(1) + 'Hz');
+                log('  Actual port length: ' + qb3.portLength.toFixed(1) + 'cm (expected ' + ref2.box.expectedPortLength + 'cm)');
+                log('  Diff: ' + (qb3.portLength - ref2.box.expectedPortLength).toFixed(1) + 'cm');
+            }
+
+        } catch (error) {
+            log('');
+            log('ERROR: ' + error.message);
+            log(error.stack);
+        }
+
+        document.getElementById('output').innerHTML = '<pre>' + output + '</pre>';
+    </script>
+</body>
+</html>

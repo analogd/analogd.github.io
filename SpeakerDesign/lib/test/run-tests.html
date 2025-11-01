@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Suite - Speaker Physics Library</title>
+    <style>
+        body {
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #58a6ff;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #8b949e;
+            margin-bottom: 30px;
+        }
+        .actions {
+            margin: 20px 0;
+        }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #2ea043;
+        }
+        button.secondary {
+            background: #21262d;
+            border: 1px solid #30363d;
+        }
+        button.secondary:hover {
+            background: #30363d;
+        }
+        #console {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+            font-size: 13px;
+            white-space: pre-wrap;
+            font-family: 'SF Mono', Monaco, monospace;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        .pass { color: #3fb950; }
+        .fail { color: #f85149; }
+        .info { color: #58a6ff; }
+        .summary {
+            background: #21262d;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .metric {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .metric-label {
+            color: #8b949e;
+        }
+        .metric-value {
+            color: #58a6ff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Speaker Physics Library - Test Suite</h1>
+    <div class="subtitle">Validates core Thiele-Small calculations against known formulas</div>
+
+    <div class="actions">
+        <button id="runTests" onclick="runAllTests()">▶ Run All Tests</button>
+        <button class="secondary" onclick="clearConsole()">Clear Console</button>
+        <button class="secondary" onclick="downloadResults()">Download Results</button>
+    </div>
+
+    <div id="summary" class="summary" style="display: none;">
+        <div class="metric">
+            <span class="metric-label">Total Tests:</span>
+            <span class="metric-value" id="totalTests">0</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Passed:</span>
+            <span class="metric-value pass" id="passedTests">0</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Failed:</span>
+            <span class="metric-value fail" id="failedTests">0</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Success Rate:</span>
+            <span class="metric-value" id="successRate">0%</span>
+        </div>
+    </div>
+
+    <div id="console"></div>
+
+    <!-- Load library files -->
+    <script src="../models/Driver.js"></script>
+    <script src="../models/SealedBox.js"></script>
+    <script src="../models/PortedBox.js"></script>
+    <script src="../calculators/AlignmentCalculator.js"></script>
+    <script src="../calculators/SPLCalculator.js"></script>
+
+    <!-- Load test framework and tests -->
+    <script src="TestFramework.js"></script>
+    <script src="Driver.test.js"></script>
+    <script src="SealedBox.test.js"></script>
+    <script src="AlignmentCalculator.test.js"></script>
+
+    <script>
+        // Intercept console output
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleElement = document.getElementById('console');
+
+        function formatLog(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = type;
+            line.textContent = message;
+            consoleElement.appendChild(line);
+            consoleElement.scrollTop = consoleElement.scrollHeight;
+        }
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const message = args.join(' ');
+
+            if (message.includes('✅')) {
+                formatLog(message, 'pass');
+            } else if (message.includes('❌')) {
+                formatLog(message, 'fail');
+            } else if (message.includes('🧪') || message.includes('📊') || message.includes('🎉')) {
+                formatLog(message, 'info');
+            } else {
+                formatLog(message);
+            }
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            formatLog(args.join(' '), 'fail');
+        };
+
+        async function runAllTests() {
+            document.getElementById('runTests').disabled = true;
+            document.getElementById('console').innerHTML = '';
+
+            const runner = new TestRunner();
+
+            // Add all test suites
+            runner.addSuite(createDriverTests());
+            runner.addSuite(createSealedBoxTests());
+            runner.addSuite(createAlignmentCalculatorTests());
+
+            // Run tests
+            const summary = await runner.runAll();
+
+            // Update summary display
+            document.getElementById('summary').style.display = 'block';
+            document.getElementById('totalTests').textContent = summary.totalTests;
+            document.getElementById('passedTests').textContent = summary.totalPassed;
+            document.getElementById('failedTests').textContent = summary.totalFailed;
+            document.getElementById('successRate').textContent =
+                ((summary.totalPassed / summary.totalTests) * 100).toFixed(1) + '%';
+
+            document.getElementById('runTests').disabled = false;
+
+            return summary;
+        }
+
+        function clearConsole() {
+            document.getElementById('console').innerHTML = '';
+            document.getElementById('summary').style.display = 'none';
+        }
+
+        function downloadResults() {
+            const text = document.getElementById('console').textContent;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `test-results-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            console.log('Test suite loaded. Click "Run All Tests" to begin.');
+        });
+    </script>
+</body>
+</html>

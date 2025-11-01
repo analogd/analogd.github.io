@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speaker Design Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>🔊 Speaker Design Calculator</h1>
+            <p class="tagline">Don't build garbage • See real-world limitations</p>
+            <nav class="app-nav">
+                <a href="index.html" class="active">Design</a>
+                <a href="driver-browser.html">Browse Drivers</a>
+                <a href="compare.html">Compare</a>
+                <a href="#help">Help</a>
+            </nav>
+        </header>
+
+        <!-- Controls Panel -->
+        <section class="controls-panel">
+            <div class="control-group">
+                <label>Driver</label>
+                <select id="driverSelect">
+                    <option value="">Loading drivers...</option>
+                </select>
+                <button id="browseDrivers" class="btn-secondary">Browse All</button>
+            </div>
+
+            <div class="control-group">
+                <label>Enclosure Type</label>
+                <select id="enclosureType">
+                    <option value="sealed">Sealed</option>
+                    <option value="ported">Ported</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label>Box Volume (Liters)</label>
+                <input type="number" id="boxVolume" value="330" min="10" max="2000" step="10">
+                <button id="findAlignments" class="btn-secondary">Alignments</button>
+            </div>
+
+            <div class="control-group ported-only" style="display: none;">
+                <label>Port Tuning (Hz)</label>
+                <input type="number" id="portTuning" value="25" min="15" max="50" step="1">
+            </div>
+
+            <div class="control-group">
+                <label>Amplifier Power (Watts)</label>
+                <input type="number" id="ampPower" value="500" min="1" max="5000" step="50">
+            </div>
+
+            <div class="control-actions">
+                <button id="calculate" class="btn-primary">Calculate</button>
+                <button id="addToCompare" class="btn-secondary">Add to Compare</button>
+                <button id="saveDesign" class="btn-secondary">Save</button>
+                <button id="shareDesign" class="btn-secondary">Share</button>
+            </div>
+        </section>
+
+        <!-- Box Parameters Display -->
+        <section class="parameters-display">
+            <h3>Box Parameters</h3>
+            <div class="params-grid">
+                <div class="param">
+                    <span class="param-label">Qtc:</span>
+                    <span class="param-value" id="qtcValue">-</span>
+                </div>
+                <div class="param">
+                    <span class="param-label">Fc:</span>
+                    <span class="param-value" id="fcValue">-</span>
+                </div>
+                <div class="param">
+                    <span class="param-label">F3:</span>
+                    <span class="param-value" id="f3Value">-</span>
+                </div>
+                <div class="param sealed-only">
+                    <span class="param-label">Alpha:</span>
+                    <span class="param-value" id="alphaValue">-</span>
+                </div>
+                <div class="param ported-only" style="display: none;">
+                    <span class="param-label">Port Length:</span>
+                    <span class="param-value" id="portLengthValue">-</span>
+                </div>
+                <div class="param ported-only" style="display: none;">
+                    <span class="param-label">Port Velocity:</span>
+                    <span class="param-value" id="portVelocityValue">-</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Warnings -->
+        <section class="warnings-panel" id="warningsPanel" style="display: none;">
+            <h3>⚠️ Warnings</h3>
+            <ul id="warningsList"></ul>
+        </section>
+
+        <!-- Graphs -->
+        <section class="graphs-container">
+            <!-- Frequency Response -->
+            <div class="graph-panel">
+                <h3>📊 Frequency Response</h3>
+                <p class="graph-subtitle">SPL at 1W, 100W, and specified power</p>
+                <canvas id="frequencyResponseChart"></canvas>
+            </div>
+
+            <!-- Maximum Power -->
+            <div class="graph-panel">
+                <h3>⚡ Maximum Safe Power</h3>
+                <p class="graph-subtitle">Excursion vs Thermal limiting</p>
+                <canvas id="maxPowerChart"></canvas>
+            </div>
+
+            <!-- Cone Excursion -->
+            <div class="graph-panel">
+                <h3>📍 Cone Excursion</h3>
+                <p class="graph-subtitle">Displacement at specified power</p>
+                <canvas id="excursionChart"></canvas>
+            </div>
+
+            <!-- SPL Ceiling (Bonus) -->
+            <div class="graph-panel">
+                <h3>🎯 SPL Ceiling</h3>
+                <p class="graph-subtitle">Maximum achievable SPL at each frequency</p>
+                <canvas id="splCeilingChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Built with 🔊 for DIY speaker builders • Open source</p>
+            <p class="disclaimer">Calculations are estimates. Verify with measurements. CEA-2034 ratings may exceed practical output due to limiters and thermal compression.</p>
+        </footer>
+    </div>
+
+    <!-- Alignment Picker Modal -->
+    <div id="alignmentModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Standard Alignments</h2>
+            <div id="alignmentsList"></div>
+            <button id="closeAlignments" class="btn-secondary">Close</button>
+        </div>
+    </div>
+
+    <!-- Load Dependencies -->
+    <script src="../data/drivers.json" type="application/json"></script>
+    <script src="../lib/models/Driver.js"></script>
+    <script src="../lib/models/SealedBox.js"></script>
+    <script src="../lib/models/PortedBox.js"></script>
+    <script src="../lib/calculators/AlignmentCalculator.js"></script>
+    <script src="../lib/calculators/SPLCalculator.js"></script>
+    <script src="../lib/calculators/MaxPowerCalculator.js"></script>
+    <script src="graphs.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

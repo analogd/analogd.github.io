@@ -1,0 +1,1430 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2025-11-01",
+  "drivers": [
+    {
+      "id": "dayton-umii18-22",
+      "manufacturer": "Dayton Audio",
+      "model": "UMII18-22 (Ultimax II)",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 22.0,
+        "qts": 0.53,
+        "qes": 0.67,
+        "qms": 2.53,
+        "vas": 248.2,
+        "re": 4.2,
+        "le": 1.15,
+        "xmax": 28,
+        "sd": 1184,
+        "pe": 1200
+      },
+      "notes": "Ultimax II 18\" DVC subwoofer (Version 2). High excursion, very popular for DIY. SPL: 90.7dB@2.83V/1m. Official specs from Dayton Audio datasheet.",
+      "tags": [
+        "high-power",
+        "ported",
+        "sealed",
+        "ultimax-ii"
+      ],
+      "derived": {
+        "vd": 33152,
+        "ebp": 32.8,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 91
+      }
+    },
+    {
+      "id": "dayton-um15-22",
+      "manufacturer": "Dayton Audio",
+      "model": "UM15-22",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 26.4,
+        "qts": 0.49,
+        "qes": 0.55,
+        "qms": 4.28,
+        "vas": 106.8,
+        "re": 3,
+        "le": 2,
+        "xmax": 24,
+        "sd": 520,
+        "pe": 600
+      },
+      "notes": "Compact high excursion 15\", great for smaller enclosures",
+      "tags": [
+        "high-power",
+        "compact"
+      ],
+      "derived": {
+        "vd": 12480,
+        "ebp": 48,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 175
+      }
+    },
+    {
+      "id": "dayton-um12-22",
+      "manufacturer": "Dayton Audio",
+      "model": "UM12-22",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 28.5,
+        "qts": 0.52,
+        "qes": 0.58,
+        "qms": 4.54,
+        "vas": 47.5,
+        "re": 3,
+        "le": 1.5,
+        "xmax": 21,
+        "sd": 325,
+        "pe": 400
+      },
+      "notes": "Compact 12\" with excellent excursion for car or small room",
+      "tags": [
+        "compact",
+        "car-audio"
+      ],
+      "derived": {
+        "vd": 6825,
+        "ebp": 49.1,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 172
+      }
+    },
+    {
+      "id": "dayton-rss390hf-4",
+      "manufacturer": "Dayton Audio",
+      "model": "RSS390HF-4",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 22.5,
+        "qts": 0.42,
+        "qes": 0.45,
+        "qms": 6.8,
+        "vas": 185,
+        "re": 3.6,
+        "le": 2.5,
+        "xmax": 18,
+        "sd": 530,
+        "pe": 500
+      },
+      "notes": "Reference Series 15\" high-frequency capable subwoofer",
+      "tags": [
+        "reference",
+        "ported"
+      ],
+      "derived": {
+        "vd": 9540,
+        "ebp": 50,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 175
+      }
+    },
+    {
+      "id": "dayton-rss460ho-4",
+      "manufacturer": "Dayton Audio",
+      "model": "RSS460HO-4",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 20.3,
+        "qts": 0.4,
+        "qes": 0.43,
+        "qms": 7.2,
+        "vas": 328,
+        "re": 3.5,
+        "le": 3,
+        "xmax": 20,
+        "sd": 855,
+        "pe": 800
+      },
+      "notes": "High output 18\" Reference Series",
+      "tags": [
+        "high-power",
+        "reference"
+      ],
+      "derived": {
+        "vd": 17100,
+        "ebp": 47.2,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 176
+      }
+    },
+    {
+      "id": "tc-lms-5400",
+      "manufacturer": "TC Sounds",
+      "model": "LMS-5400",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 21.5,
+        "qts": 0.48,
+        "qes": 0.53,
+        "qms": 5.2,
+        "vas": 275,
+        "re": 2.8,
+        "le": 3.2,
+        "xmax": 32,
+        "sd": 860,
+        "pe": 1200
+      },
+      "notes": "Ultra long throw 18\", extreme excursion capability",
+      "tags": [
+        "extreme-excursion",
+        "high-power"
+      ],
+      "derived": {
+        "vd": 27520,
+        "ebp": 40.6,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 176
+      }
+    },
+    {
+      "id": "tc-lms-ultra-5400",
+      "manufacturer": "TC Sounds",
+      "model": "LMS Ultra 5400",
+      "size": 21,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 18.2,
+        "qts": 0.45,
+        "qes": 0.49,
+        "qms": 5.8,
+        "vas": 520,
+        "re": 2.5,
+        "le": 4,
+        "xmax": 35,
+        "sd": 1320,
+        "pe": 1500
+      },
+      "notes": "Massive 21\" ultra subwoofer, incredible output capability",
+      "tags": [
+        "extreme-excursion",
+        "high-power",
+        "massive"
+      ],
+      "derived": {
+        "vd": 46200,
+        "ebp": 37.1,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "si-hst18-8",
+      "manufacturer": "Stereo Integrity",
+      "model": "HST-18",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 22.8,
+        "qts": 0.44,
+        "qes": 0.48,
+        "qms": 6.1,
+        "vas": 198,
+        "re": 3.2,
+        "le": 2.8,
+        "xmax": 30,
+        "sd": 850,
+        "pe": 1000
+      },
+      "notes": "Home Sound Theater 18\", designed for sealed home theater",
+      "tags": [
+        "home-theater",
+        "sealed"
+      ],
+      "derived": {
+        "vd": 25500,
+        "ebp": 47.5,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 176
+      }
+    },
+    {
+      "id": "si-hs24-8",
+      "manufacturer": "Stereo Integrity",
+      "model": "HS-24",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 19.5,
+        "qts": 0.51,
+        "qes": 0.57,
+        "qms": 4.9,
+        "vas": 285,
+        "re": 3,
+        "le": 3,
+        "xmax": 26,
+        "sd": 850,
+        "pe": 800
+      },
+      "notes": "High output 18\" for sealed or ported home theater",
+      "tags": [
+        "home-theater",
+        "versatile"
+      ],
+      "derived": {
+        "vd": 22100,
+        "ebp": 34.2,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 175
+      }
+    },
+    {
+      "id": "eminence-nsw6021-6",
+      "manufacturer": "Eminence",
+      "model": "NSW6021-6",
+      "size": 21,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 16.8,
+        "qts": 0.38,
+        "qes": 0.41,
+        "qms": 8.5,
+        "vas": 625,
+        "re": 5.2,
+        "le": 4.5,
+        "xmax": 19,
+        "sd": 1385,
+        "pe": 1200
+      },
+      "notes": "Professional 21\" subwoofer for large venue applications",
+      "tags": [
+        "professional",
+        "large-venue"
+      ],
+      "derived": {
+        "vd": 26315,
+        "ebp": 41,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "eminence-nsw3005-8",
+      "manufacturer": "Eminence",
+      "model": "NSW3005-8",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 25.2,
+        "qts": 0.42,
+        "qes": 0.46,
+        "qms": 7.8,
+        "vas": 215,
+        "re": 6.8,
+        "le": 3.2,
+        "xmax": 16,
+        "sd": 855,
+        "pe": 800
+      },
+      "notes": "Professional 18\" for installed sound applications",
+      "tags": [
+        "professional",
+        "installed"
+      ],
+      "derived": {
+        "vd": 13680,
+        "ebp": 54.8,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "bc-21sw152-4",
+      "manufacturer": "B&C Speakers",
+      "model": "21SW152",
+      "size": 21,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 26.5,
+        "qts": 0.35,
+        "qes": 0.38,
+        "qms": 9.2,
+        "vas": 485,
+        "re": 3.2,
+        "le": 5,
+        "xmax": 20,
+        "sd": 1380,
+        "pe": 2000
+      },
+      "notes": "High power professional 21\", exceptional build quality",
+      "tags": [
+        "professional",
+        "high-power"
+      ],
+      "derived": {
+        "vd": 27600,
+        "ebp": 69.7,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 182
+      }
+    },
+    {
+      "id": "bc-18sw115-4",
+      "manufacturer": "B&C Speakers",
+      "model": "18SW115",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 30.5,
+        "qts": 0.38,
+        "qes": 0.42,
+        "qms": 8.5,
+        "vas": 165,
+        "re": 3.5,
+        "le": 3.8,
+        "xmax": 18,
+        "sd": 850,
+        "pe": 1200
+      },
+      "notes": "Compact 18\" professional subwoofer",
+      "tags": [
+        "professional",
+        "compact"
+      ],
+      "derived": {
+        "vd": 15300,
+        "ebp": 72.6,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 179
+      }
+    },
+    {
+      "id": "jbl-2269h",
+      "manufacturer": "JBL",
+      "model": "2269H",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 22,
+        "qts": 0.39,
+        "qes": 0.43,
+        "qms": 7.9,
+        "vas": 310,
+        "re": 5.8,
+        "le": 4.2,
+        "xmax": 15,
+        "sd": 855,
+        "pe": 1000
+      },
+      "notes": "Classic JBL 18\" professional subwoofer",
+      "tags": [
+        "professional",
+        "classic"
+      ],
+      "derived": {
+        "vd": 12825,
+        "ebp": 51.2,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "dayton-pa460-8",
+      "manufacturer": "Dayton Audio",
+      "model": "PA460-8",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 28.5,
+        "qts": 0.41,
+        "qes": 0.45,
+        "qms": 8.1,
+        "vas": 145,
+        "re": 6.5,
+        "le": 2.8,
+        "xmax": 12,
+        "sd": 850,
+        "pe": 600
+      },
+      "notes": "Budget 18\" PA subwoofer for ported designs",
+      "tags": [
+        "budget",
+        "ported",
+        "pa"
+      ],
+      "derived": {
+        "vd": 10200,
+        "ebp": 63.3,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "dayton-dcs450-4",
+      "manufacturer": "Dayton Audio",
+      "model": "DCS450-4",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 32.8,
+        "qts": 0.58,
+        "qes": 0.67,
+        "qms": 5.2,
+        "vas": 82,
+        "re": 3.6,
+        "le": 1.8,
+        "xmax": 10,
+        "sd": 840,
+        "pe": 450
+      },
+      "notes": "Classic Series 18\", good for sealed designs",
+      "tags": [
+        "budget",
+        "sealed"
+      ],
+      "derived": {
+        "vd": 8400,
+        "ebp": 49,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "peerless-xls-830500",
+      "manufacturer": "Peerless by Tymphany",
+      "model": "XLS-830500",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 23.5,
+        "qts": 0.48,
+        "qes": 0.54,
+        "qms": 5.8,
+        "vas": 68,
+        "re": 3.2,
+        "le": 1.8,
+        "xmax": 19,
+        "sd": 325,
+        "pe": 300
+      },
+      "notes": "High quality 12\" with excellent linearity",
+      "tags": [
+        "high-quality",
+        "compact"
+      ],
+      "derived": {
+        "vd": 6175,
+        "ebp": 43.5,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 171
+      }
+    },
+    {
+      "id": "scanspeak-32w-4878t00",
+      "manufacturer": "ScanSpeak",
+      "model": "32W/4878T00",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 24.8,
+        "qts": 0.41,
+        "qes": 0.45,
+        "qms": 7.2,
+        "vas": 95,
+        "re": 3.8,
+        "le": 2.2,
+        "xmax": 17,
+        "sd": 330,
+        "pe": 400
+      },
+      "notes": "Premium 12\" subwoofer with excellent build quality",
+      "tags": [
+        "premium",
+        "high-quality"
+      ],
+      "derived": {
+        "vd": 5610,
+        "ebp": 55.1,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 174
+      }
+    },
+    {
+      "id": "seas-l26roy",
+      "manufacturer": "Seas",
+      "model": "L26ROY",
+      "size": 10,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 28.2,
+        "qts": 0.52,
+        "qes": 0.59,
+        "qms": 5.1,
+        "vas": 42,
+        "re": 3.5,
+        "le": 1.5,
+        "xmax": 15,
+        "sd": 220,
+        "pe": 250
+      },
+      "notes": "Compact 10\" sealed box specialist",
+      "tags": [
+        "premium",
+        "sealed",
+        "compact"
+      ],
+      "derived": {
+        "vd": 3300,
+        "ebp": 47.8,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 172
+      }
+    },
+    {
+      "id": "dayton-titanic-mkiii-12",
+      "manufacturer": "Dayton Audio",
+      "model": "Titanic MKIII-12",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 19.5,
+        "qts": 0.65,
+        "qes": 0.74,
+        "qms": 5.8,
+        "vas": 75,
+        "re": 3.2,
+        "le": 1.2,
+        "xmax": 28,
+        "sd": 325,
+        "pe": 500
+      },
+      "notes": "Legendary sealed box 12\" with extreme excursion",
+      "tags": [
+        "sealed",
+        "high-excursion"
+      ],
+      "derived": {
+        "vd": 9100,
+        "ebp": 26.4,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 169
+      }
+    },
+    {
+      "id": "dayton-titanic-mkiii-15",
+      "manufacturer": "Dayton Audio",
+      "model": "Titanic MKIII-15",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 17.2,
+        "qts": 0.68,
+        "qes": 0.78,
+        "qms": 5.5,
+        "vas": 145,
+        "re": 2.8,
+        "le": 1.8,
+        "xmax": 30,
+        "sd": 520,
+        "pe": 800
+      },
+      "notes": "Titanic 15\" optimized for sealed enclosures",
+      "tags": [
+        "sealed",
+        "high-excursion"
+      ],
+      "derived": {
+        "vd": 15600,
+        "ebp": 22.1,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 171
+      }
+    },
+    {
+      "id": "fi-q18",
+      "manufacturer": "Fi Car Audio",
+      "model": "Q18",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 28.5,
+        "qts": 0.52,
+        "qes": 0.58,
+        "qms": 4.8,
+        "vas": 155,
+        "re": 1.8,
+        "le": 2.5,
+        "xmax": 32,
+        "sd": 850,
+        "pe": 2000
+      },
+      "notes": "Extreme SPL 18\" car audio competition subwoofer",
+      "tags": [
+        "car-audio",
+        "spl",
+        "extreme-excursion"
+      ],
+      "derived": {
+        "vd": 27200,
+        "ebp": 49.1,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 178
+      }
+    },
+    {
+      "id": "fi-bl18",
+      "manufacturer": "Fi Car Audio",
+      "model": "BL18",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 25.2,
+        "qts": 0.48,
+        "qes": 0.53,
+        "qms": 5.2,
+        "vas": 185,
+        "re": 2,
+        "le": 2.8,
+        "xmax": 28,
+        "sd": 850,
+        "pe": 1800
+      },
+      "notes": "High power 18\" designed for SPL competition",
+      "tags": [
+        "car-audio",
+        "spl"
+      ],
+      "derived": {
+        "vd": 23800,
+        "ebp": 47.5,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "sundown-x18-v2",
+      "manufacturer": "Sundown Audio",
+      "model": "X-18 v2",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 27.5,
+        "qts": 0.51,
+        "qes": 0.57,
+        "qms": 5.1,
+        "vas": 168,
+        "re": 1.5,
+        "le": 2.2,
+        "xmax": 30,
+        "sd": 850,
+        "pe": 2000
+      },
+      "notes": "Popular car audio subwoofer with massive power handling",
+      "tags": [
+        "car-audio",
+        "high-power"
+      ],
+      "derived": {
+        "vd": 25500,
+        "ebp": 48.2,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "sundown-zv5-18",
+      "manufacturer": "Sundown Audio",
+      "model": "ZV5-18",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 26.8,
+        "qts": 0.48,
+        "qes": 0.53,
+        "qms": 5.5,
+        "vas": 178,
+        "re": 1.2,
+        "le": 2.5,
+        "xmax": 35,
+        "sd": 850,
+        "pe": 2500
+      },
+      "notes": "Extreme power handling 18\" for competition builds",
+      "tags": [
+        "car-audio",
+        "extreme-power",
+        "spl"
+      ],
+      "derived": {
+        "vd": 29750,
+        "ebp": 50.6,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "dayton-rss315hfa-4",
+      "manufacturer": "Dayton Audio",
+      "model": "RSS315HFA-4",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 28.2,
+        "qts": 0.44,
+        "qes": 0.48,
+        "qms": 7.1,
+        "vas": 85,
+        "re": 3.5,
+        "le": 1.8,
+        "xmax": 16,
+        "sd": 325,
+        "pe": 350
+      },
+      "notes": "Reference 12\" aluminum cone subwoofer",
+      "tags": [
+        "reference",
+        "compact"
+      ],
+      "derived": {
+        "vd": 5200,
+        "ebp": 58.8,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 175
+      }
+    },
+    {
+      "id": "dayton-rss315ho-44",
+      "manufacturer": "Dayton Audio",
+      "model": "RSS315HO-44",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 31.5,
+        "qts": 0.47,
+        "qes": 0.52,
+        "qms": 6.5,
+        "vas": 62,
+        "re": 3.2,
+        "le": 1.5,
+        "xmax": 18,
+        "sd": 325,
+        "pe": 400
+      },
+      "notes": "High output 12\" Reference Series",
+      "tags": [
+        "reference",
+        "high-output"
+      ],
+      "derived": {
+        "vd": 5850,
+        "ebp": 60.6,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 175
+      }
+    },
+    {
+      "id": "eminence-kilomax-18",
+      "manufacturer": "Eminence",
+      "model": "Kilomax 18",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 22.5,
+        "qts": 0.41,
+        "qes": 0.45,
+        "qms": 7.8,
+        "vas": 268,
+        "re": 3.8,
+        "le": 3.5,
+        "xmax": 20,
+        "sd": 850,
+        "pe": 1000
+      },
+      "notes": "Popular 18\" pro audio subwoofer",
+      "tags": [
+        "professional",
+        "ported"
+      ],
+      "derived": {
+        "vd": 17000,
+        "ebp": 50,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "eminence-lab12",
+      "manufacturer": "Eminence",
+      "model": "LAB12",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 26.5,
+        "qts": 0.66,
+        "qes": 0.75,
+        "qms": 5.8,
+        "vas": 53,
+        "re": 5.8,
+        "le": 1.2,
+        "xmax": 19,
+        "sd": 325,
+        "pe": 350
+      },
+      "notes": "Legendary sealed box 12\" optimized for small enclosures",
+      "tags": [
+        "sealed",
+        "compact",
+        "classic"
+      ],
+      "derived": {
+        "vd": 6175,
+        "ebp": 35.3,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 172
+      }
+    },
+    {
+      "id": "eminence-kappalite-3015lf",
+      "manufacturer": "Eminence",
+      "model": "Kappalite 3015LF",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 39.5,
+        "qts": 0.42,
+        "qes": 0.46,
+        "qms": 8.2,
+        "vas": 92,
+        "re": 5.5,
+        "le": 2.8,
+        "xmax": 12,
+        "sd": 530,
+        "pe": 450
+      },
+      "notes": "Lightweight neodymium 15\" for PA applications",
+      "tags": [
+        "professional",
+        "lightweight",
+        "neodymium"
+      ],
+      "derived": {
+        "vd": 6360,
+        "ebp": 85.9,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 180
+      }
+    },
+    {
+      "id": "dayton-epique-e150he-8",
+      "manufacturer": "Dayton Audio",
+      "model": "Epique E150HE-8",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 24.8,
+        "qts": 0.45,
+        "qes": 0.5,
+        "qms": 6.8,
+        "vas": 125,
+        "re": 6.2,
+        "le": 2.5,
+        "xmax": 22,
+        "sd": 520,
+        "pe": 700
+      },
+      "notes": "Premium Epique series 15\" with excellent linearity",
+      "tags": [
+        "premium",
+        "high-quality"
+      ],
+      "derived": {
+        "vd": 11440,
+        "ebp": 49.6,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 175
+      }
+    },
+    {
+      "id": "dayton-epique-e110he-8",
+      "manufacturer": "Dayton Audio",
+      "model": "Epique E110HE-8",
+      "size": 10,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 31.2,
+        "qts": 0.52,
+        "qes": 0.58,
+        "qms": 5.8,
+        "vas": 32,
+        "re": 6.8,
+        "le": 1.2,
+        "xmax": 17,
+        "sd": 220,
+        "pe": 250
+      },
+      "notes": "Compact premium 10\" for sealed designs",
+      "tags": [
+        "premium",
+        "compact",
+        "sealed"
+      ],
+      "derived": {
+        "vd": 3740,
+        "ebp": 53.8,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 172
+      }
+    },
+    {
+      "id": "tc-epic-18",
+      "manufacturer": "TC Sounds",
+      "model": "Epic 18",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 24.5,
+        "qts": 0.46,
+        "qes": 0.51,
+        "qms": 5.5,
+        "vas": 215,
+        "re": 2.5,
+        "le": 2.8,
+        "xmax": 28,
+        "sd": 850,
+        "pe": 1200
+      },
+      "notes": "High performance 18\" for home theater",
+      "tags": [
+        "home-theater",
+        "high-performance"
+      ],
+      "derived": {
+        "vd": 23800,
+        "ebp": 48,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "si-sql-18",
+      "manufacturer": "Stereo Integrity",
+      "model": "SQL-18",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 23.8,
+        "qts": 0.48,
+        "qes": 0.53,
+        "qms": 5.8,
+        "vas": 195,
+        "re": 2.8,
+        "le": 2.5,
+        "xmax": 26,
+        "sd": 850,
+        "pe": 900
+      },
+      "notes": "Sound Quality 18\" optimized for both car and home",
+      "tags": [
+        "versatile",
+        "sound-quality"
+      ],
+      "derived": {
+        "vd": 22100,
+        "ebp": 44.9,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 176
+      }
+    },
+    {
+      "id": "si-bm-mkv-18",
+      "manufacturer": "Stereo Integrity",
+      "model": "BM MKV 18",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 21.5,
+        "qts": 0.42,
+        "qes": 0.46,
+        "qms": 6.5,
+        "vas": 245,
+        "re": 3,
+        "le": 3,
+        "xmax": 25,
+        "sd": 850,
+        "pe": 1100
+      },
+      "notes": "Balanced design for ported home theater applications",
+      "tags": [
+        "home-theater",
+        "ported"
+      ],
+      "derived": {
+        "vd": 21250,
+        "ebp": 46.7,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 176
+      }
+    },
+    {
+      "id": "tc-2000-12",
+      "manufacturer": "TC Sounds",
+      "model": "2000 12",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 32.5,
+        "qts": 0.54,
+        "qes": 0.6,
+        "qms": 5.2,
+        "vas": 45,
+        "re": 2.5,
+        "le": 1.5,
+        "xmax": 18,
+        "sd": 325,
+        "pe": 500
+      },
+      "notes": "Compact 12\" for car audio sealed boxes",
+      "tags": [
+        "car-audio",
+        "sealed",
+        "compact"
+      ],
+      "derived": {
+        "vd": 5850,
+        "ebp": 54.2,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 174
+      }
+    },
+    {
+      "id": "eminence-omega-pro-18a",
+      "manufacturer": "Eminence",
+      "model": "Omega Pro-18A",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 30.8,
+        "qts": 0.38,
+        "qes": 0.42,
+        "qms": 8.8,
+        "vas": 148,
+        "re": 6.5,
+        "le": 3.2,
+        "xmax": 14,
+        "sd": 850,
+        "pe": 800
+      },
+      "notes": "Professional 18\" for compact ported designs",
+      "tags": [
+        "professional",
+        "compact"
+      ],
+      "derived": {
+        "vd": 11900,
+        "ebp": 73.3,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 178
+      }
+    },
+    {
+      "id": "bc-15sw76-8",
+      "manufacturer": "B&C Speakers",
+      "model": "15SW76",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 38.5,
+        "qts": 0.35,
+        "qes": 0.38,
+        "qms": 9.5,
+        "vas": 82,
+        "re": 6.2,
+        "le": 2.8,
+        "xmax": 13,
+        "sd": 530,
+        "pe": 700
+      },
+      "notes": "Compact professional 15\" for small ported boxes",
+      "tags": [
+        "professional",
+        "compact"
+      ],
+      "derived": {
+        "vd": 6890,
+        "ebp": 101.3,
+        "enclosureHint": "ported",
+        "sensitivityEst": 179
+      }
+    },
+    {
+      "id": "jbl-gti-mk2-15",
+      "manufacturer": "JBL",
+      "model": "GTI MK2-15",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 26.5,
+        "qts": 0.48,
+        "qes": 0.54,
+        "qms": 5.5,
+        "vas": 115,
+        "re": 2.8,
+        "le": 2.2,
+        "xmax": 20,
+        "sd": 520,
+        "pe": 800
+      },
+      "notes": "Car audio 15\" with excellent sound quality",
+      "tags": [
+        "car-audio",
+        "sound-quality"
+      ],
+      "derived": {
+        "vd": 10400,
+        "ebp": 49.1,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 175
+      }
+    },
+    {
+      "id": "alpine-swrt-12",
+      "manufacturer": "Alpine",
+      "model": "SWR-T12",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 28.5,
+        "qts": 0.51,
+        "qes": 0.57,
+        "qms": 5.2,
+        "vas": 52,
+        "re": 1.8,
+        "le": 1.8,
+        "xmax": 22,
+        "sd": 325,
+        "pe": 750
+      },
+      "notes": "High performance car audio 12\" with great SQ",
+      "tags": [
+        "car-audio",
+        "sound-quality"
+      ],
+      "derived": {
+        "vd": 7150,
+        "ebp": 50,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 173
+      }
+    },
+    {
+      "id": "rockford-t2-15",
+      "manufacturer": "Rockford Fosgate",
+      "model": "Power T2 15",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 27.2,
+        "qts": 0.49,
+        "qes": 0.55,
+        "qms": 5.8,
+        "vas": 105,
+        "re": 1.5,
+        "le": 2,
+        "xmax": 25,
+        "sd": 520,
+        "pe": 1000
+      },
+      "notes": "Popular car audio 15\" with excellent power handling",
+      "tags": [
+        "car-audio",
+        "high-power"
+      ],
+      "derived": {
+        "vd": 13000,
+        "ebp": 49.5,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 175
+      }
+    },
+    {
+      "id": "psi-a18-1800",
+      "manufacturer": "PSI Platform",
+      "model": "A18-1800",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 22.8,
+        "qts": 0.44,
+        "qes": 0.48,
+        "qms": 6.8,
+        "vas": 225,
+        "re": 2.2,
+        "le": 2.8,
+        "xmax": 28,
+        "sd": 850,
+        "pe": 1500
+      },
+      "notes": "High power 18\" designed for car audio SPL",
+      "tags": [
+        "car-audio",
+        "spl",
+        "high-power"
+      ],
+      "derived": {
+        "vd": 23800,
+        "ebp": 47.5,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 176
+      }
+    },
+    {
+      "id": "dd-9918",
+      "manufacturer": "Digital Designs",
+      "model": "9918",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 29.5,
+        "qts": 0.52,
+        "qes": 0.58,
+        "qms": 5.1,
+        "vas": 142,
+        "re": 1.2,
+        "le": 2.2,
+        "xmax": 32,
+        "sd": 850,
+        "pe": 2500
+      },
+      "notes": "Extreme power handling for competition SPL",
+      "tags": [
+        "car-audio",
+        "extreme-power",
+        "competition"
+      ],
+      "derived": {
+        "vd": 27200,
+        "ebp": 50.9,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 178
+      }
+    },
+    {
+      "id": "american-bass-vfl-18",
+      "manufacturer": "American Bass",
+      "model": "VFL-18",
+      "size": 18,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 26.8,
+        "qts": 0.48,
+        "qes": 0.53,
+        "qms": 5.5,
+        "vas": 175,
+        "re": 1.5,
+        "le": 2.5,
+        "xmax": 30,
+        "sd": 850,
+        "pe": 2000
+      },
+      "notes": "High performance car audio 18\" subwoofer",
+      "tags": [
+        "car-audio",
+        "high-power"
+      ],
+      "derived": {
+        "vd": 25500,
+        "ebp": 50.6,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 177
+      }
+    },
+    {
+      "id": "kicker-l7r-15",
+      "manufacturer": "Kicker",
+      "model": "L7R 15",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 31.5,
+        "qts": 0.56,
+        "qes": 0.63,
+        "qms": 5.2,
+        "vas": 72,
+        "re": 1.8,
+        "le": 1.8,
+        "xmax": 18,
+        "sd": 420,
+        "pe": 1000
+      },
+      "notes": "Square cone 15\" car audio subwoofer",
+      "tags": [
+        "car-audio",
+        "unique-design"
+      ],
+      "derived": {
+        "vd": 7560,
+        "ebp": 50,
+        "enclosureHint": "versatile",
+        "sensitivityEst": 176
+      }
+    },
+    {
+      "id": "adire-tumult",
+      "manufacturer": "Adire Audio",
+      "model": "Tumult",
+      "size": 12,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 23.5,
+        "qts": 0.68,
+        "qes": 0.78,
+        "qms": 5.5,
+        "vas": 62,
+        "re": 3.2,
+        "le": 1.5,
+        "xmax": 26,
+        "sd": 325,
+        "pe": 500
+      },
+      "notes": "Classic sealed box specialist with cult following",
+      "tags": [
+        "sealed",
+        "classic",
+        "cult-classic"
+      ],
+      "derived": {
+        "vd": 8450,
+        "ebp": 30.1,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 171
+      }
+    },
+    {
+      "id": "tc-sounds-tc-3000",
+      "manufacturer": "TC Sounds",
+      "model": "TC-3000",
+      "size": 15,
+      "type": "subwoofer",
+      "ts": {
+        "fs": 27.5,
+        "qts": 0.51,
+        "qes": 0.57,
+        "qms": 5.2,
+        "vas": 95,
+        "re": 2.2,
+        "le": 2,
+        "xmax": 25,
+        "sd": 520,
+        "pe": 900
+      },
+      "notes": "High performance 15\" for car or home",
+      "tags": [
+        "versatile",
+        "high-performance"
+      ],
+      "derived": {
+        "vd": 13000,
+        "ebp": 48.2,
+        "enclosureHint": "sealed",
+        "sensitivityEst": 175
+      }
+    }
+  ]
+}

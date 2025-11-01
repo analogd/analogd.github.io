@@ -1,0 +1,42 @@
+# Test output
+test-results/
+*.test-output.txt
+coverage/
+
+# Build artifacts
+dist/
+build/
+*.bundle.js
+*.min.js
+
+# Dependencies
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*-old.html
+*-backup.*
+*.bak

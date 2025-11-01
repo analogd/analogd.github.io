@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foundation Theory Playground</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Courier New', monospace;
+            padding: 20px;
+            background: #0d1117;
+            color: #c9d1d9;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #58a6ff;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #8b949e;
+            font-size: 13px;
+            margin-bottom: 30px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+        }
+        .panel {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 20px;
+        }
+        .panel h2 {
+            color: #58a6ff;
+            font-size: 16px;
+            margin: 0 0 15px 0;
+            border-bottom: 1px solid #30363d;
+            padding-bottom: 10px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            color: #8b949e;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+        input {
+            width: 100%;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 13px;
+        }
+        input:focus {
+            outline: none;
+            border-color: #58a6ff;
+        }
+        .equation {
+            background: #0d1117;
+            border-left: 3px solid #58a6ff;
+            padding: 12px;
+            margin: 15px 0;
+            font-family: 'Times New Roman', serif;
+            font-size: 15px;
+        }
+        .equation-title {
+            color: #58a6ff;
+            font-size: 12px;
+            font-family: 'SF Mono', monospace;
+            margin-bottom: 8px;
+        }
+        .citation {
+            color: #8b949e;
+            font-size: 11px;
+            font-style: italic;
+            margin-top: 5px;
+        }
+        .result {
+            background: #1c2128;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .result-label {
+            color: #8b949e;
+        }
+        .result-value {
+            color: #58a6ff;
+            font-weight: bold;
+        }
+        .alignment-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .alignment-table th,
+        .alignment-table td {
+            border: 1px solid #30363d;
+            padding: 8px;
+            text-align: left;
+        }
+        .alignment-table th {
+            background: #0d1117;
+            color: #58a6ff;
+            font-size: 12px;
+        }
+        .alignment-table td {
+            font-size: 13px;
+        }
+        .note {
+            background: #1c2128;
+            border-left: 3px solid #f0883e;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 12px;
+            color: #8b949e;
+        }
+        button {
+            background: #238636;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #2ea043;
+        }
+        .formula {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            font-size: 16px;
+        }
+        .warning {
+            background: #1c1817;
+            border-left: 3px solid #f85149;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 12px;
+            color: #f85149;
+        }
+    </style>
+</head>
+<body>
+    <h1>Foundation Theory Playground</h1>
+    <div class="subtitle">
+        Pure Thiele-Small equations from Small (1972) and Thiele (1971)
+        <br>SI units only • No pragmatic adjustments • Academic-grade calculations
+    </div>
+
+    <div class="container">
+        <!-- Input Panel -->
+        <div class="panel">
+            <h2>Driver Parameters (SI Units)</h2>
+
+            <div class="input-group">
+                <label>Fs - Resonance Frequency (Hz)</label>
+                <input type="number" id="fs" value="22.0" step="0.1">
+            </div>
+
+            <div class="input-group">
+                <label>Qts - Total Q Factor</label>
+                <input type="number" id="qts" value="0.530" step="0.001">
+            </div>
+
+            <div class="input-group">
+                <label>Qes - Electrical Q Factor</label>
+                <input type="number" id="qes" value="0.670" step="0.001">
+            </div>
+
+            <div class="input-group">
+                <label>Vas - Equivalent Volume (m³)</label>
+                <input type="number" id="vas" value="0.2482" step="0.0001">
+                <div class="note">Note: 248.2 liters = 0.2482 m³</div>
+            </div>
+
+            <div class="input-group">
+                <label>Vb - Box Volume (m³)</label>
+                <input type="number" id="vb" value="0.330" step="0.001">
+                <div class="note">Note: 330 liters = 0.330 m³</div>
+            </div>
+
+            <button onclick="calculate()">Calculate</button>
+
+            <div class="note" style="margin-top: 20px;">
+                <strong>⚠️ Pure Theory Mode</strong><br>
+                This playground uses ONLY equations from Small (1972).<br>
+                No practical corrections or WinISD adjustments.<br>
+                Results may differ from real-world measurements.
+            </div>
+        </div>
+
+        <!-- Results Panel -->
+        <div class="panel">
+            <h2>Sealed Box Calculations</h2>
+
+            <div class="equation">
+                <div class="equation-title">EQUATION 5 - Compliance Ratio</div>
+                <div class="formula">α = V<sub>AS</sub> / V<sub>B</sub></div>
+                <div class="citation">Small (1972), Page 385</div>
+                <div class="result">
+                    <span class="result-label">α =</span>
+                    <span class="result-value" id="alpha">-</span>
+                </div>
+            </div>
+
+            <div class="equation">
+                <div class="equation-title">EQUATION 6 - System Resonance</div>
+                <div class="formula">f<sub>c</sub> = f<sub>s</sub> √(1 + α)</div>
+                <div class="citation">Small (1972), Page 385</div>
+                <div class="result">
+                    <span class="result-label">Fc =</span>
+                    <span class="result-value" id="fc">-</span>
+                </div>
+            </div>
+
+            <div class="equation">
+                <div class="equation-title">EQUATION 7 - Total Q in Box</div>
+                <div class="formula">Q<sub>TC</sub> = Q<sub>TS</sub> √(α + 1)</div>
+                <div class="citation">Small (1972), Page 385</div>
+                <div class="result">
+                    <span class="result-label">Qtc =</span>
+                    <span class="result-value" id="qtc">-</span>
+                </div>
+            </div>
+
+            <div class="equation">
+                <div class="equation-title">-3dB Frequency (Derived from Transfer Function)</div>
+                <div class="formula">f<sub>3</sub> = f<sub>c</sub> / √[(1 - 1/(2Q<sub>TC</sub>²)) + √((1 - 1/(2Q<sub>TC</sub>²))² + 1)]</div>
+                <div class="citation">Derived from Small (1972) Equation 10</div>
+                <div class="result">
+                    <span class="result-label">F3 =</span>
+                    <span class="result-value" id="f3">-</span>
+                </div>
+            </div>
+
+            <div class="equation">
+                <div class="equation-title">EQUATION 22 - Reference Efficiency</div>
+                <div class="formula">η<sub>0</sub> = (4π²/c³) × (f<sub>s</sub>³ × V<sub>AS</sub> / Q<sub>ES</sub>)</div>
+                <div class="citation">Small (1972), Page 390</div>
+                <div class="result">
+                    <span class="result-label">η₀ =</span>
+                    <span class="result-value" id="eta">-</span>
+                </div>
+                <div class="result">
+                    <span class="result-label">SPL (1W @ 1m) =</span>
+                    <span class="result-value" id="spl">-</span>
+                </div>
+            </div>
+
+            <h2 style="margin-top: 30px;">Canonical Alignments (Thiele 1971)</h2>
+
+            <table class="alignment-table">
+                <tr>
+                    <th>Alignment</th>
+                    <th>Qtc (Target)</th>
+                    <th>Required Vb (m³)</th>
+                    <th>Required Vb (L)</th>
+                </tr>
+                <tbody id="alignments"></tbody>
+            </table>
+
+            <div class="note">
+                <strong>Theory vs Practice:</strong><br>
+                These values come from pure theory (Small 1972, Thiele 1971).<br>
+                WinISD may show different results due to:<br>
+                • Box losses (absorption, leaks)<br>
+                • Driver non-linearities<br>
+                • Voice coil inductance<br>
+                • Practical measurement variations
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Physical constants
+        const C = 343;  // Speed of sound (m/s) at 20°C
+        const RHO = 1.18;  // Air density (kg/m³)
+
+        function calculate() {
+            // Get inputs (all SI units)
+            const fs = parseFloat(document.getElementById('fs').value);
+            const qts = parseFloat(document.getElementById('qts').value);
+            const qes = parseFloat(document.getElementById('qes').value);
+            const vas = parseFloat(document.getElementById('vas').value);
+            const vb = parseFloat(document.getElementById('vb').value);
+
+            // EQUATION 5: Compliance ratio
+            const alpha = vas / vb;
+            document.getElementById('alpha').textContent = alpha.toFixed(4);
+
+            // EQUATION 6: System resonance
+            const fc = fs * Math.sqrt(1 + alpha);
+            document.getElementById('fc').textContent = fc.toFixed(2) + ' Hz';
+
+            // EQUATION 7: Total Q
+            const qtc = qts * Math.sqrt(alpha + 1);
+            document.getElementById('qtc').textContent = qtc.toFixed(4);
+
+            // F3 (derived from transfer function poles)
+            const term = 1 - 1 / (2 * qtc * qtc);
+            const sqrt_term = Math.sqrt(term * term + 1);
+            const f3 = fc / Math.sqrt(term + sqrt_term);
+            document.getElementById('f3').textContent = f3.toFixed(2) + ' Hz';
+
+            // EQUATION 22: Reference efficiency
+            const eta = (4 * Math.PI * Math.PI) / (C * C * C) *
+                        (fs * fs * fs * vas) / qes;
+            document.getElementById('eta').textContent = (eta * 100).toFixed(4) + '%';
+
+            // SPL (Dickason formula)
+            const spl = 112 + 10 * Math.log10(eta);
+            document.getElementById('spl').textContent = spl.toFixed(2) + ' dB';
+
+            // Calculate canonical alignments
+            calculateAlignments(fs, qts, vas);
+        }
+
+        function calculateAlignments(fs, qts, vas) {
+            const alignments = [
+                { name: 'Butterworth', qtc: 0.707, citation: 'Thiele (1971) Table II' },
+                { name: 'Bessel (B2)', qtc: 0.577, citation: 'Thiele (1971) Table II' },
+                { name: 'Chebychev (0.5dB)', qtc: 1.000, citation: 'Thiele (1971) Table II' }
+            ];
+
+            const tbody = document.getElementById('alignments');
+            tbody.innerHTML = '';
+
+            for (const alignment of alignments) {
+                const targetQtc = alignment.qtc;
+
+                // From Small Equation 7: Qtc = Qts × √(α + 1)
+                // Solve for α: α = (Qtc / Qts)² - 1
+                const alphaNeeded = (targetQtc / qts) ** 2 - 1;
+
+                if (alphaNeeded <= 0) {
+                    // Driver Qts too high for this alignment
+                    const row = tbody.insertRow();
+                    row.innerHTML = `
+                        <td>${alignment.name}</td>
+                        <td>${targetQtc.toFixed(3)}</td>
+                        <td colspan="2" style="color: #f85149;">Not achievable (Qts too high)</td>
+                    `;
+                    continue;
+                }
+
+                // From Equation 5: α = Vas / Vb, so Vb = Vas / α
+                const vbNeeded = vas / alphaNeeded;
+                const vbLiters = vbNeeded * 1000;
+
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${alignment.name}</td>
+                    <td>${targetQtc.toFixed(3)}</td>
+                    <td>${vbNeeded.toFixed(4)}</td>
+                    <td>${vbLiters.toFixed(1)}</td>
+                `;
+            }
+        }
+
+        // Calculate on load
+        window.addEventListener('load', calculate);
+    </script>
+</body>
+</html>

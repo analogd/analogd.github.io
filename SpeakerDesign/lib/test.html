@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpeakerPhysics Library Validation</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        h1 {
+            color: #4ec9b0;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-left: 4px solid;
+            background: #252526;
+        }
+        .test-result.passed {
+            border-color: #4ec9b0;
+        }
+        .test-result.failed {
+            border-color: #f48771;
+        }
+        .test-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .test-details {
+            margin-top: 5px;
+            font-size: 13px;
+            color: #858585;
+        }
+        .summary {
+            margin: 20px 0;
+            padding: 15px;
+            background: #252526;
+            border: 2px solid #4ec9b0;
+            font-size: 18px;
+        }
+        button {
+            padding: 10px 20px;
+            background: #0e639c;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1177bb;
+        }
+    </style>
+</head>
+<body>
+    <h1>SpeakerPhysics Library Validation</h1>
+    <p>Testing calculations against WinISD reference data...</p>
+
+    <button onclick="runValidation()">Run Validation Tests</button>
+    <button onclick="runDemo()">Run Demo</button>
+
+    <div id="results"></div>
+
+    <!-- Load library files -->
+    <script src="models/Driver.js"></script>
+    <script src="models/SealedBox.js"></script>
+    <script src="models/PortedBox.js"></script>
+    <script src="calculators/AlignmentCalculator.js"></script>
+    <script src="calculators/SPLCalculator.js"></script>
+    <script src="calculators/ExcursionCalculator.js"></script>
+    <script src="SpeakerPhysics.js"></script>
+    <script src="validation/reference-data-v2.js"></script>
+    <script src="validation/Validator-v2.js"></script>
+
+    <script>
+        function runValidation() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Running tests...</p>';
+
+            try {
+                const summary = LibraryValidator.runAllTests();
+
+                let html = `<div class="summary">`;
+                html += `<strong>Test Results: ${summary.passed}/${summary.total} passed</strong><br>`;
+                html += `Status: ${summary.allPassed ? '✓ ALL TESTS PASSED' : '✗ SOME TESTS FAILED'}`;
+                html += `</div>`;
+
+                for (const result of summary.results) {
+                    const status = result.passed ? 'passed' : 'failed';
+                    const icon = result.passed ? '✓' : '✗';
+
+                    html += `<div class="test-result ${status}">`;
+                    html += `<div class="test-name">${icon} ${result.test}</div>`;
+
+                    if (!result.passed) {
+                        if (result.error) {
+                            html += `<div class="test-details">Error: ${result.error}</div>`;
+                        } else {
+                            html += `<div class="test-details">`;
+                            html += `Expected: ${JSON.stringify(result.expected)}<br>`;
+                            html += `Actual: ${JSON.stringify(result.actual)}<br>`;
+                            if (result.checks) {
+                                html += `Checks: ${JSON.stringify(result.checks)}`;
+                            }
+                            html += `</div>`;
+                        }
+                    }
+
+                    html += `</div>`;
+                }
+
+                resultsDiv.innerHTML = html;
+
+                // Also log to console
+                LibraryValidator.printResults(summary);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-result failed">
+                    <div class="test-name">✗ Error running tests</div>
+                    <div class="test-details">${error.message}<br><pre>${error.stack}</pre></div>
+                </div>`;
+                console.error('Validation error:', error);
+            }
+        }
+
+        function runDemo() {
+            const resultsDiv = document.getElementById('results');
+
+            try {
+                // Demo: Create UM18-22 and calculate alignments
+                const um18 = SpeakerPhysics.createDriver({
+                    fs: 27.4,
+                    qts: 0.39,
+                    qes: 0.42,
+                    vas: 185,
+                    re: 3.5,
+                    xmax: 18,
+                    sd: 1160,
+                    pe: 500
+                });
+
+                let html = '<div class="summary"><strong>Demo: Dayton UM18-22</strong></div>';
+
+                // Sealed alignments
+                const sealedAlignments = SpeakerPhysics.calculateAlignments(um18, 'sealed');
+                html += '<h3>Sealed Alignments:</h3>';
+                for (const alignment of sealedAlignments) {
+                    html += `<div class="test-result passed">`;
+                    html += `<strong>${alignment.name}</strong><br>`;
+                    html += `Box: ${alignment.vb.toFixed(1)}L, Qtc: ${alignment.qtc.toFixed(3)}, `;
+                    html += `Fc: ${alignment.box.fc.toFixed(1)}Hz, F3: ${alignment.box.f3.toFixed(1)}Hz`;
+                    html += `</div>`;
+                }
+
+                // Ported alignments
+                const portedAlignments = SpeakerPhysics.calculateAlignments(um18, 'ported');
+                html += '<h3>Ported Alignments:</h3>';
+                for (const alignment of portedAlignments) {
+                    html += `<div class="test-result passed">`;
+                    html += `<strong>${alignment.name}</strong><br>`;
+                    html += `Box: ${alignment.vb.toFixed(1)}L, Tuning: ${alignment.fb.toFixed(1)}Hz, `;
+                    html += `F3: ${alignment.box.f3.toFixed(1)}Hz<br>`;
+                    html += `Port: ${alignment.portDiameter.toFixed(1)}cm dia × ${alignment.portLength.toFixed(1)}cm long, `;
+                    html += `Velocity: ${alignment.portVelocity.toFixed(1)} m/s`;
+                    html += `</div>`;
+                }
+
+                // SPL analysis
+                const butterworth = sealedAlignments.find(a => a.name.includes('Butterworth'));
+                if (butterworth) {
+                    const analysis = SpeakerPhysics.analyzeLimits(butterworth.box, 500, 25);
+                    html += '<h3>SPL Analysis (500W @ 25Hz):</h3>';
+                    html += `<div class="test-result passed">`;
+                    html += `System SPL: ${analysis.systemSPL.toFixed(1)} dB<br>`;
+                    html += `Limiting factor: ${analysis.limitingFactor}<br>`;
+                    html += `Margin: ${analysis.limitingMargin.toFixed(1)} dB`;
+                    html += `</div>`;
+                }
+
+                resultsDiv.innerHTML = html;
+                console.log('Demo completed');
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-result failed">
+                    <div class="test-name">✗ Demo error</div>
+                    <div class="test-details">${error.message}<br><pre>${error.stack}</pre></div>
+                </div>`;
+                console.error('Demo error:', error);
+            }
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            console.log('SpeakerPhysics library loaded');
+            console.log('Click "Run Validation Tests" to validate calculations');
+        });
+    </script>
+</body>
+</html>

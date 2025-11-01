@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        pre { background: #252526; padding: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Simple Calculation Test</h1>
+    <pre id="output"></pre>
+
+    <script src="models/Driver.js"></script>
+    <script src="models/SealedBox.js"></script>
+    <script src="calculators/AlignmentCalculator.js"></script>
+
+    <script>
+        let output = '';
+        function log(msg) {
+            output += msg + '\n';
+            console.log(msg);
+        }
+
+        try {
+            log('Creating UM18-22 driver...');
+            const driver = new Driver({
+                fs: 27.4,
+                qts: 0.39,
+                vas: 185
+            });
+            log('  fs: ' + driver.fs);
+            log('  qts: ' + driver.qts);
+            log('  vas: ' + driver.vas);
+            log('');
+
+            log('Calculating sealed alignments...');
+            const alignments = AlignmentCalculator.calculateSealedAlignments(driver);
+            log('  Found ' + alignments.length + ' alignments');
+            log('');
+
+            alignments.forEach((a, i) => {
+                log((i+1) + '. ' + a.name);
+                log('   Vb: ' + a.vb.toFixed(2) + 'L');
+                log('   Qtc: ' + a.qtc.toFixed(3));
+                log('   Fc: ' + a.box.fc.toFixed(1) + 'Hz');
+                log('   F3: ' + a.box.f3.toFixed(1) + 'Hz');
+                log('');
+            });
+
+            log('Expected for Butterworth:');
+            log('  Vb: 81.0L');
+            log('  Qtc: 0.707');
+            log('  Fc: 49.5Hz');
+            log('  F3: 60.0Hz');
+
+        } catch (error) {
+            log('ERROR: ' + error.message);
+            log(error.stack);
+        }
+
+        document.getElementById('output').textContent = output;
+    </script>
+</body>
+</html>
