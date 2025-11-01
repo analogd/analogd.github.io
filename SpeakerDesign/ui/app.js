@@ -1,12 +1,15 @@
 // app.js - Main application logic
 
+// Debug mode - set to true to enable console logging
+const DEBUG = localStorage.getItem('debug') === 'true' || false;
+
 const App = {
     drivers: [],
     currentDriver: null,
     currentBox: null,
 
     async init() {
-        console.log('Initializing Speaker Design Calculator...');
+        if (DEBUG) console.log('Initializing Speaker Design Calculator...');
 
         // Initialize graph manager
         GraphManager.init();
@@ -20,7 +23,7 @@ const App = {
         // Load default design
         this.loadDefaultDesign();
 
-        console.log('App initialized');
+        if (DEBUG) console.log('App initialized');
     },
 
     async loadDrivers() {
@@ -35,7 +38,7 @@ const App = {
                 `<option value="${driver.id}">${driver.manufacturer} ${driver.model}</option>`
             ).join('');
 
-            console.log(`Loaded ${this.drivers.length} drivers`);
+            if (DEBUG) console.log(`Loaded ${this.drivers.length} drivers`);
         } catch (error) {
             console.error('Failed to load drivers:', error);
             document.getElementById('driverSelect').innerHTML =
@@ -69,27 +72,63 @@ const App = {
         // Add to compare
         document.getElementById('addToCompare').addEventListener('click', () => this.addToCompare());
 
+        // Save design
+        document.getElementById('saveDesign').addEventListener('click', () => this.saveDesign());
+
         // Share design
         document.getElementById('shareDesign').addEventListener('click', () => this.shareDesign());
     },
 
     loadDefaultDesign() {
-        // Select UMII18-22 by default
-        const umii18 = this.drivers.find(d => d.id === 'dayton-umii18-22');
-        if (umii18) {
-            document.getElementById('driverSelect').value = umii18.id;
+        // Check URL parameters first (for driver browser and share links)
+        const urlParams = new URLSearchParams(window.location.search);
+        const driverIdFromUrl = urlParams.get('driver');
+        const boxVolumeFromUrl = urlParams.get('boxVolume');
+        const ampPowerFromUrl = urlParams.get('ampPower');
+        const enclosureTypeFromUrl = urlParams.get('enclosureType');
+
+        // Load from URL if available
+        if (driverIdFromUrl) {
+            const urlDriver = this.drivers.find(d => d.id === driverIdFromUrl);
+            if (urlDriver) {
+                document.getElementById('driverSelect').value = urlDriver.id;
+            }
+        } else {
+            // Fallback: Select UMII18-22 by default
+            const umii18 = this.drivers.find(d => d.id === 'dayton-umii18-22');
+            if (umii18) {
+                document.getElementById('driverSelect').value = umii18.id;
+            }
         }
 
-        // Set default values
-        document.getElementById('boxVolume').value = 330;
-        document.getElementById('ampPower').value = 500;
+        // Set box volume
+        if (boxVolumeFromUrl) {
+            document.getElementById('boxVolume').value = boxVolumeFromUrl;
+        } else {
+            document.getElementById('boxVolume').value = 330;
+        }
+
+        // Set amp power
+        if (ampPowerFromUrl) {
+            document.getElementById('ampPower').value = ampPowerFromUrl;
+        } else {
+            document.getElementById('ampPower').value = 500;
+        }
+
+        // Set enclosure type
+        if (enclosureTypeFromUrl) {
+            document.getElementById('enclosureType').value = enclosureTypeFromUrl;
+            // Trigger change event to show/hide ported controls
+            const event = new Event('change');
+            document.getElementById('enclosureType').dispatchEvent(event);
+        }
 
         // Calculate automatically
         this.calculate();
     },
 
     calculate() {
-        console.log('Calculating...');
+        if (DEBUG) console.log('Calculating...');
 
         // Get inputs
         const driverId = document.getElementById('driverSelect').value;
@@ -124,7 +163,7 @@ const App = {
         // Check for warnings
         this.checkWarnings(ampPower);
 
-        console.log('Calculation complete');
+        if (DEBUG) console.log('Calculation complete');
     },
 
     updateParametersDisplay() {
@@ -247,6 +286,42 @@ const App = {
         localStorage.setItem('compareDesigns', JSON.stringify(designs));
 
         alert(`Added to compare (${designs.length}/4). Open Compare view to see side-by-side.`);
+    },
+
+    saveDesign() {
+        // Validate that we have a calculated design
+        if (!this.currentBox || !this.currentDriver) {
+            alert('Please calculate a design first');
+            return;
+        }
+
+        // Get driver name for display
+        const driverId = document.getElementById('driverSelect').value;
+        const driverData = this.drivers.find(d => d.id === driverId);
+        const driverName = driverData ? `${driverData.manufacturer} ${driverData.model}` : driverId;
+
+        // Create saved design object
+        const design = {
+            id: Date.now(),
+            timestamp: new Date().toISOString(),
+            name: `${driverName} - ${this.currentBox.vb}L`,
+            driver: driverId,
+            enclosureType: this.currentBox instanceof SealedBox ? 'sealed' : 'ported',
+            boxVolume: this.currentBox.vb,
+            ampPower: parseFloat(document.getElementById('ampPower').value),
+            // Save calculated parameters for reference
+            qtc: this.currentBox.qtc ? this.currentBox.qtc.toFixed(3) : null,
+            fc: this.currentBox.fc ? this.currentBox.fc.toFixed(1) : null,
+            f3: this.currentBox.f3 ? this.currentBox.f3.toFixed(1) : null
+        };
+
+        // Save to localStorage
+        const saved = JSON.parse(localStorage.getItem('savedDesigns') || '[]');
+        saved.unshift(design); // Add to beginning
+        if (saved.length > 20) saved.pop(); // Keep max 20
+        localStorage.setItem('savedDesigns', JSON.stringify(saved));
+
+        alert(`Design saved!\n\n${design.name}\nQtc: ${design.qtc}, F3: ${design.f3} Hz\n\n(${saved.length} designs saved)`);
     },
 
     shareDesign() {
