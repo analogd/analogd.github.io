@@ -1,5 +1,8 @@
 // Driver model - immutable representation of T-S parameters
-class Driver {
+// Uses Foundation library for all calculations (189 tested functions)
+import * as Small1972 from '../foundation/small-1972.js';
+
+export class Driver {
     constructor(params) {
         // Required T-S parameters
         this.fs = params.fs;   // Resonance frequency (Hz)
@@ -11,9 +14,16 @@ class Driver {
         this.qms = params.qms || null;  // Mechanical Q
         this.re = params.re || null;    // DC resistance (Ω)
         this.le = params.le || null;    // Voice coil inductance (mH)
+        this.bl = params.bl || null;    // Force factor (T·m)
+        this.mms = params.mms || null;  // Moving mass (g)
+        this.cms = params.cms || null;  // Compliance (m/N)
+        this.rms = params.rms || null;  // Mechanical resistance (kg/s)
         this.xmax = params.xmax || null; // Linear excursion (mm)
         this.sd = params.sd || null;     // Effective piston area (cm²)
         this.pe = params.pe || null;     // Power handling (W)
+
+        // Store SI conversions for Foundation calls
+        this.vasSI = this.vas / 1000;  // Convert liters to m³
 
         // Derived parameters (calculated on construction)
         this.derived = this._calculateDerived();
@@ -42,31 +52,16 @@ class Driver {
         }
 
         // Reference efficiency (η₀) and sensitivity - Small 1972, Equation 22
-        // η₀ = (4π²/c³) × (Fs³ × Vas / Qes)
-        // SPL₀ = 112 + 10 × log₁₀(η₀)
-        //
-        // ⚠️ CONFIDENCE: MEDIUM
-        // - Formula is from literature but simplified
-        // - Typically within ±3dB of measured values
-        // - Full formula requires Bl, Mms, Sd which aren't always available
-        if (this.fs && this.vas && this.qes) {
-            const c = 343;  // Speed of sound (m/s) at 20°C
-            const vas_m3 = this.vas / 1000;  // Convert liters to m³
+        // Delegated to Foundation library (tested, correct)
+        if (this.fs && this.vasSI && this.qes) {
+            // Use Foundation library (Small 1972, Eq. 22)
+            const eta0 = Small1972.calculateEta0(this.fs, this.vasSI, this.qes);
+            const spl0 = Small1972.calculateSpl0(eta0);
 
-            // Calculate reference efficiency
-            const fourPiSquared = 4 * Math.PI * Math.PI;
-            const cCubed = c * c * c;
-            const fsCubed = this.fs * this.fs * this.fs;
-
-            const eta0 = (fourPiSquared / cCubed) * (fsCubed * vas_m3 / this.qes);
-
-            // Convert to SPL @ 2.83V/1m
             derived.referenceEfficiency = eta0;
-            derived.referenceSPL = 112 + 10 * Math.log10(eta0);
-
-            // Also store as sensitivity (more common term)
-            derived.sensitivity = parseFloat(derived.referenceSPL.toFixed(1));
-        } else if (this.fs && this.vas) {
+            derived.referenceSPL = spl0;
+            derived.sensitivity = parseFloat(spl0.toFixed(1));
+        } else if (this.fs && this.vasSI) {
             // Fallback: rough approximation without Qes
             const fs3 = Math.pow(this.fs, 3);
             const product = fs3 * this.vas;

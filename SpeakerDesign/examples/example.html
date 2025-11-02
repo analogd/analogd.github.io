@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foundation Library - Usage Example</title>
+    <style>
+        body { font-family: monospace; max-width: 800px; margin: 40px auto; padding: 0 20px; line-height: 1.6; }
+        h1 { border-bottom: 2px solid #333; }
+        .example { background: #f5f5f5; padding: 15px; margin: 20px 0; border-left: 4px solid #0066cc; }
+        .result { background: #e8f5e9; padding: 10px; margin: 10px 0; }
+        code { background: #eee; padding: 2px 6px; }
+        button { background: #0066cc; color: white; border: none; padding: 10px 20px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0052a3; }
+        .output { white-space: pre; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔊 Loudspeaker Foundation - Usage Example</h1>
+
+    <p>Direct browser usage of Foundation library. No build step, no frameworks.</p>
+
+    <div class="example">
+        <h3>Example 1: Sealed Butterworth Box</h3>
+        <button onclick="example1()">Run Example 1</button>
+        <div id="output1" class="result output"></div>
+    </div>
+
+    <div class="example">
+        <h3>Example 2: QB3 Ported Box</h3>
+        <button onclick="example2()">Run Example 2</button>
+        <div id="output2" class="result output"></div>
+    </div>
+
+    <div class="example">
+        <h3>Example 3: Frequency Response</h3>
+        <button onclick="example3()">Run Example 3</button>
+        <div id="output3" class="result output"></div>
+    </div>
+
+    <div class="example">
+        <h3>Example 4: Parameter Validation</h3>
+        <button onclick="example4()">Run Example 4</button>
+        <div id="output4" class="result output"></div>
+    </div>
+
+    <hr>
+    <p>📖 <a href="lib/foundation/README.md">Documentation</a> | 🧪 <a href="lib/test/run-foundation-tests.html">Test Suite (73 tests)</a></p>
+
+    <script type="module">
+        import * as Foundation from './lib/foundation/index.js';
+        import * as Small1972 from './lib/foundation/small-1972.js';
+        import * as Thiele1971 from './lib/foundation/thiele-1971.js';
+        import * as Small1973 from './lib/foundation/small-1973.js';
+
+        // Example 1: Sealed Butterworth box for UM18-22 V2
+        window.example1 = function() {
+            const output = document.getElementById('output1');
+
+            // Driver: Dayton Audio UM18-22 V2 (from official datasheet)
+            const driver = {
+                name: 'Dayton Audio UM18-22 V2',
+                fs: 22.0,
+                qts: 0.530,
+                qes: 0.56,
+                vas: 0.2482  // 248.2 liters in m³
+            };
+
+            // Calculate Butterworth alignment volume
+            const vb = Thiele1971.calculateButterworthVolume(driver.qts, driver.vas);
+
+            // Calculate system parameters
+            const alpha = Small1972.calculateAlpha(driver.vas, vb);
+            const fc = Small1972.calculateFc(driver.fs, alpha);
+            const qtc = Small1972.calculateQtc(driver.qts, alpha);
+            const f3 = Small1972.calculateF3(fc, qtc);
+            const eta0 = Small1972.calculateEta0(driver.fs, driver.vas, driver.qes);
+            const spl0 = Small1972.calculateSpl0(eta0);
+
+            output.textContent = `${driver.name} - Sealed Butterworth
+─────────────────────────────────────────
+Box Volume:      ${(vb * 1000).toFixed(1)} liters
+System Fc:       ${fc.toFixed(2)} Hz
+System Qtc:      ${qtc.toFixed(3)} (Butterworth)
+F3 (-3dB):       ${f3.toFixed(2)} Hz
+Efficiency:      ${(eta0 * 100).toFixed(3)}%
+Sensitivity:     ${spl0.toFixed(1)} dB @ 1W/1m
+
+Source: Small 1972, Eq. 5-7, 10, 22`;
+        };
+
+        // Example 2: QB3 ported box
+        window.example2 = function() {
+            const output = document.getElementById('output2');
+
+            const driver = {
+                name: 'Dayton Audio UM18-22 V2',
+                fs: 22.0,
+                qts: 0.530,
+                vas: 0.2482
+            };
+
+            // Calculate QB3 alignment
+            const vb = Thiele1971.QB3_ALIGNMENT.calculateVolume(driver.qts, driver.vas);
+            const fb = Thiele1971.QB3_ALIGNMENT.calculateTuning(driver.fs);
+
+            // Calculate port dimensions (10cm diameter)
+            const portDiameter = 0.10;  // 10cm in meters
+            const portArea = Small1973.calculatePortArea(portDiameter);
+            const portLength = Small1973.calculatePortLength(vb, fb, portArea, portDiameter);
+
+            output.textContent = `${driver.name} - QB3 Ported
+─────────────────────────────────────────
+Box Volume:      ${(vb * 1000).toFixed(1)} liters
+Tuning Freq:     ${fb.toFixed(1)} Hz (Fb = Fs)
+Port Diameter:   ${(portDiameter * 100).toFixed(1)} cm
+Port Length:     ${(portLength * 100).toFixed(1)} cm
+
+Formula: Vb = 15 × Qts^3.3 × Vas
+Source: Thiele 1971, Table II; Small 1973, Eq. 15`;
+        };
+
+        // Example 3: Frequency response sweep
+        window.example3 = function() {
+            const output = document.getElementById('output3');
+
+            const fc = 29.35;
+            const qtc = 0.707;  // Butterworth
+            const frequencies = [10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100];
+
+            let result = 'Butterworth Response (Fc=29.35 Hz, Qtc=0.707)\n';
+            result += '─────────────────────────────────────────\n';
+            result += 'Freq (Hz)    Response (dB)\n';
+
+            frequencies.forEach(f => {
+                const dB = Small1972.calculateResponseDb(f, fc, qtc);
+                const formatted = Number.isFinite(dB) ? dB.toFixed(1).padStart(6) : '  -∞';
+                result += `${f.toString().padStart(4)}        ${formatted}\n`;
+            });
+
+            result += '\nSource: Small 1972, Eq. 10';
+            output.textContent = result;
+        };
+
+        // Example 4: Parameter validation
+        window.example4 = function() {
+            const output = document.getElementById('output4');
+
+            let result = 'Parameter Validation Examples\n';
+            result += '─────────────────────────────────────────\n\n';
+
+            // Valid driver
+            try {
+                Small1972.validateDriverParameters(22, 0.53, 0.2482, 0.56);
+                result += '✅ Valid: Fs=22Hz, Qts=0.53, Vas=248.2L, Qes=0.56\n\n';
+            } catch (e) {
+                result += `❌ ${e.message}\n\n`;
+            }
+
+            // Invalid: Fs too high
+            try {
+                Small1972.validateDriverParameters(600, 0.5, 0.1);
+                result += '✅ Valid\n\n';
+            } catch (e) {
+                result += `❌ Fs=600Hz: ${e.message.split('.')[0]}\n\n`;
+            }
+
+            // Invalid: Qts too high
+            try {
+                Small1972.validateDriverParameters(50, 1.8, 0.1);
+                result += '✅ Valid\n\n';
+            } catch (e) {
+                result += `❌ Qts=1.8: ${e.message.split('.')[0]}\n\n`;
+            }
+
+            // Invalid: Qes < Qts
+            try {
+                Small1972.validateDriverParameters(50, 0.5, 0.1, 0.4);
+                result += '✅ Valid\n\n';
+            } catch (e) {
+                result += `❌ Qes<Qts: ${e.message.split('.')[0]}\n\n`;
+            }
+
+            result += 'Valid ranges:\n';
+            result += '  Fs:  15-500 Hz (pistonic behavior)\n';
+            result += '  Qts: 0.2-1.5 (practical damping)\n';
+            result += '  Qes: Must be ≥ Qts (by definition)\n\n';
+            result += 'Source: Small 1972; Dickason 2006';
+
+            output.textContent = result;
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foundation Library - Thiele-Small Implementation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+            background: #0a0a0a;
+            color: #e0e0e0;
+        }
+        h1 { font-size: 20px; margin-bottom: 10px; color: #4a9eff; }
+        h2 { font-size: 16px; margin-top: 30px; margin-bottom: 10px; color: #7ec699; }
+        h3 { font-size: 14px; margin-top: 20px; margin-bottom: 8px; color: #ffa07a; }
+
+        .lib-entry {
+            background: #1a1a1a;
+            border-left: 3px solid #4a9eff;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .lib-entry.paper-pure { border-left-color: #7ec699; }
+        .lib-entry.derived { border-left-color: #ffa07a; }
+        .lib-entry.placeholder { border-left-color: #666; }
+
+        .lib-name {
+            font-weight: bold;
+            color: #4a9eff;
+            margin-bottom: 4px;
+        }
+        .lib-source { color: #888; font-size: 12px; margin-bottom: 6px; }
+        .lib-desc { margin-bottom: 6px; }
+        .lib-coverage { color: #7ec699; font-size: 12px; }
+        .lib-missing { color: #ffa07a; font-size: 12px; margin-top: 4px; }
+
+        .legend {
+            background: #1a1a1a;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: inline-block;
+            margin-right: 20px;
+            padding-left: 15px;
+            position: relative;
+        }
+        .legend-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 4px;
+            width: 10px;
+            height: 10px;
+            background: #4a9eff;
+        }
+        .legend-item.paper-pure::before { background: #7ec699; }
+        .legend-item.derived::before { background: #ffa07a; }
+        .legend-item.placeholder::before { background: #666; }
+
+        a { color: #4a9eff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .back-link {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+    <h1>Foundation Library</h1>
+    <p>Reference implementations of Thiele-Small papers + derived analysis tools</p>
+    <p><a href="https://github.com/analogd/analogd.github.io/blob/main/SpeakerDesign/lib/foundation/README.md">→ Full documentation (README.md on GitHub)</a></p>
+
+    <div class="legend">
+        <span class="legend-item paper-pure">Paper-Pure: Verifiable against source papers</span>
+        <span class="legend-item derived">Derived: Built on paper equations</span>
+        <span class="legend-item placeholder">Placeholder: Not yet implemented</span>
+    </div>
+
+    <h2>Paper-Pure Implementations</h2>
+
+    <div class="lib-entry paper-pure">
+        <div class="lib-name">small-1972.js</div>
+        <div class="lib-source">Small, R.H. "Closed-Box Loudspeaker Systems" JAES Vol. 20, 1972</div>
+        <div class="lib-desc">Sealed enclosure design - system resonance, Q, F3, efficiency</div>
+        <div class="lib-coverage">✓ Coverage: ~90% (14/15 functions)</div>
+        <div class="lib-missing">Missing: Advanced group delay variants</div>
+    </div>
+
+    <div class="lib-entry paper-pure">
+        <div class="lib-name">thiele-1971.js</div>
+        <div class="lib-source">Thiele, A.N. "Loudspeakers in Vented Boxes" JAES Vol. 19, 1971</div>
+        <div class="lib-desc">Alignment theory - Butterworth, Bessel, Chebyshev, QB3</div>
+        <div class="lib-coverage">✓ Coverage: 100% (5/5 functions)</div>
+    </div>
+
+    <div class="lib-entry paper-pure">
+        <div class="lib-name">small-1973.js</div>
+        <div class="lib-source">Small, R.H. "Vented-Box Loudspeaker Systems" Parts I-IV, JAES Vol. 21, 1973</div>
+        <div class="lib-desc">Ported enclosure design - transfer function, port design, impedance measurement, alignments, loss modeling</div>
+        <div class="lib-coverage">✓ Coverage: ~45% (43/96 functions)</div>
+        <div class="lib-missing">Missing: Advanced transient analysis, multi-driver coupling, exotic port geometries, deprecated graphical methods</div>
+    </div>
+
+    <h2>Derived Analysis Tools</h2>
+
+    <div class="lib-entry derived">
+        <div class="lib-name">sensitivity.js</div>
+        <div class="lib-source">Derived from Small 1972/1973 using numerical differentiation</div>
+        <div class="lib-desc">Parameter sensitivity analysis - "What if I change box volume by 10%?"</div>
+        <div class="lib-coverage">✓ Functions: calculateF3SensitivityToVolume(), ...ToTuning(), ...ToLoss(), calculateAllSensitivities()</div>
+    </div>
+
+    <div class="lib-entry derived">
+        <div class="lib-name">comparison.js</div>
+        <div class="lib-source">Derived from Small 1972 + Small 1973</div>
+        <div class="lib-desc">Sealed vs ported comparison - side-by-side performance metrics</div>
+        <div class="lib-coverage">✓ Functions: analyzeSealed(), analyzeVented(), compareConfigurations()</div>
+    </div>
+
+    <div class="lib-entry derived">
+        <div class="lib-name">bandpass.js</div>
+        <div class="lib-source">Derived from ported box theory</div>
+        <div class="lib-desc">Bandpass enclosure design - 4th and 6th order systems</div>
+        <div class="lib-coverage">✓ Functions: designBandpass4(), designBandpass6(), calculateBandpassResponse()</div>
+    </div>
+
+    <div class="lib-entry derived">
+        <div class="lib-name">boundary.js</div>
+        <div class="lib-source">Standard room acoustics theory</div>
+        <div class="lib-desc">Room boundary loading - SPL gain from wall/corner placement</div>
+        <div class="lib-coverage">✓ Functions: calculateRoomGain()</div>
+    </div>
+
+    <h2>Future Extensions (Placeholders)</h2>
+
+    <div class="lib-entry placeholder">
+        <div class="lib-name">geddes.js</div>
+        <div class="lib-source">Geddes, E. "Acoustic Waveguide Theory" + port compression work (1989-2003)</div>
+        <div class="lib-desc">Advanced port compression (nonlinear resistance, turbulence, jet formation) + waveguide theory</div>
+        <div class="lib-coverage">⏳ Status: Not yet implemented (priority: high for subwoofer designs)</div>
+    </div>
+
+    <div class="lib-entry placeholder">
+        <div class="lib-name">klippel.js</div>
+        <div class="lib-source">Klippel, W. "Loudspeaker Nonlinearities" + thermal models (1992-2006)</div>
+        <div class="lib-desc">Nonlinear driver behavior - Bl(x), Cms(x), Le(x), thermal compression, distortion zones</div>
+        <div class="lib-coverage">⏳ Status: Not yet implemented (priority: medium-high for practical designs)</div>
+    </div>
+
+    <div class="back-link">
+        <a href="index.html">← Back to main site</a> |
+        <a href="https://github.com/analogd/analogd.github.io">View on GitHub</a>
+    </div>
+</body>
+</html>

@@ -5,6 +5,8 @@
 //
 // Alignment theory for sealed and vented loudspeaker systems
 //
+// ⚠️  IMPORTANT: When adding/removing functions, update lib/foundation/metadata.js
+//
 // Table II (Thiele 1971, Part I) defines canonical alignments
 // based on maximally flat passband (Butterworth), linear phase
 // (Bessel), and passband ripple (Chebyshev) responses.

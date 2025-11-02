@@ -1,0 +1,773 @@
+openapi: 3.0.3
+info:
+  title: Loudspeaker Foundation API
+  description: |
+    REST API for loudspeaker enclosure design based on Thiele-Small parameters.
+
+    **Built on pure theory from published papers:**
+    - Small 1972: Sealed box calculations
+    - Thiele 1971: Standard alignments
+    - Small 1973: Ported box calculations
+
+    All calculations cite source equations. Accepts both SI units (m³) and user-friendly units (liters).
+
+  version: 0.1.0
+  contact:
+    name: Foundation Library
+    url: https://github.com/YOUR_USERNAME/loudspeaker-foundation
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Development server
+
+tags:
+  - name: Sealed Box
+    description: Closed-box loudspeaker calculations (Small 1972)
+  - name: Ported Box
+    description: Vented-box loudspeaker calculations (Small 1973)
+  - name: Alignments
+    description: Standard filter alignments (Thiele 1971)
+  - name: Validation
+    description: Parameter validation and checks
+  - name: Utilities
+    description: Constants, conversions, and helpers
+
+paths:
+  /sealed-box/calculate:
+    post:
+      tags: [Sealed Box]
+      operationId: calculateSealedBox
+      summary: Calculate complete sealed box system
+      description: |
+        Complete sealed box calculation including system resonance (Fc), total Q (Qtc),
+        -3dB frequency (F3), efficiency, and SPL. Returns alignment classification.
+
+        Source: Small 1972, Equations 5-7, 10, 22
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SealedBoxRequest'
+            examples:
+              um18-22-v2-butterworth:
+                summary: Dayton Audio UM18-22 V2 in 318L (Butterworth)
+                value:
+                  driver:
+                    fs: 22.0
+                    qts: 0.53
+                    qes: 0.56
+                    vas: 248.2
+                    vasUnit: L
+                  boxVolume: 318
+                  boxVolumeUnit: L
+              midwoofer-6.5:
+                summary: 6.5" Midwoofer in 51L
+                value:
+                  driver:
+                    fs: 45
+                    qts: 0.6
+                    qes: 0.65
+                    vas: 20
+                    vasUnit: L
+                  boxVolume: 51
+                  boxVolumeUnit: L
+      responses:
+        '200':
+          description: Successful calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SealedBoxResponse'
+              examples:
+                um18-22-v2-result:
+                  summary: Dayton Audio UM18-22 V2 Butterworth result
+                  value:
+                    success: true
+                    data:
+                      systemResonance:
+                        fc: 29.35
+                        unit: Hz
+                      totalQ:
+                        qtc: 0.707
+                      f3:
+                        frequency: 29.35
+                        unit: Hz
+                      alignment: Butterworth
+                      efficiency:
+                        eta0: 0.00428
+                        percent: 0.428
+                      sensitivity:
+                        spl0: 88.6
+                        unit: dB
+                      complianceRatio:
+                        alpha: 0.780
+                    meta:
+                      version: 0.1.0
+                      units: SI
+                      citations:
+                        - Small 1972, Eq. 5-7
+                        - Small 1972, Eq. 10
+                        - Small 1972, Eq. 22
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /sealed-box/alignment:
+    post:
+      tags: [Sealed Box]
+      operationId: calculateAlignmentVolume
+      summary: Calculate box volume for target alignment
+      description: |
+        Calculate required box volume to achieve a specific alignment (Butterworth, Bessel, Chebyshev)
+        or custom target Qtc.
+
+        Source: Derived from Small 1972, Eq. 7 + Thiele 1971, Table II
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlignmentRequest'
+            examples:
+              um18-22-v2-butterworth:
+                summary: Dayton Audio UM18-22 V2 Butterworth volume
+                value:
+                  driver:
+                    qts: 0.53
+                    vas: 248.2
+                    vasUnit: L
+                  targetAlignment: butterworth
+              custom-qtc:
+                summary: Custom Qtc = 0.85
+                value:
+                  driver:
+                    qts: 0.53
+                    vas: 248.2
+                    vasUnit: L
+                  targetQtc: 0.85
+      responses:
+        '200':
+          description: Successful calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlignmentVolumeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /sealed-box/response:
+    post:
+      tags: [Sealed Box]
+      operationId: calculateFrequencyResponse
+      summary: Calculate frequency response curve
+      description: |
+        Calculate magnitude response (dB) across specified frequency range for sealed box system.
+
+        Source: Small 1972, Eq. 10 (2nd-order highpass transfer function)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FrequencyResponseRequest'
+            examples:
+              butterworth-sweep:
+                summary: Butterworth 10-200Hz sweep
+                value:
+                  fc: 29.35
+                  qtc: 0.707
+                  frequencies: [10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100, 150, 200]
+      responses:
+        '200':
+          description: Successful calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrequencyResponseResponse'
+
+  /ported-box/calculate:
+    post:
+      tags: [Ported Box]
+      operationId: calculatePortedBox
+      summary: Calculate complete ported box system
+      description: |
+        Complete ported box calculation including port length, velocity, and tuning verification.
+
+        Source: Small 1973, Helmholtz resonator equations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PortedBoxRequest'
+            examples:
+              um18-22-v2-qb3:
+                summary: Dayton Audio UM18-22 V2 QB3 alignment
+                value:
+                  driver:
+                    fs: 22.0
+                    qts: 0.53
+                    vas: 248.2
+                    vasUnit: L
+                  boxVolume: 458
+                  boxVolumeUnit: L
+                  tuningFrequency: 22.0
+                  portDiameter: 10
+                  portDiameterUnit: cm
+      responses:
+        '200':
+          description: Successful calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortedBoxResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /ported-box/qb3:
+    post:
+      tags: [Ported Box]
+      operationId: calculateQB3Alignment
+      summary: Calculate QB3 alignment parameters
+      description: |
+        Calculate volume and tuning frequency for Quasi-Butterworth 3rd order (QB3) alignment.
+
+        QB3 characteristics:
+        - Fb = Fs (tuned to driver resonance)
+        - Vb = 15 × Qts^3.3 × Vas
+
+        Source: Thiele 1971, Table II
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QB3Request'
+            examples:
+              um18-22-v2:
+                summary: Dayton Audio UM18-22 V2 QB3 parameters
+                value:
+                  driver:
+                    fs: 22.0
+                    qts: 0.53
+                    vas: 248.2
+                    vasUnit: L
+      responses:
+        '200':
+          description: Successful calculation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QB3Response'
+
+  /validate/driver:
+    post:
+      tags: [Validation]
+      operationId: validateDriver
+      summary: Validate Thiele-Small parameters
+      description: |
+        Validate driver T/S parameters against theoretical limits and practical ranges.
+
+        Valid ranges:
+        - Fs: 15-500 Hz (pistonic behavior)
+        - Qts: 0.2-1.5 (practical damping)
+        - Vas: > 0
+        - Qes: > Qts (by definition)
+
+        Source: Small 1972 + Dickason 2006
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverValidationRequest'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+
+  /constants:
+    get:
+      tags: [Utilities]
+      operationId: getConstants
+      summary: Get physical constants
+      description: |
+        Physical constants used in calculations (speed of sound, air density, etc.)
+      responses:
+        '200':
+          description: Physical constants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstantsResponse'
+
+  /alignments:
+    get:
+      tags: [Utilities]
+      operationId: getAlignments
+      summary: Get standard alignment constants
+      description: |
+        Standard filter alignment constants from Thiele 1971, Table II
+      responses:
+        '200':
+          description: Alignment constants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlignmentsResponse'
+
+components:
+  schemas:
+    Driver:
+      type: object
+      required: [fs, qts, vas]
+      properties:
+        fs:
+          type: number
+          description: Free-air resonance frequency
+          minimum: 15
+          maximum: 500
+          example: 22.0
+        qts:
+          type: number
+          description: Total Q factor
+          minimum: 0.2
+          maximum: 1.5
+          example: 0.53
+        qes:
+          type: number
+          description: Electrical Q factor (optional)
+          minimum: 0.2
+          maximum: 2.0
+          example: 0.56
+        vas:
+          type: number
+          description: Equivalent compliance volume
+          minimum: 0.001
+          example: 248.2
+        vasUnit:
+          type: string
+          enum: [m3, L, liters, cuft]
+          default: m3
+          description: Unit for Vas (defaults to m³)
+
+    SealedBoxRequest:
+      type: object
+      required: [driver, boxVolume]
+      properties:
+        driver:
+          $ref: '#/components/schemas/Driver'
+        boxVolume:
+          type: number
+          description: Box internal volume
+          minimum: 0.001
+          example: 318
+        boxVolumeUnit:
+          type: string
+          enum: [m3, L, liters, cuft]
+          default: m3
+
+    SealedBoxResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            systemResonance:
+              type: object
+              properties:
+                fc:
+                  type: number
+                  description: System resonance frequency (Hz)
+                unit:
+                  type: string
+                  example: Hz
+            totalQ:
+              type: object
+              properties:
+                qtc:
+                  type: number
+                  description: Total system Q factor
+            f3:
+              type: object
+              properties:
+                frequency:
+                  type: number
+                  description: -3dB frequency (Hz)
+                unit:
+                  type: string
+            alignment:
+              type: string
+              enum: [Bessel, Butterworth, Chebyshev, Custom]
+              description: Detected alignment type
+            complianceRatio:
+              type: object
+              properties:
+                alpha:
+                  type: number
+                  description: Vas / Vb
+            efficiency:
+              type: object
+              properties:
+                eta0:
+                  type: number
+                  description: Reference efficiency (fractional)
+                percent:
+                  type: number
+                  description: Efficiency percentage
+            sensitivity:
+              type: object
+              properties:
+                spl0:
+                  type: number
+                  description: Reference SPL @ 1W/1m (dB)
+                unit:
+                  type: string
+        meta:
+          type: object
+          properties:
+            version:
+              type: string
+            units:
+              type: string
+            citations:
+              type: array
+              items:
+                type: string
+
+    AlignmentRequest:
+      type: object
+      required: [driver]
+      properties:
+        driver:
+          type: object
+          required: [qts, vas]
+          properties:
+            qts:
+              type: number
+            vas:
+              type: number
+            vasUnit:
+              type: string
+              enum: [m3, L, liters, cuft]
+              default: m3
+        targetAlignment:
+          type: string
+          enum: [butterworth, bessel, chebyshev]
+          description: Target alignment (mutually exclusive with targetQtc)
+        targetQtc:
+          type: number
+          description: Custom target Qtc (mutually exclusive with targetAlignment)
+          minimum: 0.3
+          maximum: 2.0
+
+    AlignmentVolumeResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            volume:
+              type: object
+              properties:
+                m3:
+                  type: number
+                liters:
+                  type: number
+                cubicFeet:
+                  type: number
+            targetQtc:
+              type: number
+            alignment:
+              type: string
+
+    FrequencyResponseRequest:
+      type: object
+      required: [fc, qtc, frequencies]
+      properties:
+        fc:
+          type: number
+          description: System resonance (Hz)
+        qtc:
+          type: number
+          description: System Q factor
+        frequencies:
+          type: array
+          items:
+            type: number
+          description: Frequencies to calculate (Hz)
+
+    FrequencyResponseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            response:
+              type: array
+              items:
+                type: object
+                properties:
+                  frequency:
+                    type: number
+                  magnitude:
+                    type: number
+                    description: Linear magnitude
+                  dB:
+                    type: number
+                    description: Response in dB
+
+    PortedBoxRequest:
+      type: object
+      required: [driver, boxVolume, tuningFrequency, portDiameter]
+      properties:
+        driver:
+          $ref: '#/components/schemas/Driver'
+        boxVolume:
+          type: number
+        boxVolumeUnit:
+          type: string
+          enum: [m3, L, liters]
+          default: m3
+        tuningFrequency:
+          type: number
+          description: Port tuning frequency (Hz)
+        portDiameter:
+          type: number
+          description: Port diameter
+        portDiameterUnit:
+          type: string
+          enum: [m, cm, mm, inches]
+          default: m
+
+    PortedBoxResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            port:
+              type: object
+              properties:
+                length:
+                  type: object
+                  properties:
+                    m:
+                      type: number
+                    cm:
+                      type: number
+                    inches:
+                      type: number
+                area:
+                  type: object
+                  properties:
+                    m2:
+                      type: number
+                    cm2:
+                      type: number
+                diameter:
+                  type: object
+                  properties:
+                    m:
+                      type: number
+                    cm:
+                      type: number
+            tuning:
+              type: object
+              properties:
+                fb:
+                  type: number
+                  description: Tuning frequency (Hz)
+
+    QB3Request:
+      type: object
+      required: [driver]
+      properties:
+        driver:
+          type: object
+          required: [fs, qts, vas]
+          properties:
+            fs:
+              type: number
+            qts:
+              type: number
+            vas:
+              type: number
+            vasUnit:
+              type: string
+              enum: [m3, L, liters]
+              default: m3
+
+    QB3Response:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            volume:
+              type: object
+              properties:
+                m3:
+                  type: number
+                liters:
+                  type: number
+            tuningFrequency:
+              type: number
+              description: Fb = Fs (Hz)
+            alignment:
+              type: string
+              example: QB3
+
+    DriverValidationRequest:
+      type: object
+      required: [driver]
+      properties:
+        driver:
+          $ref: '#/components/schemas/Driver'
+
+    ValidationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            valid:
+              type: boolean
+            warnings:
+              type: array
+              items:
+                type: string
+            errors:
+              type: array
+              items:
+                type: string
+
+    ConstantsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            speedOfSound:
+              type: object
+              properties:
+                value:
+                  type: number
+                  example: 343
+                unit:
+                  type: string
+                  example: m/s
+                conditions:
+                  type: string
+                  example: 20°C, sea level
+            airDensity:
+              type: object
+              properties:
+                value:
+                  type: number
+                  example: 1.204
+                unit:
+                  type: string
+                  example: kg/m³
+            referencePressure:
+              type: object
+              properties:
+                value:
+                  type: number
+                  example: 0.00002
+                unit:
+                  type: string
+                  example: Pa
+
+    AlignmentsResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            butterworth:
+              type: object
+              properties:
+                qtc:
+                  type: number
+                  example: 0.707
+                description:
+                  type: string
+                citation:
+                  type: string
+                  example: Thiele 1971, Table II
+            bessel:
+              type: object
+              properties:
+                qtc:
+                  type: number
+                  example: 0.577
+            chebyshev:
+              type: object
+              properties:
+                qtc:
+                  type: number
+                  example: 1.0
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+
+  responses:
+    BadRequest:
+      description: Invalid request format
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Parameter validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Driver Browser - Speaker Design</title>
+    <title>Driver Browser - BoxSmith</title>
     <link rel="stylesheet" href="styles.css">
     <style>
         .browser-header {
@@ -201,8 +201,9 @@
         </footer>
     </div>
 
-    <script src="../lib/models/Driver.js"></script>
-    <script>
+    <script type="module">
+        import { Driver } from '../lib/models/Driver.js';
+
         const DriverBrowser = {
             drivers: [],
             filteredDrivers: [],

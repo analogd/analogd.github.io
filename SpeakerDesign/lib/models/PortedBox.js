@@ -1,5 +1,8 @@
 // Ported box model - represents a vented enclosure design
-class PortedBox {
+// Uses Foundation library for all calculations (189 tested functions)
+import * as Small1973 from '../foundation/small-1973.js';
+
+export class PortedBox {
     constructor(driver, vb, fb, options = {}) {
         this.driver = driver;
         this.vb = vb;  // Box volume (L)
@@ -7,30 +10,30 @@ class PortedBox {
 
         // Port configuration
         this.portDiameter = options.portDiameter || 10;  // cm
-        this.portLength = this._calculatePortLength();
 
-        // Calculate F3 (-3dB frequency)
-        this.f3 = this._estimateF3();
+        // Loss parameters (Small 1973, Section 3)
+        // QL = combined enclosure Q (leakage, absorption, port friction)
+        // Default to typical well-sealed, moderately damped box
+        this.ql = options.ql !== undefined ? options.ql : 7.0;
+        this.qa = options.qa || Infinity;  // Absorption Q (separate if provided)
+        this.qp = options.qp || Infinity;  // Port friction Q (separate if provided)
+
+        // Convert to SI for Foundation calls
+        const vbSI = vb / 1000;  // Liters to m³
+        const portDiameterSI = this.portDiameter / 100;  // cm to m
+
+        // Calculate port dimensions using Foundation (Small 1973, Eq. 15)
+        const portArea = Small1973.calculatePortArea(portDiameterSI);
+        const portLengthSI = Small1973.calculatePortLength(vbSI, fb, portArea, portDiameterSI);
+        this.portLength = portLengthSI * 100;  // Convert back to cm
+
+        // Calculate system parameters
+        const alpha = driver.vasSI / vbSI;
+        this.alpha = alpha;  // Store for use in response calculations
+        this.f3 = Small1973.calculatePortedF3(driver.fs, fb, alpha, driver.qts, this.ql);
 
         // Alignment classification
         this.alignment = this._classifyAlignment();
-    }
-
-    _calculatePortLength() {
-        const portArea = Math.PI * (this.portDiameter / 2) ** 2;
-
-        // Helmholtz resonator formula with end correction
-        // L = (23562.5 × Sp) / (Vb × Fb²) - 0.732 × D
-        const length = (23562.5 * portArea) / (this.vb * this.fb * this.fb)
-                     - 0.732 * this.portDiameter;
-
-        return Math.max(1, length);  // Minimum 1cm
-    }
-
-    _estimateF3() {
-        // Simplified: F3 ≈ Fb for most alignments
-        // More accurate would require full transfer function analysis
-        return this.fb * 0.8;
     }
 
     _classifyAlignment() {
@@ -46,46 +49,59 @@ class PortedBox {
         return 'Custom';
     }
 
-    // Calculate frequency response at a single frequency (simplified)
+    // Calculate frequency response at a single frequency
+    // Delegated to Foundation (Small 1973, Eq. 13 - 4th order transfer function)
+    // Now includes losses (QL) for accurate response
     responseAt(frequency) {
-        if (frequency < this.fb) {
-            // Below tuning: steep 24dB/octave rolloff
-            const octaves = Math.log2(this.fb / frequency);
-            return Math.pow(10, -octaves * 24 / 20);  // Convert dB to amplitude
-        } else {
-            // Above tuning: essentially flat in subwoofer range
-            return 1.0;
-        }
+        return Small1973.calculatePortedResponseMagnitude(
+            frequency,
+            this.driver.fs,
+            this.fb,
+            this.alpha,
+            this.driver.qts,
+            this.ql  // Include losses
+        );
     }
 
     responseDbAt(frequency) {
-        if (frequency < this.fb) {
-            const rolloff = -40 * Math.log10(this.fb / frequency);
-            return Math.max(rolloff, -40);  // Cap at -40dB
-        }
-        return 0;  // Flat above tuning
+        return Small1973.calculatePortedResponseDb(
+            frequency,
+            this.driver.fs,
+            this.fb,
+            this.alpha,
+            this.driver.qts,
+            this.ql  // Include losses
+        );
     }
 
-    // Port velocity calculation
+    // Port velocity calculation (uses Foundation helper, adds status interpretation)
     calculatePortVelocity() {
         if (!this.driver.sd || !this.driver.xmax) return null;
 
-        // V = (Sd × Xpeak × Fb) / Sp
-        const sdM2 = this.driver.sd / 10000;  // cm² to m²
-        const xmaxM = this.driver.xmax / 1000;  // mm to m
-        const portArea = Math.PI * (this.portDiameter / 2) ** 2;
-        const spM2 = portArea / 10000;  // cm² to m²
+        // Calculate volume velocity at driver Xmax
+        const sdSI = this.driver.sd / 10000;  // cm² to m²
+        const xmaxSI = this.driver.xmax / 1000;  // mm to m
+        const volumeVelocity = sdSI * xmaxSI * this.fb;
 
-        return (sdM2 * xmaxM * this.fb) / spM2;
+        // Get port area (SI)
+        const portDiameterSI = this.portDiameter / 100;
+        const portArea = Small1973.calculatePortArea(portDiameterSI);
+
+        // Calculate port velocity using Foundation
+        return Small1973.calculatePortVelocity(volumeVelocity, portArea);
     }
 
     portVelocityStatus() {
         const velocity = this.calculatePortVelocity();
         if (!velocity) return null;
 
-        if (velocity > 30) return { level: 'critical', warning: 'Very high - expect significant chuffing' };
-        if (velocity > 20) return { level: 'high', warning: 'High - may have audible chuffing' };
-        if (velocity > 15) return { level: 'moderate', warning: 'Moderate - acceptable for most uses' };
+        // Use Foundation limits
+        const conservativeLimit = Small1973.getMaxPortVelocity(true);   // 15 m/s
+        const aggressiveLimit = Small1973.getMaxPortVelocity(false);    // 20 m/s
+
+        if (velocity > aggressiveLimit * 1.5) return { level: 'critical', warning: 'Very high - expect significant chuffing' };
+        if (velocity > aggressiveLimit) return { level: 'high', warning: 'High - may have audible chuffing' };
+        if (velocity > conservativeLimit) return { level: 'moderate', warning: 'Moderate - acceptable for most uses' };
         return { level: 'good', warning: 'Good - low chuffing risk' };
     }
 

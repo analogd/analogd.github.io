@@ -3,6 +3,8 @@
 // Vol. 20, No. 5, June 1972, pp. 383-395
 //
 // Sealed (closed-box) loudspeaker system calculations
+//
+// ⚠️  IMPORTANT: When adding/removing functions, update lib/foundation/metadata.js
 
 import { SPEED_OF_SOUND } from './constants.js';
 
@@ -264,4 +266,85 @@ export function calculateEta0(fs, vas, qes) {
  */
 export function calculateSpl0(eta0) {
     return 112 + 10 * Math.log10(eta0);
+}
+
+// ============================================================================
+// ADDITIONAL T/S PARAMETER RELATIONSHIPS
+// ============================================================================
+
+/**
+ * Calculate mechanical Q (Qms) from Qts and Qes
+ *
+ * Formula: 1/Qts = 1/Qes + 1/Qms
+ * Rearranged: Qms = 1 / (1/Qts - 1/Qes) = Qts×Qes / (Qes - Qts)
+ *
+ * Qms represents mechanical losses (suspension damping).
+ * Typically much higher than Qes for modern drivers.
+ *
+ * Source: Small 1972, fundamental T/S relationships
+ *
+ * @param {number} qts - Total Q
+ * @param {number} qes - Electrical Q
+ * @returns {number} Mechanical Q (Qms)
+ */
+export function calculateQms(qts, qes) {
+    if (qes <= qts) {
+        throw new Error(`Qes (${qes}) must be greater than Qts (${qts})`);
+    }
+    return (qts * qes) / (qes - qts);
+}
+
+/**
+ * Calculate electrical Q (Qes) from Qts and Qms
+ *
+ * Formula: Qes = Qts×Qms / (Qms - Qts)
+ *
+ * @param {number} qts - Total Q
+ * @param {number} qms - Mechanical Q
+ * @returns {number} Electrical Q (Qes)
+ */
+export function calculateQes(qts, qms) {
+    if (qms <= qts) {
+        throw new Error(`Qms (${qms}) must be greater than Qts (${qts})`);
+    }
+    return (qts * qms) / (qms - qts);
+}
+
+/**
+ * Calculate total Q (Qts) from Qes and Qms
+ *
+ * Formula: 1/Qts = 1/Qes + 1/Qms
+ * Rearranged: Qts = Qes×Qms / (Qes + Qms)
+ *
+ * This is the parallel combination of electrical and mechanical Q.
+ *
+ * Source: Small 1972, fundamental T/S relationships
+ *
+ * @param {number} qes - Electrical Q
+ * @param {number} qms - Mechanical Q
+ * @returns {number} Total Q (Qts)
+ */
+export function calculateQts(qes, qms) {
+    return (qes * qms) / (qes + qms);
+}
+
+/**
+ * Calculate equivalent volume Vas from other parameters
+ *
+ * Formula: Vas = ρ₀×c²×Sd² / (Cms×(2πfs)²×Bl²/Re + Mms×(2πfs)²)
+ *
+ * Simplified for common use: Vas = ρ₀×c²×Cms×Sd²
+ *
+ * Where Cms = suspension compliance
+ *
+ * Source: Small 1972, Equation 3
+ *
+ * @param {number} cms - Mechanical compliance (m/N)
+ * @param {number} sd - Diaphragm area (m²)
+ * @returns {number} Equivalent volume Vas (m³)
+ */
+export function calculateVas(cms, sd) {
+    const rho = 1.204;  // Air density kg/m³
+    const c = SPEED_OF_SOUND;
+    return rho * c * c * cms * sd * sd;
 }

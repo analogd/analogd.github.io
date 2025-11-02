@@ -1,0 +1,3 @@
+- when talking/coding/documenting and referencing ultimax 18, like UM18-22 - be specific, if v2 ultimax 18, that is a differnt driver from v1 ultimax 18. Also remember this will be hosted on Github Pages, so must work from there, for now.
+- also try to build always as lean and perfect as possible. We doing great work here, but wanna be able to maintain extend modify .. code size, test suite size etc, lets be pragmatic
+- no to pragmatic, the bottom layers should make insights from papers actionable I think? I think there is value in a great effort to translate papers into a lib?

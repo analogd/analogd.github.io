@@ -1,32 +1,23 @@
 // Sealed box model - represents a sealed enclosure design
-//
-// ✅ CONFIDENCE: HIGH
-// - Based on Small 1972 equations (validated with tests)
-// - See FORMULA_STATUS.md for details
-class SealedBox {
+// Uses Foundation library for all calculations (189 tested functions)
+import * as Small1972 from '../foundation/small-1972.js';
+
+export class SealedBox {
     constructor(driver, vb, options = {}) {
         this.driver = driver;
         this.vb = vb;  // Box volume (L)
 
-        // Calculate derived parameters
-        this.alpha = driver.vas / vb;
-        this.qtc = driver.qts * Math.sqrt(this.alpha + 1);
-        this.fc = driver.fs * Math.sqrt(this.alpha + 1);
+        // Convert to SI for Foundation calls
+        const vbSI = vb / 1000;  // Liters to m³
 
-        // Calculate F3 (-3dB frequency)
-        this.f3 = this._calculateF3();
+        // ALL calculations delegated to Foundation (Small 1972)
+        this.alpha = Small1972.calculateAlpha(driver.vasSI, vbSI);
+        this.qtc = Small1972.calculateQtc(driver.qts, this.alpha);
+        this.fc = Small1972.calculateFc(driver.fs, this.alpha);
+        this.f3 = Small1972.calculateF3(this.fc, this.qtc);
 
         // Alignment classification
         this.alignment = this._classifyAlignment();
-    }
-
-    _calculateF3() {
-        const qtc = this.qtc;
-        const fc = this.fc;
-
-        const term = 1 - 1 / (2 * qtc * qtc);
-        const sqrt = Math.sqrt(term * term + 1);
-        return fc / Math.sqrt(term + sqrt);
     }
 
     _classifyAlignment() {
@@ -43,20 +34,15 @@ class SealedBox {
     }
 
     // Calculate frequency response at a single frequency
+    // Delegated to Foundation (Small 1972, Eq. 10)
     responseAt(frequency) {
-        const ratio = frequency / this.fc;
-        const ratio2 = ratio * ratio;
-
-        // 2nd order high-pass transfer function
-        const numerator = ratio2;
-        const denominator = Math.sqrt((1 - ratio2) ** 2 + ratio2 / (this.qtc * this.qtc));
-
-        return numerator / denominator;
+        return Small1972.calculateResponseMagnitude(frequency, this.fc, this.qtc);
     }
 
     // Calculate frequency response in dB relative to passband
+    // Delegated to Foundation (Small 1972, Eq. 10)
     responseDbAt(frequency) {
-        return 20 * Math.log10(this.responseAt(frequency));
+        return Small1972.calculateResponseDb(frequency, this.fc, this.qtc);
     }
 
     // Generate frequency response sweep

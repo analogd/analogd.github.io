@@ -12,53 +12,254 @@ const GraphManager = {
         Chart.defaults.font.size = 12;
     },
 
-    // Frequency Response Graph
-    createFrequencyResponse(canvasId, datasets) {
+    // Helper: Check if input is array of designs (new format) or legacy format
+    _isMultiDesignFormat(data) {
+        return Array.isArray(data) && data.length > 0 && data[0].hasOwnProperty('name');
+    },
+
+    // Helper: Convert multi-design format to Chart.js datasets for frequency response
+    _prepareFrequencyResponseDatasets(designs) {
+        const allDatasets = [];
+
+        designs.forEach(design => {
+            if (!design.results || !design.results.frequencyResponse) return;
+
+            // For each power level in this design
+            design.results.frequencyResponse.forEach((powerCurve, idx) => {
+                const isMainPower = idx === design.results.frequencyResponse.length - 1;
+                allDatasets.push({
+                    label: `${design.name} - ${powerCurve.power}W`,
+                    data: powerCurve.frequencies.map((freq, i) => ({
+                        x: freq,
+                        y: powerCurve.spl[i]
+                    })),
+                    borderColor: design.color,
+                    backgroundColor: 'transparent',
+                    borderWidth: isMainPower ? 2.5 : 1.5,  // Main power thicker
+                    borderDash: isMainPower ? [] : [5, 5],  // Lower powers dashed
+                    pointRadius: 0,
+                    tension: 0.1,
+                    opacity: isMainPower ? 1 : 0.6
+                });
+            });
+        });
+
+        return allDatasets;
+    },
+
+    // Helper: Convert multi-design format to Chart.js datasets for max power
+    _prepareMaxPowerDatasets(designs) {
+        const allDatasets = [];
+
+        designs.forEach(design => {
+            if (!design.results || !design.results.maxPower) return;
+
+            const data = design.results.maxPower;
+            const excursionData = [];
+            const thermalData = [];
+
+            data.forEach(point => {
+                const dataPoint = { x: point.frequency, y: point.maxPower };
+                if (point.limitingFactor === 'excursion') {
+                    excursionData.push(dataPoint);
+                    thermalData.push({ x: point.frequency, y: null });
+                } else {
+                    thermalData.push(dataPoint);
+                    excursionData.push({ x: point.frequency, y: null });
+                }
+            });
+
+            // Add excursion limit curve
+            allDatasets.push({
+                label: `${design.name} - Excursion`,
+                data: excursionData,
+                borderColor: design.color,
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                borderDash: [5, 5],  // Dashed for excursion
+                pointRadius: 0,
+                tension: 0.1,
+                spanGaps: true
+            });
+
+            // Add thermal limit curve (lighter shade)
+            const lighterColor = design.color + '80';  // Add alpha
+            allDatasets.push({
+                label: `${design.name} - Thermal`,
+                data: thermalData,
+                borderColor: lighterColor,
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                pointRadius: 0,
+                tension: 0.1,
+                spanGaps: true
+            });
+        });
+
+        return allDatasets;
+    },
+
+    // Frequency Response Graph (supports both single and multi-design)
+    createFrequencyResponse(canvasId, datasets, limits = null, secondaryData = null) {
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
         }
 
         const ctx = document.getElementById(canvasId).getContext('2d');
 
+        // Check if this is multi-design format
+        const chartDatasets = this._isMultiDesignFormat(datasets)
+            ? this._prepareFrequencyResponseDatasets(datasets)
+            : datasets.map((dataset, idx) => {
+                const colors = ['#58a6ff', '#39d353', '#f0883e'];
+                return {
+                    label: `${dataset.power}W`,
+                    data: dataset.frequencies.map((freq, i) => ({
+                        x: freq,
+                        y: dataset.spl[i]
+                    })),
+                    borderColor: colors[idx % colors.length],
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y'
+                };
+            });
+
+        // Add limit lines if provided
+        if (limits) {
+            if (limits.thermal) {
+                chartDatasets.push({
+                    label: 'Thermal Limit (Pe, no EQ)',
+                    data: limits.thermal.frequencies.map((freq, i) => ({
+                        x: freq,
+                        y: limits.thermal.spl[i]
+                    })),
+                    borderColor: '#f0883e',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y'
+                });
+            }
+
+            if (limits.thermalFlat) {
+                chartDatasets.push({
+                    label: 'Thermal Limit (with EQ boost)',
+                    data: limits.thermalFlat.frequencies.map((freq, i) => ({
+                        x: freq,
+                        y: limits.thermalFlat.spl[i]
+                    })),
+                    borderColor: '#d29922',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [10, 5],
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y'
+                });
+            }
+
+            if (limits.excursion) {
+                chartDatasets.push({
+                    label: 'Excursion Limit (Xmax)',
+                    data: limits.excursion.frequencies.map((freq, i) => ({
+                        x: freq,
+                        y: limits.excursion.spl[i]
+                    })),
+                    borderColor: '#f85149',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2,
+                    borderDash: [3, 3],
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y'
+                });
+            }
+        }
+
+        // Add secondary Y-axis data if provided (power or excursion)
+        if (secondaryData) {
+            if (secondaryData.type === 'power') {
+                chartDatasets.push({
+                    label: 'Max Safe Power',
+                    data: secondaryData.frequencies.map((freq, i) => ({
+                        x: freq,
+                        y: secondaryData.values[i]
+                    })),
+                    borderColor: '#a371f7',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2.5,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y2'
+                });
+            } else if (secondaryData.type === 'excursion') {
+                chartDatasets.push({
+                    label: `Excursion @ ${secondaryData.power}W`,
+                    data: secondaryData.frequencies.map((freq, i) => ({
+                        x: freq,
+                        y: secondaryData.values[i]
+                    })),
+                    borderColor: '#bc8cff',
+                    backgroundColor: 'transparent',
+                    borderWidth: 2.5,
+                    pointRadius: 0,
+                    tension: 0.1,
+                    yAxisID: 'y2'
+                });
+            }
+        }
+
+        window.debug?.(`GraphManager.createFrequencyResponse: Created ${chartDatasets.length} datasets`);
+
+        const scalesConfig = {
+            x: {
+                type: 'logarithmic',
+                title: { display: true, text: 'Frequency (Hz)' },
+                grid: { color: '#30363d' }
+            },
+            y: {
+                type: 'linear',
+                position: 'left',
+                title: { display: true, text: 'SPL (dB)' },
+                grid: { color: '#30363d' }
+            }
+        };
+
+        // Add secondary Y-axis if needed
+        if (secondaryData) {
+            scalesConfig.y2 = {
+                type: 'linear',
+                position: 'right',
+                title: {
+                    display: true,
+                    text: secondaryData.type === 'power' ? 'Power (W)' : 'Excursion (mm)'
+                },
+                grid: { drawOnChartArea: false },
+                ticks: { color: '#a371f7' }
+            };
+        }
+
         this.charts[canvasId] = new Chart(ctx, {
             type: 'line',
-            data: {
-                datasets: datasets.map((dataset, idx) => {
-                    const colors = ['#58a6ff', '#39d353', '#f0883e'];
-                    return {
-                        label: `${dataset.power}W`,
-                        data: dataset.frequencies.map((freq, i) => ({
-                            x: freq,
-                            y: dataset.spl[i]
-                        })),
-                        borderColor: colors[idx % colors.length],
-                        backgroundColor: 'transparent',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        tension: 0.1
-                    };
-                })
-            },
+            data: { datasets: chartDatasets },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'logarithmic',
-                        title: { display: true, text: 'Frequency (Hz)' },
-                        grid: { color: '#30363d' }
-                    },
-                    y: {
-                        title: { display: true, text: 'SPL (dB)' },
-                        grid: { color: '#30363d' }
-                    }
-                },
+                scales: scalesConfig,
                 plugins: {
                     legend: { display: true, position: 'top' },
                     tooltip: {
                         callbacks: {
                             label: (context) => {
-                                return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} dB`;
+                                const suffix = context.dataset.yAxisID === 'y2'
+                                    ? (secondaryData.type === 'power' ? 'W' : 'mm')
+                                    : 'dB';
+                                return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} ${suffix}`;
                             }
                         }
                     }
@@ -67,7 +268,7 @@ const GraphManager = {
         });
     },
 
-    // Maximum Power Graph
+    // Maximum Power Graph (supports both single and multi-design)
     createMaxPowerCurve(canvasId, data) {
         if (this.charts[canvasId]) {
             this.charts[canvasId].destroy();
@@ -75,25 +276,27 @@ const GraphManager = {
 
         const ctx = document.getElementById(canvasId).getContext('2d');
 
-        // Separate excursion and thermal limited points
-        const excursionData = [];
-        const thermalData = [];
+        // Check if this is multi-design format
+        const isMultiDesign = this._isMultiDesignFormat(data);
+        const chartDatasets = isMultiDesign
+            ? this._prepareMaxPowerDatasets(data)
+            : (() => {
+                // Legacy format - single design
+                const excursionData = [];
+                const thermalData = [];
 
-        data.forEach(point => {
-            const dataPoint = { x: point.frequency, y: point.maxPower };
-            if (point.limitingFactor === 'excursion') {
-                excursionData.push(dataPoint);
-                thermalData.push({ x: point.frequency, y: null });
-            } else {
-                thermalData.push(dataPoint);
-                excursionData.push({ x: point.frequency, y: null });
-            }
-        });
+                data.forEach(point => {
+                    const dataPoint = { x: point.frequency, y: point.maxPower };
+                    if (point.limitingFactor === 'excursion') {
+                        excursionData.push(dataPoint);
+                        thermalData.push({ x: point.frequency, y: null });
+                    } else {
+                        thermalData.push(dataPoint);
+                        excursionData.push({ x: point.frequency, y: null });
+                    }
+                });
 
-        this.charts[canvasId] = new Chart(ctx, {
-            type: 'line',
-            data: {
-                datasets: [
+                return [
                     {
                         label: 'Excursion Limited',
                         data: excursionData,
@@ -116,7 +319,15 @@ const GraphManager = {
                         tension: 0.1,
                         fill: false
                     }
-                ]
+                ];
+            })();
+
+        window.debug?.(`GraphManager.createMaxPowerCurve: Created ${chartDatasets.length} datasets (mode: ${isMultiDesign ? 'multi' : 'single'})`);
+
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: chartDatasets
             },
             options: {
                 responsive: true,
@@ -222,6 +433,7 @@ const GraphManager = {
         }
 
         const ctx = document.getElementById(canvasId).getContext('2d');
+        window.debug?.(`GraphManager.createSPLCeiling: ${frequencies.length} points`);
 
         this.charts[canvasId] = new Chart(ctx, {
             type: 'line',
@@ -276,3 +488,5 @@ const GraphManager = {
         this.charts = {};
     }
 };
+
+export { GraphManager };

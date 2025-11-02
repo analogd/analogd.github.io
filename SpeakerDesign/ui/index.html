@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Speaker Design Calculator</title>
+    <title>BoxSmith - Speaker Design Calculator</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
@@ -11,8 +11,8 @@
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
-            <h1>🔊 Speaker Design Calculator</h1>
-            <p class="tagline">Don't build garbage • See real-world limitations</p>
+            <h1>🔊 BoxSmith</h1>
+            <p class="tagline">Speaker enclosure design calculator</p>
             <nav class="app-nav">
                 <a href="index.html" class="active">Design</a>
                 <a href="driver-browser.html">Browse Drivers</a>
@@ -57,9 +57,7 @@
 
             <div class="control-actions">
                 <button id="calculate" class="btn-primary">Calculate</button>
-                <button id="addToCompare" class="btn-secondary">Add to Compare</button>
-                <button id="saveDesign" class="btn-secondary">Save</button>
-                <button id="shareDesign" class="btn-secondary">Share</button>
+                <button id="shareDesign" class="btn-secondary">Share Link</button>
             </div>
         </section>
 
@@ -100,12 +98,58 @@
             <ul id="warningsList"></ul>
         </section>
 
+        <!-- Design List & Comparison -->
+        <section class="comparison-section">
+            <div class="section-header">
+                <h3>📋 Designs in Project</h3>
+                <button id="pinCurrentDesign" class="btn-primary">+ Pin Current Design</button>
+            </div>
+
+            <!-- Design List -->
+            <div id="designsList" class="designs-list">
+                <p class="empty-state">No designs yet. Click "Pin Current Design" to add your first design.</p>
+            </div>
+
+            <!-- Comparison Table -->
+            <div id="comparisonTable" class="comparison-table-container" style="display: none;">
+                <h4>Comparison</h4>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Design</th>
+                            <th>F3</th>
+                            <th>Max SPL @20Hz</th>
+                            <th>Excursion @20Hz</th>
+                            <th>Port Velocity</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparisonTableBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <!-- Graphs -->
         <section class="graphs-container">
             <!-- Frequency Response -->
             <div class="graph-panel">
-                <h3>📊 Frequency Response</h3>
-                <p class="graph-subtitle">SPL at 1W, 100W, and specified power</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <div>
+                        <h3 style="margin: 0;">📊 Frequency Response</h3>
+                        <p class="graph-subtitle" style="margin: 4px 0 0 0;">1W reference + amp power + limit lines</p>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <label for="secondaryAxisToggle" style="color: #8b949e; font-size: 12px;">Show:</label>
+                        <select id="secondaryAxisToggle" style="background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 3px 6px; border-radius: 3px; font-size: 12px;">
+                            <option value="none">SPL only</option>
+                            <option value="power">+ Max Power</option>
+                            <option value="excursion">+ Excursion</option>
+                        </select>
+                    </div>
+                </div>
                 <canvas id="frequencyResponseChart"></canvas>
             </div>
 
@@ -133,8 +177,8 @@
 
         <!-- Footer -->
         <footer class="app-footer">
-            <p>Built with 🔊 for DIY speaker builders • Open source</p>
-            <p class="disclaimer">Calculations are estimates. Verify with measurements. CEA-2034 ratings may exceed practical output due to limiters and thermal compression.</p>
+            <p>BoxSmith • Built with 189 tested equations from Small 1972/1973 & Thiele 1971</p>
+            <p class="disclaimer">Calculations use peer-reviewed formulas. Verify with measurements. Real-world output may vary due to room gain, thermal compression, and power limiting.</p>
         </footer>
     </div>
 
@@ -148,13 +192,6 @@
     </div>
 
     <!-- Load Dependencies -->
-    <script src="../lib/models/Driver.js"></script>
-    <script src="../lib/models/SealedBox.js"></script>
-    <script src="../lib/models/PortedBox.js"></script>
-    <script src="../lib/calculators/AlignmentCalculator.js"></script>
-    <script src="../lib/calculators/SPLCalculator.js"></script>
-    <script src="../lib/calculators/MaxPowerCalculator.js"></script>
-    <script src="graphs.js"></script>
-    <script src="app.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
