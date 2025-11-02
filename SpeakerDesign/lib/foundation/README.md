@@ -219,7 +219,7 @@ The library is validated against:
    - QB3: Fb = Fs, Vb = 15 × Qts^3.3 × Vas ✓
 
 2. **Known driver calculations**
-   - UM18-22 in 330L sealed → Qtc = 0.702 ✓ (matches theory)
+   - Dayton Audio UM18-22 V2 in 318L sealed → Qtc = 0.707 ✓ (Butterworth)
 
 3. **Self-consistency**
    - F3 ≈ Fc for Qtc = 0.707 ✓

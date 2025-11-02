@@ -6,6 +6,94 @@
 
 import { SPEED_OF_SOUND } from './constants.js';
 
+// ============================================================================
+// PARAMETER VALIDATION
+// ============================================================================
+
+/**
+ * Validate driver Thiele-Small parameters
+ *
+ * Thiele-Small theory assumes:
+ * - Pistonic driver behavior (no cone breakup)
+ * - Linear suspension (small signal)
+ * - Direct radiator (not horn-loaded)
+ *
+ * Valid ranges based on Small 1972 and practical experience:
+ * - Fs: 15-500 Hz (below 15Hz: not pistonic, above 500Hz: breakup modes)
+ * - Qts: 0.2-1.5 (below 0.2: overdamped/unstable, above 1.5: underdamped/ringing)
+ * - Vas: Must be positive (physical constraint)
+ * - Qes: Must be positive and typically > Qts (electrical losses)
+ *
+ * Source: Small 1972 applies to direct radiators only
+ *         Dickason 2006, Chapter 3 for practical ranges
+ *
+ * @param {number} fs - Free-air resonance (Hz)
+ * @param {number} qts - Total Q factor
+ * @param {number} vas - Equivalent compliance volume (m³)
+ * @param {number} qes - Electrical Q factor (optional)
+ * @throws {Error} If parameters are outside valid ranges
+ */
+export function validateDriverParameters(fs, qts, vas, qes = null) {
+    if (fs < 15 || fs > 500) {
+        throw new Error(
+            `Fs=${fs}Hz outside valid range (15-500Hz). ` +
+            `Thiele-Small parameters assume pistonic behavior without cone breakup. ` +
+            `Below 15Hz or above 500Hz, the model may not be accurate. ` +
+            `Source: Small 1972 applies to direct radiators.`
+        );
+    }
+
+    if (qts < 0.2 || qts > 1.5) {
+        throw new Error(
+            `Qts=${qts.toFixed(2)} outside practical range (0.2-1.5). ` +
+            `Very low Qts (<0.2) indicates overdamping or measurement error. ` +
+            `Very high Qts (>1.5) indicates severe underdamping with excessive ringing. ` +
+            `Source: Dickason 2006, Chapter 3.`
+        );
+    }
+
+    if (vas <= 0) {
+        throw new Error(
+            `Vas=${vas} must be positive. ` +
+            `Vas represents equivalent air compliance volume and must be > 0.`
+        );
+    }
+
+    if (qes !== null) {
+        if (qes <= 0) {
+            throw new Error(
+                `Qes=${qes} must be positive. ` +
+                `Qes represents electrical damping and must be > 0.`
+            );
+        }
+        if (qes < qts) {
+            throw new Error(
+                `Qes=${qes.toFixed(2)} cannot be less than Qts=${qts.toFixed(2)}. ` +
+                `By definition: 1/Qts = 1/Qes + 1/Qms, so Qes ≥ Qts. ` +
+                `Check your T/S parameters.`
+            );
+        }
+    }
+}
+
+/**
+ * Validate box volume
+ *
+ * @param {number} vb - Box volume (m³)
+ * @throws {Error} If volume is invalid
+ */
+export function validateBoxVolume(vb) {
+    if (vb <= 0) {
+        throw new Error(`Box volume Vb=${vb} must be positive.`);
+    }
+    if (vb > 10) {
+        throw new Error(
+            `Box volume Vb=${vb}m³ (${vb * 1000}L) is unusually large. ` +
+            `Are you sure this is correct? Typical subwoofers are < 1000L.`
+        );
+    }
+}
+
 /**
  * Calculate compliance ratio (alpha) for sealed enclosure
  *

@@ -255,7 +255,7 @@ calculateArrayResponse(drivers, geometry)
 ### WinISD Fsc Discrepancy
 **Status:** INVESTIGATING
 
-Our Fc ≈ 29 Hz for UM18-22/330L, WinISD shows Fsc ≈ 68.73 Hz.
+Our Fc ≈ 29 Hz for Dayton Audio UM18-22 V2/318L, WinISD shows Fsc ≈ 68.73 Hz.
 
 **Hypothesis:** Different parameter definition (Fsc ≠ Fc?)
 
