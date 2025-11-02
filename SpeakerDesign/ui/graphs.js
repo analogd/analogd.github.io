@@ -12,6 +12,92 @@ const GraphManager = {
         Chart.defaults.font.size = 12;
     },
 
+    // Unified Frequency Response Graph (single graph shows everything)
+    // This is the NEW simplified approach - shows FR with toggleable limit lines
+    createUnifiedFrequencyResponse(canvasId, graphData) {
+        if (this.charts[canvasId]) {
+            this.charts[canvasId].destroy();
+        }
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+
+        // Build scales config
+        const scalesConfig = {
+            x: {
+                type: 'logarithmic',
+                title: { display: true, text: 'Frequency (Hz)' },
+                grid: { color: '#30363d' },
+                min: 10,
+                max: 200
+            },
+            y: {
+                type: 'linear',
+                position: 'left',
+                title: { display: true, text: 'SPL (dB @ 1m)' },
+                grid: { color: '#30363d' }
+            }
+        };
+
+        // Add secondary Y-axis if mode is power or excursion
+        if (graphData.secondaryMode === 'power') {
+            scalesConfig.y2 = {
+                type: 'linear',
+                position: 'right',
+                title: { display: true, text: 'Max Power (W)' },
+                grid: { drawOnChartArea: false },
+                ticks: { color: '#d29922' }
+            };
+        } else if (graphData.secondaryMode === 'excursion') {
+            scalesConfig.y2 = {
+                type: 'linear',
+                position: 'right',
+                title: { display: true, text: 'Excursion (mm)' },
+                grid: { drawOnChartArea: false },
+                ticks: { color: '#bc8cff' }
+            };
+        }
+
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: { datasets: graphData.datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                scales: scalesConfig,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 6,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const yAxisID = context.dataset.yAxisID || 'y';
+                                let suffix = 'dB';
+                                if (yAxisID === 'y2') {
+                                    suffix = graphData.secondaryMode === 'power' ? 'W' : 'mm';
+                                }
+                                return `${context.dataset.label}: ${context.parsed.y.toFixed(1)} ${suffix}`;
+                            },
+                            title: (items) => {
+                                return `${items[0].parsed.x.toFixed(1)} Hz`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    },
+
     // Helper: Check if input is array of designs (new format) or legacy format
     _isMultiDesignFormat(data) {
         return Array.isArray(data) && data.length > 0 && data[0].hasOwnProperty('name');

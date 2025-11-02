@@ -43,7 +43,7 @@ export class MaxPowerCalculator {
         return {
             maxPower: result.maxPower,
             limitingFactor: result.limitingFactor,
-            excursion: result.excursion
+            excursion: Engineering.displacementToMm(result.excursion)  // Convert m to mm
         };
     }
 

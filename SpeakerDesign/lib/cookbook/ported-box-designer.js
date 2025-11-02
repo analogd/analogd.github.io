@@ -97,12 +97,17 @@ export function designPortedBox(driver, alignment, options = {}) {
     const alpha = Small1972.calculateAlpha(vasSI, vbSI);
     const f3 = Small1973.calculatePortedF3(driver.fs, fb, alpha, driver.qts, ql);
 
-    // Build response curve
+    // Build response curve with log spacing for better resolution at low frequencies
     const frequencies = [];
     const response = [];
-    const step = (responseRange[1] - responseRange[0]) / (responsePoints - 1);
+
+    // Logarithmic frequency spacing
+    const logStart = Math.log10(responseRange[0]);
+    const logEnd = Math.log10(responseRange[1]);
+    const logStep = (logEnd - logStart) / (responsePoints - 1);
+
     for (let i = 0; i < responsePoints; i++) {
-        const freq = responseRange[0] + i * step;
+        const freq = Math.pow(10, logStart + i * logStep);
         frequencies.push(freq);
         response.push(Small1973.calculatePortedResponseDb(
             freq, driver.fs, fb, alpha, driver.qts, ql
@@ -141,11 +146,12 @@ export function designPortedBox(driver, alignment, options = {}) {
     if (driver.xmax && driver.pe) {
         try {
             const params = _buildEngineeringParams(driver, vbSI, vasSI, 'ported', fb, ql);
-            const curve = Engineering.generateMaxPowerCurve(params);
+            // Use same frequency grid as response for smooth curves
+            const curve = Engineering.generateMaxPowerCurve(params, frequencies);
 
-            const at20Hz = curve.find(p => p.frequency === 20);
-            const at30Hz = curve.find(p => p.frequency === 30);
-            const at50Hz = curve.find(p => p.frequency === 50);
+            const at20Hz = curve.find(p => Math.abs(p.frequency - 20) < 1);
+            const at30Hz = curve.find(p => Math.abs(p.frequency - 30) < 1);
+            const at50Hz = curve.find(p => Math.abs(p.frequency - 50) < 1);
             const atFb = curve.find(p => Math.abs(p.frequency - fb) < 2);
 
             powerLimits = {

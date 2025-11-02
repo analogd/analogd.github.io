@@ -126,8 +126,9 @@ export function calculateSealedDisplacementFromPower(params) {
     // 5. Force: F = Bl × I
     const force = bl * current;
 
-    // 6. Displacement: X = F / |Zmech|
-    const displacement = force / zmech_mag;
+    // 6. Displacement: X = F / (ω × |Zmech|)
+    // Note: Zmech relates force to VELOCITY, so divide by ω to get displacement
+    const displacement = force / (omega * zmech_mag);
 
     return Math.abs(displacement);
 }

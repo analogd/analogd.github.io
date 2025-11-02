@@ -12,11 +12,78 @@
  */
 
 import * as Displacement from './displacement.js';
+import * as Small1972 from '../foundation/small-1972.js';
+import * as Small1973 from '../foundation/small-1973.js';
+
+/**
+ * Calculate power required to achieve target displacement
+ *
+ * ANALYTICAL SOLUTION - no binary search needed
+ *
+ * From displacement formula: X = (Bl × I) / (ω × |Zmech|)
+ * Where I = Vin / Ztotal, Vin = sqrt(P × Re), Ztotal ≈ Re + Bl²/|Zmech|
+ *
+ * Solving for P:
+ * X × ω × |Zmech| = Bl × sqrt(P × Re) / (Re + Bl²/|Zmech|)
+ *
+ * Let Z_refl = Bl²/|Zmech|
+ * X × ω × |Zmech| × (Re + Z_refl) = Bl × sqrt(P × Re)
+ *
+ * Square both sides and solve for P:
+ * P = [X × ω × |Zmech| × (Re + Z_refl)]² / (Bl² × Re)
+ */
+function calculatePowerForDisplacement(params) {
+    const { xmax, frequency, re, bl, mms, cms, rms, alpha, boxType, fb, ql, fs, qts } = params;
+
+    const omega = 2 * Math.PI * frequency;
+
+    // Calculate sealed box power first
+    const zmech_real = rms || 0.1;
+    const zmech_imag = omega * mms - 1 / (omega * cms * (1 + alpha));
+    const zmech_mag = Math.sqrt(zmech_real * zmech_real + zmech_imag * zmech_imag);
+    const z_reflected = (bl * bl) / zmech_mag;
+    const ztotal = re + z_reflected;
+
+    // Target force for Xmax
+    const force = xmax * omega * zmech_mag;
+    const current = force / bl;
+    const voltage = current * ztotal;
+    const power_sealed = (voltage * voltage) / re;
+
+    if (boxType === 'sealed') {
+        return power_sealed;
+    }
+
+    // For ported: The displacement relationship is X_ported = X_sealed × correction
+    // where correction = (h_sealed / h_ported)^0.8
+    //
+    // To find power for target Xmax:
+    // 1. Calculate what sealed displacement would give Xmax after correction
+    // 2. Find power for that sealed displacement
+    // 3. That's the ported power
+    //
+    // X_sealed_target = Xmax / correction
+    // Since P ∝ X², we have: P_ported = P_sealed / correction²
+
+    const h_ported = Small1973.calculatePortedResponseMagnitude(
+        frequency, fs, fb, alpha, qts, ql || Infinity
+    );
+    const fc_sealed = Small1972.calculateFc(fs, alpha);
+    const qtc_sealed = Small1972.calculateQtc(qts, alpha);
+    const h_sealed = Small1972.calculateResponseMagnitude(frequency, fc_sealed, qtc_sealed);
+
+    const h_ported_safe = Math.max(h_ported, 0.001);
+    const correction = Math.pow(h_sealed / h_ported_safe, 0.8);
+    const power_factor = correction * correction;  // P ∝ X²
+
+    return power_sealed / power_factor;
+}
 
 /**
  * Find excursion-limited power at given frequency
  *
- * Uses binary search to find power where displacement equals Xmax.
+ * DEPRECATED - use calculatePowerForDisplacement() for analytical solution
+ * Kept for backward compatibility
  *
  * @param {Object} params - Driver and box parameters
  * @param {string} params.boxType - 'sealed' or 'ported'
@@ -27,29 +94,48 @@ import * as Displacement from './displacement.js';
  * @returns {number} Maximum power before exceeding Xmax (W)
  */
 export function findExcursionLimitedPower(params) {
-    const { xmax, frequency, thermalLimit = 1000, boxType } = params;
+    const { boxType } = params;
 
-    // Binary search bounds
-    let lowPower = 0.1;  // Start at 0.1W
-    let highPower = thermalLimit;
-
-    // Check if thermal limit already exceeds excursion
-    const displacementAtThermal = Displacement.calculateDisplacementFromPower({
-        ...params,
-        power: thermalLimit
-    });
-
-    if (displacementAtThermal <= xmax) {
-        // Thermal limited - excursion is fine even at max power
-        return thermalLimit;
+    if (boxType === 'sealed') {
+        // Use analytical solution for sealed - perfect, no search needed
+        return calculatePowerForDisplacement(params);
     }
 
-    // Binary search for power where displacement = Xmax
-    const tolerance = 0.1;  // 0.1mm tolerance
-    const maxIterations = 30;
+    // TODO: DOING STUPID SHIT HERE - binary search for ported instead of analytical solution
+    //
+    // The RIGHT way: Derive closed-form inverse of Small 1973 coupled resonator equations
+    // The WRONG way (current): Binary search with tight tolerance to fake smoothness
+    //
+    // Why stupid: We have analytical displacement→power for sealed, should derive same for ported
+    // Problem: Ported displacement involves coupled cone+port system, no simple inverse exists
+    //
+    // To fix properly:
+    // 1. Study Small 1973 Part I Section 2 equivalent circuit (Figure 2)
+    // 2. Derive analytical relationship between electrical power and cone displacement
+    // 3. Invert it algebraically for P(X, f)
+    //
+    // For now: Using binary search with 0.01W tolerance, 100 iterations
+    // This works but is slow and philosophically wrong
+    return findExcursionLimitedPowerBinarySearch(params);
+}
+
+function findExcursionLimitedPowerBinarySearch(params) {
+    const { xmax, pe = 1000 } = params;
+
+    let lowPower = 0.1;
+    let highPower = pe;
+
+    // Tighter convergence for smooth curves
+    const toleranceMeters = 0.00005;  // 0.05mm
+    const maxIterations = 100;
 
     for (let i = 0; i < maxIterations; i++) {
         const testPower = (lowPower + highPower) / 2;
+
+        // Converge when power range is tight
+        if (highPower - lowPower < 0.01) {
+            return testPower;
+        }
 
         const displacement = Displacement.calculateDisplacementFromPower({
             ...params,
@@ -58,7 +144,7 @@ export function findExcursionLimitedPower(params) {
 
         const error = Math.abs(displacement - xmax);
 
-        if (error < tolerance / 1000) {  // Convert mm to m
+        if (error < toleranceMeters) {
             return testPower;
         }
 
@@ -69,8 +155,7 @@ export function findExcursionLimitedPower(params) {
         }
     }
 
-    // Return conservative estimate if didn't converge
-    return lowPower;
+    return (lowPower + highPower) / 2;
 }
 
 /**

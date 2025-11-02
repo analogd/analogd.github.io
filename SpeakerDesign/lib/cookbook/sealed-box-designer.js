@@ -106,12 +106,17 @@ export function designSealedBox(driver, alignment, options = {}) {
     const qtc = Small1972.calculateQtc(driver.qts, alpha);
     const f3 = Small1972.calculateF3(fc, qtc);
 
-    // Build response curve
+    // Build response curve with log spacing for better resolution at low frequencies
     const frequencies = [];
     const response = [];
-    const step = (responseRange[1] - responseRange[0]) / (responsePoints - 1);
+
+    // Logarithmic frequency spacing
+    const logStart = Math.log10(responseRange[0]);
+    const logEnd = Math.log10(responseRange[1]);
+    const logStep = (logEnd - logStart) / (responsePoints - 1);
+
     for (let i = 0; i < responsePoints; i++) {
-        const freq = responseRange[0] + i * step;
+        const freq = Math.pow(10, logStart + i * logStep);
         frequencies.push(freq);
         response.push(Small1972.calculateResponseDb(freq, fc, qtc));
     }
@@ -133,12 +138,13 @@ export function designSealedBox(driver, alignment, options = {}) {
     if (driver.xmax && driver.pe) {
         try {
             const params = _buildEngineeringParams(driver, vbSI, vasSI, 'sealed');
-            const curve = Engineering.generateMaxPowerCurve(params);
+            // Use same frequency grid as response for smooth curves
+            const curve = Engineering.generateMaxPowerCurve(params, frequencies);
 
             // Extract key points
-            const at20Hz = curve.find(p => p.frequency === 20);
-            const at30Hz = curve.find(p => p.frequency === 30);
-            const at50Hz = curve.find(p => p.frequency === 50);
+            const at20Hz = curve.find(p => Math.abs(p.frequency - 20) < 1);
+            const at30Hz = curve.find(p => Math.abs(p.frequency - 30) < 1);
+            const at50Hz = curve.find(p => Math.abs(p.frequency - 50) < 1);
 
             powerLimits = {
                 thermal: driver.pe,
