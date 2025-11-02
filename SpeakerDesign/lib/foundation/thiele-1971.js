@@ -48,7 +48,7 @@ export const BESSEL_QTC = 0.577;
  *
  * @constant {number}
  */
-export const CHEBYCHEV_QTC = 1.0;
+export const CHEBYSHEV_QTC = 1.0;
 
 /**
  * Calculate required box volume for target Qtc (sealed enclosure)
@@ -117,8 +117,8 @@ export function calculateBesselVolume(qts, vas) {
  * @param {number} vas - Driver equivalent volume (m³)
  * @returns {number} Required box volume for Chebyshev (m³)
  */
-export function calculateChebychevVolume(qts, vas) {
-    return calculateVolumeForQtc(qts, vas, CHEBYCHEV_QTC);
+export function calculateChebyshevVolume(qts, vas) {
+    return calculateVolumeForQtc(qts, vas, CHEBYSHEV_QTC);
 }
 
 /**

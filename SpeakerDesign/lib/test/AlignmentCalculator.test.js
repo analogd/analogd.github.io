@@ -44,12 +44,12 @@ function createAlignmentCalculatorTests() {
         TestFramework.assertTrue(bessel.vb > butterworth.vb);
     });
 
-    suite.test('Calculates Chebychev alignment correctly', () => {
+    suite.test('Calculates Chebyshev alignment correctly', () => {
         const driver = createTestDriver();
         const alignments = AlignmentCalculator.calculateSealedAlignments(driver);
 
-        const cheby = alignments.find(a => a.name.includes('Chebychev'));
-        TestFramework.assertExists(cheby, 'Chebychev alignment should exist');
+        const cheby = alignments.find(a => a.name.includes('Chebyshev'));
+        TestFramework.assertExists(cheby, 'Chebyshev alignment should exist');
 
         // Should target Qtc = 1.0
         TestFramework.assertAlmostEqual(cheby.qtc, 1.0, 2);
@@ -145,7 +145,7 @@ function createAlignmentCalculatorTests() {
 
         const alignments = AlignmentCalculator.calculateSealedAlignments(driver);
 
-        // Should have Butterworth, Bessel, and Chebychev
+        // Should have Butterworth, Bessel, and Chebyshev
         TestFramework.assertTrue(alignments.length >= 3);
     });
 

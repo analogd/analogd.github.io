@@ -404,7 +404,7 @@ export function runFoundationTests(TestFramework) {
                 // Physics: lower Q needs bigger box
                 const vbButterworth = Thiele1971.calculateButterworthVolume(0.5, 0.1);
                 const vbBessel = Thiele1971.calculateBesselVolume(0.5, 0.1);
-                const vbChebyshev = Thiele1971.calculateChebychevVolume(0.5, 0.1);
+                const vbChebyshev = Thiele1971.calculateChebyshevVolume(0.5, 0.1);
 
                 // Bessel (0.577) < Butterworth (0.707) < Chebyshev (1.0)
                 // So: Vb_Bessel > Vb_Butterworth > Vb_Chebyshev
@@ -954,7 +954,7 @@ export function runFoundationTests(TestFramework) {
             bessel.f3 = Small1972.calculateF3(bessel.fc, bessel.qtc);
 
             const chebyshev = {
-                vb: Thiele1971.calculateChebychevVolume(driver.qts, driver.vas),
+                vb: Thiele1971.calculateChebyshevVolume(driver.qts, driver.vas),
             };
             chebyshev.alpha = Small1972.calculateAlpha(driver.vas, chebyshev.vb);
             chebyshev.qtc = Small1972.calculateQtc(driver.qts, chebyshev.alpha);

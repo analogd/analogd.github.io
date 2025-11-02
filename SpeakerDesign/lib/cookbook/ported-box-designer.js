@@ -49,6 +49,26 @@ export function designPortedBox(driver, alignment, options = {}) {
         responsePoints = 100
     } = options;
 
+    // Validate required driver parameters
+    if (!driver.fs || !driver.qts || !driver.vas) {
+        throw new Error('Driver missing required T/S parameters: fs, qts, vas');
+    }
+
+    // Validate Qts range for ported designs
+    if (driver.qts < 0.2 || driver.qts > 1.5) {
+        console.warn(`Warning: Qts=${driver.qts} outside typical range (0.2-1.5) for loudspeaker drivers`);
+    }
+
+    // Warn about edge cases for ported designs (unless custom alignment)
+    if (typeof alignment === 'string') {
+        if (driver.qts < 0.3) {
+            console.warn(`Warning: Qts=${driver.qts} is low for ported design. Typical range: 0.3-0.5. Consider sealed box.`);
+        }
+        if (driver.qts > 0.55) {
+            console.warn(`Warning: Qts=${driver.qts} is high for ported design. Typical range: 0.3-0.5. Consider sealed box (Butterworth).`);
+        }
+    }
+
     // Convert driver Vas to SI
     const vasSI = Units.volumeToM3(driver.vas, vasUnit);
     const portDiameterSI = Units.lengthToM(portDiameter, portDiameterUnit);

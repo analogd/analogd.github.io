@@ -9,7 +9,7 @@ export class AlignmentCalculator {
     static SEALED_ALIGNMENTS = [
         { name: 'Butterworth (Q=0.707)', qtc: Thiele1971.BUTTERWORTH_QTC },
         { name: 'Bessel (Q=0.577)', qtc: Thiele1971.BESSEL_QTC },
-        { name: 'Chebychev (Q=1.0)', qtc: Thiele1971.CHEBYCHEV_QTC }
+        { name: 'Chebyshev (Q=1.0)', qtc: Thiele1971.CHEBYSHEV_QTC }
     ];
 
     // Standard ported alignments
@@ -39,8 +39,8 @@ export class AlignmentCalculator {
                 vbSI = Thiele1971.calculateButterworthVolume(driver.qts, driver.vasSI);
             } else if (qtc === Thiele1971.BESSEL_QTC) {
                 vbSI = Thiele1971.calculateBesselVolume(driver.qts, driver.vasSI);
-            } else if (qtc === Thiele1971.CHEBYCHEV_QTC) {
-                vbSI = Thiele1971.calculateChebychevVolume(driver.qts, driver.vasSI);
+            } else if (qtc === Thiele1971.CHEBYSHEV_QTC) {
+                vbSI = Thiele1971.calculateChebyshevVolume(driver.qts, driver.vasSI);
             }
 
             // Convert to liters

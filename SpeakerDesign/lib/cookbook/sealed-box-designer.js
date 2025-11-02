@@ -52,6 +52,16 @@ export function designSealedBox(driver, alignment, options = {}) {
         volume = null
     } = options;
 
+    // Validate required driver parameters
+    if (!driver.fs || !driver.qts || !driver.vas) {
+        throw new Error('Driver missing required T/S parameters: fs, qts, vas');
+    }
+
+    // Validate Qts range
+    if (driver.qts < 0.2 || driver.qts > 1.5) {
+        console.warn(`Warning: Qts=${driver.qts} outside typical range (0.2-1.5) for loudspeaker drivers`);
+    }
+
     // Convert driver Vas to SI
     const vasSI = Units.volumeToM3(driver.vas, vasUnit);
 

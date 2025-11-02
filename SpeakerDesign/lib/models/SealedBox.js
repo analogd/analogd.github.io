@@ -25,7 +25,7 @@ export class SealedBox {
 
         if (Math.abs(qtc - 0.707) < 0.05) return 'Butterworth';
         if (Math.abs(qtc - 0.577) < 0.05) return 'Bessel';
-        if (Math.abs(qtc - 1.0) < 0.1) return 'Chebychev';
+        if (Math.abs(qtc - 1.0) < 0.1) return 'Chebyshev';
 
         if (qtc < 0.5) return 'Underdamped';
         if (qtc < 0.7) return 'Quasi-Butterworth';

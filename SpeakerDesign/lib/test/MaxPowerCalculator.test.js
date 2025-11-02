@@ -242,5 +242,34 @@ function createMaxPowerCalculatorTests() {
         }
     });
 
+    suite.test('Mms estimator accuracy - Dayton UM18-22 V2', () => {
+        // Real driver: Dayton Audio UM18-22 V2 (18" subwoofer)
+        // Published Mms: 240 grams (from datasheet)
+        const um18Driver = {
+            fs: 22.0,
+            qts: 0.530,
+            vas: 248.2,  // liters
+            sd: 1140     // cm²
+        };
+
+        const estimated = MaxPowerCalculator._estimateMms(um18Driver);
+        const published = 240;  // grams (from datasheet)
+
+        const error = Math.abs(estimated - published) / published;
+
+        // Should be within 15% of published value
+        if (error > 0.15) {
+            throw new Error(
+                `Mms estimator error too high: ${(error * 100).toFixed(1)}% ` +
+                `(estimated: ${estimated.toFixed(1)}g, published: ${published}g). ` +
+                `Should be within 15%.`
+            );
+        }
+
+        // Log the accuracy for informational purposes
+        console.log(`Mms estimation accuracy: ${(error * 100).toFixed(1)}% error ` +
+                    `(estimated: ${estimated.toFixed(1)}g, published: ${published}g)`);
+    });
+
     return suite;
 }

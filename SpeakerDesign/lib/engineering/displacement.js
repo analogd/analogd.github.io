@@ -93,6 +93,16 @@ export function calculateSealedDisplacementFromPower(params) {
         throw new Error('Missing required mechanical parameters for displacement calculation');
     }
 
+    // Guard against unrealistic frequency
+    if (frequency < 0.1) {
+        throw new Error('Frequency too low for displacement calculation (f < 0.1 Hz)');
+    }
+
+    // Guard against division by zero in impedance calculation
+    if (cms <= 0 || mms <= 0) {
+        throw new Error('Invalid mechanical parameters: Cms and Mms must be positive');
+    }
+
     const omega = 2 * Math.PI * frequency;
 
     // 1. Input voltage from power: Vin = sqrt(P × Re)
@@ -182,6 +192,16 @@ export function calculatePortedDisplacementFromPower(params) {
 
     // Validate inputs
     if (power <= 0 || frequency <= 0) return 0;
+
+    // Guard against unrealistic frequency
+    if (frequency < 0.1) {
+        throw new Error('Frequency too low for displacement calculation (f < 0.1 Hz)');
+    }
+
+    // Guard against invalid tuning
+    if (fb <= 0 || fs <= 0) {
+        throw new Error('Invalid resonance frequencies: Fb and Fs must be positive');
+    }
 
     // 1. Calculate sealed displacement as baseline
     const x_sealed = calculateSealedDisplacementFromPower({

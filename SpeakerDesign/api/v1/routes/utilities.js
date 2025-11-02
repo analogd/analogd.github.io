@@ -62,7 +62,7 @@ router.get('/alignments', (req, res) => {
             citation: 'Thiele 1971, Table II'
         },
         chebyshev: {
-            qtc: Thiele1971.CHEBYCHEV_QTC,
+            qtc: Thiele1971.CHEBYSHEV_QTC,
             name: 'Chebyshev',
             description: 'Peaked response at Fc, steeper rolloff',
             characteristics: 'Extended low frequency response',
