@@ -362,16 +362,26 @@ function _getPortVelocityStatus(velocity) {
 function _buildEngineeringParams(driver, vbSI, vasSI, boxType, fb = null, ql = Infinity) {
     const alpha = Small1972.calculateAlpha(vasSI, vbSI);
 
+    // Calculate Rms from Qms if not directly provided
+    // Qms = (ωs × Mms) / Rms  →  Rms = (ωs × Mms) / Qms
+    let rms = driver.rms;
+    if (!rms && driver.qms && driver.mms && driver.fs) {
+        const omega_s = 2 * Math.PI * driver.fs;
+        const mms_kg = driver.mms / 1000;  // convert to kg
+        rms = (omega_s * mms_kg) / driver.qms;
+    }
+
     const params = {
         boxType,
         fs: driver.fs,
         qts: driver.qts,
+        qms: driver.qms,  // Pass through for calculations
         alpha,
         re: driver.re || 6.4,
         bl: driver.bl || 10,
         mms: driver.mms ? driver.mms / 1000 : 0.050,
         cms: driver.cms || _estimateCms(driver, vasSI),
-        rms: driver.rms || 1.0,
+        rms: rms || 1.0,  // Fallback only if Qms also unavailable
         xmax: driver.xmax / 1000,
         pe: driver.pe
     };

@@ -1,6 +1,37 @@
 # Known Issues & Limitations
 
-## Displacement Calculation Accuracy (Moderate Priority)
+## Ported Box Displacement Correction (HIGH PRIORITY - BROKEN)
+
+**Status**: ⚠️ CRITICAL - Ported displacement calculation is **backwards**
+
+**Issue**:
+Our ported box shows LESS power handling than sealed at low frequencies, which is physically wrong.
+
+**Current Behavior**:
+```
+Frequency    Sealed 200L    Ported 600L    Expected    Actual
+10 Hz        531W           58W            Ported      Sealed (9x wrong!)
+15 Hz        1200W          619W           Ported      Sealed (2x wrong)
+20 Hz        1200W          1200W          Similar     OK
+```
+
+**Root Cause**:
+The transfer-function-based correction in `lib/engineering/displacement.js:234`:
+```javascript
+const correction = Math.pow(h_sealed / h_ported_safe, 0.8);
+```
+
+This applies correction in the wrong direction. When h_ported > h_sealed (port radiating efficiently), we're INCREASING displacement instead of decreasing it.
+
+**Fix Needed**:
+Full network solver (Small 1973 Figure 2) to properly calculate cone displacement accounting for port loading. Transfer function magnitude alone is insufficient.
+
+**Impact**:
+⚠️ **DO NOT USE PORTED POWER LIMITS** until fixed. Sealed calculations are OK (within 33%).
+
+---
+
+## Displacement Calculation Accuracy (Moderate Priority - Sealed Only)
 
 **Status**: Paper-close approximation, ~30% deviation from WinISD at very low frequencies
 

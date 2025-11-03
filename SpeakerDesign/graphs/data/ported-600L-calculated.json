@@ -1,0 +1,1002 @@
+[
+  {
+    "frequency": 10,
+    "power": 18.244995880126954,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 10.198529059688214,
+    "power": 19.105555725097652,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 10.400999498130497,
+    "power": 19.984425354003903,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 10.607489563148642,
+    "power": 20.89991455078125,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 10.818079056011088,
+    "power": 21.83371353149414,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 11.032849362273353,
+    "power": 22.80413208007812,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 11.251883483230737,
+    "power": 23.774550628662105,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 11.475266067995452,
+    "power": 24.781588745117187,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 11.703083446210574,
+    "power": 25.806936645507808,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 11.935423661413465,
+    "power": 26.832284545898435,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 12.172376505061552,
+    "power": 27.930871582031248,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 12.414033551233631,
+    "power": 28.992839050292964,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 12.660488192020066,
+    "power": 30.128045654296876,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 12.911835673615617,
+    "power": 31.226632690429685,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 13.168173133128782,
+    "power": 32.39845886230469,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 13.42959963612195,
+    "power": 33.57028503417969,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 13.696216214896797,
+    "power": 34.81535034179687,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 13.968125907539791,
+    "power": 36.060415649414054,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 14.245433797742837,
+    "power": 37.378720092773435,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 14.528247055414496,
+    "power": 38.80688323974609,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 14.81667497809745,
+    "power": 40.308285522460935,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 15.110829033208207,
+    "power": 41.99278564453124,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 15.410822901115427,
+    "power": 43.89700317382812,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 15.716772519073432,
+    "power": 46.020938110351565,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 16.028796126027956,
+    "power": 48.51106872558593,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 16.347014308311397,
+    "power": 51.51387329101562,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 16.671550046245283,
+    "power": 55.175830078125,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 17.002528761667893,
+    "power": 59.71665649414063,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 17.340078366405468,
+    "power": 65.42930908203125,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 17.68432931170572,
+    "power": 72.6799835205078,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 18.03541463865268,
+    "power": 81.98135375976562,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 18.393470029582566,
+    "power": 94.13905029296875,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 18.758633860520195,
+    "power": 109.95870361328126,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 19.13104725465666,
+    "power": 130.90509643554685,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 19.51085413688843,
+    "power": 158.73596801757813,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 19.898201289439477,
+    "power": 195.794970703125,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 20.293238408587392,
+    "power": 245.59758300781246,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 20.696118162515965,
+    "power": 312.39167480468745,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 21.106996250316,
+    "power": 403.79411621093743,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 21.526031462157803,
+    "power": 527.42177734375,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 21.953385740657904,
+    "power": 697.9224853515624,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 22.38922424346446,
+    "power": 931.7018066406251,
+    "limiting": "excursion"
+  },
+  {
+    "frequency": 22.83371540708482,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 23.287031011980506,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 23.749346248954385,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 24.22083978685586,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 24.7016938416302,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 25.192094246738698,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 25.69223052497689,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 26.20229596171854,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 26.72248767961377,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 27.253006714770134,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 27.794058094446125,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 28.345850916287123,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 28.908598429134404,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 29.48251811543843,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 30.067831775308306,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 30.664765612229843,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 31.273550320485395,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 31.894421174309198,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 32.52761811881275,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 33.17338586271527,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 33.831973972915186,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 34.503636970939084,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 35.188634431305495,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 35.887231081841435,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 36.5996969059906,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 37.3263072471526,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 38.067342915093654,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 38.82309029446989,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 39.59384145550507,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 40.37989426686564,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 41.181552510776676,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 41.99912600042321,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 42.832930699682294,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 43.683288845232134,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 44.55052907108539,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 45.4349865355949,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 46.33700305098074,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 47.25692721542885,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 48.1951145478122,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 49.15192762508649,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 50.12773622241368,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 51.12291745606712,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 52.13785592917427,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 53.1729438803521,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 54.22858133529418,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 55.305176261366334,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 56.40314472527237,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 57.522911053849,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 58.66490799805398,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 59.82957690020887,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 61.01736786456313,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 62.228739931243254,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 63.464161253656506,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 64.72410927941543,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 66.00907093485543,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 67.31954281321435,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 68.65603136654917,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 70.01905310146171,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 71.40913477871098,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 72.82681361678759,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 74.27263749953059,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 75.74716518786511,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 77.25096653574461,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 78.78462271037928,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 80.34872641683756,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 81.94388212710555,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 83.57070631369523,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 85.22982768788896,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 86.92188744271553,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 88.6475395007482,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 90.40745076682398,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 92.2023013857786,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 94.03278500529939,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 95.89960904399601,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 97.8034949647932,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 99.74517855375134,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 101.72541020442227,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 103.74495520785052,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 105.80459404833152,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 107.90512270504232,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 110.04735295965972,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 112.23211271008562,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 114.46024629040106,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 116.73261479717247,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 119.05009642223546,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 121.4135867920853,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 123.82399931400585,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 126.28226552907016,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 128.7893354721486,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 131.34617803906423,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 133.95378136103778,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 136.61315318656648,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 139.32532127088365,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 142.0913337731504,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 144.91225966153314,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 147.78918912632292,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 150.72323400125626,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 153.71552819319996,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 156.76722812036718,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 159.87951315923354,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 163.05358610032485,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 166.29067361305383,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 169.59202671978568,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 172.95892127931535,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 176.39265847994247,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 179.8945653423353,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 183.46599523237862,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 187.10832838420316,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 190.82297243359824,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 194.61136296201357,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 198.4749640513625,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 202.41526884983932,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 206.433800148969,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 210.5321109721131,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 214.7117851746598,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 218.97443805613003,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 223.321716984434,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 227.75530203252185,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 232.27690662767392,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 236.88827821368199,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 241.59119892617412,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 246.38748628135042,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 251.2789938783885,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 256.26761211579606,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 261.35526892198527,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 266.54393050034963,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 271.83560208913326,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 277.23232873638665,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 282.73619609030743,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 288.3493312052707,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 294.07390336386163,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 299.9121249152285,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 305.86625213007983,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 311.93858607265435,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 318.131473490002,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 324.4473077189215,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 330.88852961090237,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 337.4576284754294,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 344.15714304201373,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 350.98966244132487,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 357.9578272058007,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 365.0643302901213,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 372.3119181119421,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 379.7033916132898,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 387.24160734303086,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 394.92947856082753,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 402.76997636301155,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 410.76613083081065,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 418.92103220137113,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 427.2378320620268,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 435.7197445682776,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 444.3700476859503,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 453.19208445801996,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 462.18926429657944,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 471.36506430045847,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 480.7230305990027,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 490.26677972253134,
+    "power": 1200,
+    "limiting": "thermal"
+  },
+  {
+    "frequency": 499.99999999999994,
+    "power": 1200,
+    "limiting": "thermal"
+  }
+]
