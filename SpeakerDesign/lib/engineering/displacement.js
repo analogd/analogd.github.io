@@ -111,7 +111,10 @@ export function calculateSealedDisplacementFromPower(params) {
     // 2. Mechanical impedance with box loading
     // Zmech = Rms + jω×Mms + 1/(jω×Cms×(1+α))
     // Where (1+α) is the stiffness increase from Small 1972
-    const real_zmech = rms || 0.1;  // Fallback for Rms if not provided
+    if (!rms || rms <= 0) {
+        throw new Error('Rms (mechanical resistance) required for displacement calculation. Calculate from Qms if not measured.');
+    }
+    const real_zmech = rms;
     const imag_zmech = omega * mms - 1 / (omega * cms * (1 + alpha));
     const zmech_mag = Math.sqrt(real_zmech * real_zmech + imag_zmech * imag_zmech);
 

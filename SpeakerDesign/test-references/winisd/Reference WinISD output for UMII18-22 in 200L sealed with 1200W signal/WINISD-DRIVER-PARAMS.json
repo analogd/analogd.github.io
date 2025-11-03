@@ -1,0 +1,70 @@
+{
+  "source": "WinISD Pro 0.7.0.950 - Extracted from screenshot 01-driver-ts-parameters.png",
+  "driver": "Dayton Audio UMII18-22 (Ultimax 18 v2)",
+  "date": "2025-11-03",
+  "note": "THESE ARE THE EXACT VALUES USED IN WINISD - Use these for validation testing!",
+
+  "thiele_small": {
+    "fs": 22.00,
+    "fsUnit": "Hz",
+    "qts": 0.530,
+    "qes": 0.670,
+    "qms": 2.530,
+    "vas": 248.20,
+    "vasUnit": "liters"
+  },
+
+  "electromechanical": {
+    "mms": 420.0,
+    "mmsUnit": "grams",
+    "cms": 0.1240,
+    "cmsUnit": "mm/N",
+    "rms": 23.05978,
+    "rmsUnit": "N·s/m",
+    "re": 4.200,
+    "reUnit": "ohms",
+    "bl": 38.40000,
+    "blUnit": "T·m/A",
+    "le": 1.15,
+    "leUnit": "mH",
+    "sd": 1184.0,
+    "sdUnit": "cm²",
+    "dd": 388.3,
+    "ddUnit": "mm"
+  },
+
+  "largeSignal": {
+    "xmax": 28.0,
+    "xmaxUnit": "mm",
+    "xmaxType": "peak",
+    "pe": 1200.0,
+    "peUnit": "W",
+    "vd": 3.32,
+    "vdUnit": "liters"
+  },
+
+  "miscellaneous": {
+    "efficiency": 0.3836,
+    "efficiencyUnit": "%",
+    "znom": 4.000,
+    "znomUnit": "ohms",
+    "uspl": 93.50,
+    "usplUnit": "dB",
+    "spl": 90.70,
+    "splUnit": "dB",
+    "voiceCoils": 2,
+    "connection": "Series"
+  },
+
+  "notes": [
+    "These parameters produce DIFFERENT results than manufacturer spec sheet values",
+    "WinISD may have auto-calculated some values or used measured data",
+    "Key differences from datasheet:",
+    "  - Fs: 22Hz vs 26.5Hz (datasheet)",
+    "  - Qts: 0.530 vs 0.43 (datasheet)",
+    "  - Xmax: 28mm vs 18mm (datasheet)",
+    "  - Mms: 420g vs 165g (datasheet)",
+    "  - BL: 38.4 vs 23.5 (datasheet)",
+    "These differences will significantly affect simulation results"
+  ]
+}

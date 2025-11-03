@@ -1,0 +1,40 @@
+{
+  "driver": "Dayton Audio UMII18-22",
+  "manufacturer": "Dayton Audio",
+  "model": "UMII18-22",
+  "source": "Dayton Audio UMII18-22 spec sheet (PDF) - exact values used in WinISD",
+  "date": "2025-11-03",
+
+  "thiele_small": {
+    "fs": 22,
+    "qts": 0.53,
+    "qes": 0.67,
+    "qms": 2.53,
+    "vas": 248.2,
+    "vasUnit": "liters",
+    "sd": 1184,
+    "sdUnit": "cm²",
+    "xmax": 28,
+    "xmaxUnit": "mm",
+    "pe": 1200,
+    "peUnit": "W",
+    "re": 4.2,
+    "reUnit": "ohms",
+    "bl": 19.2,
+    "blUnit": "N/A",
+    "blNote": "PDF spec: 19.2. WinISD shows 38.4 (possibly dual VC convention). Using PDF value.",
+    "mms": 420,
+    "mmsUnit": "grams",
+    "cms": 0.124,
+    "cmsUnit": "mm/N",
+    "le": 1.15,
+    "leUnit": "mH"
+  },
+
+  "notes": [
+    "UMII18-22 is Ultimax II series with 28mm Xmax (Klippel verified at 70% BL)",
+    "All specs measured with dual 2-ohm voice coils wired in series",
+    "Pe is RMS power handling per AES 426B standard",
+    "Xmax is peak one-way linear excursion"
+  ]
+}

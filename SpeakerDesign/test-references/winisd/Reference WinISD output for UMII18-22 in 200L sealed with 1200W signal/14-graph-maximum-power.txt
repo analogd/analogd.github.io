@@ -1,0 +1,35 @@
+Graph Type: Maximum Power
+
+Description:
+Shows maximum safe power handling vs frequency, limited by either excursion (Xmax) or thermal (Pe) constraints. Critical graph for validating our displacement and power limit calculations.
+
+Key Observations:
+- Below ~40-45Hz: Excursion limited, power rises rapidly with frequency
+- At ~45Hz: Transition point where excursion limit meets thermal limit
+- Above ~50Hz: Thermal limited, flat at 1200W (Pe)
+- At 10Hz: ~400W maximum safe power
+- At 20Hz: ~450-500W maximum safe power
+- At 30Hz: ~700W maximum safe power
+- At 40Hz: ~1100W maximum safe power
+- Smooth transition from excursion to thermal limiting
+
+Extractable Data for expected-values.json:
+{
+  "maxPower": {
+    "10Hz": 400,
+    "20Hz": 475,
+    "30Hz": 700,
+    "40Hz": 1100,
+    "45Hz": 1200,
+    "50Hz": 1200,
+    "thermalTransitionHz": 45
+  }
+}
+
+Critical for Validation:
+This is THE KEY GRAPH for testing our displacement formula. Our current code shows:
+- 10Hz: 129W (WinISD: 400W) - 3x OFF
+- 20Hz: 623W (WinISD: 475W) - WRONG DIRECTION
+- Transition: 27Hz (WinISD: 45Hz) - 18Hz OFF
+
+The huge discrepancy at 10Hz (3x) suggests our displacement calculation is fundamentally wrong.

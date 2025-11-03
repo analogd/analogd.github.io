@@ -1,0 +1,41 @@
+Graph Type: Driver T/S Parameters
+
+Description:
+Thiele-Small and electro-mechanical parameters for the Dayton Audio UMII18-22 driver as entered in WinISD. These are the REFERENCE values that must be used for validation testing.
+
+Key Observations:
+CRITICAL: These parameters differ from what we had in our driver-params.json!
+
+Thiele/Small parameters:
+- Qes: 0.670 (not 0.46!)
+- Qms: 2.530 (not 4.35!)
+- Qts: 0.530 (not 0.43!)
+- Fs: 22.00 Hz (not 26.5!)
+- Vas: 248.20 L (not 330!)
+
+Electro-Mechanical parameters:
+- Mms: 420.0 g (not 165!)
+- Cms: 0.1240 mm/N
+- Rms: 23.05978 N·s/m
+- Re: 4.200 ohm (not 6.4!)
+- BL: 38.40000 T·m/A (not 23.5!)
+- Dd: 388.3 mm
+- Le: 1.15 mH
+- Sd: 1184.0 cm²
+
+Large-Signal parameters:
+- Xmax: 28.0 mm peak (not 18!)
+- Pe: 1200.0 W
+- Vd: 3.32 L
+
+Extractable Data:
+These EXACT values must be copied to driver-params.json for validation testing.
+
+Impact on Testing:
+We were testing with WRONG driver parameters! This explains some of the discrepancy:
+- Higher Fs (26.5 vs 22) pushes resonance higher
+- Lower Qts (0.43 vs 0.53) changes damping
+- Smaller Xmax (18 vs 28) makes it excursion-limited earlier
+- Different BL/Re changes force factor and current draw
+
+MUST update our test parameters to match these values exactly.
