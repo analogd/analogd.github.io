@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body style="background: #1a1a1a; padding: 20px;">
+    <canvas id="chart" style="width: 800px; height: 400px; background: #2a2a2a;"></canvas>
+    
+    <script>
+        const fs = 22, qts = 0.53, vas = 248.2 / 1000, vb = 0.1;
+        const alpha = vas / vb;
+        const fc = fs * Math.sqrt(1 + alpha);
+        const qtc = qts * Math.sqrt(1 + alpha);
+        
+        const data = [];
+        for (let i = 0; i <= 200; i++) {
+            const f = 10 * Math.pow(200 / 10, i / 200);
+            const ratio = f / fc;
+            const ratio2 = ratio * ratio;
+            const numerator = ratio2;
+            const denominator = Math.sqrt(Math.pow(1 - ratio2, 2) + ratio2 / (qtc * qtc));
+            const magnitude = numerator / denominator;
+            const db = 20 * Math.log10(magnitude);
+            data.push({ x: f, y: db });
+        }
+        
+        new Chart(document.getElementById('chart'), {
+            type: 'line',
+            data: {
+                datasets: [{
+                    label: 'Transfer Function',
+                    data: data,
+                    borderColor: '#4a9eff',
+                    borderWidth: 2,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: false,
+                scales: {
+                    x: { type: 'logarithmic', min: 10, max: 200 },
+                    y: { min: -30, max: 10 }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

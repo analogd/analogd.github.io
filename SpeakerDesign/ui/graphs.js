@@ -1,4 +1,5 @@
 // graphs.js - Chart.js wrapper functions
+import { calculateSealedTransferFunction } from '../lib/cookbook/sealed-box-designer.js';
 
 const GraphManager = {
     charts: {},
@@ -28,7 +29,7 @@ const GraphManager = {
                 title: { display: true, text: 'Frequency (Hz)' },
                 grid: { color: '#30363d' },
                 min: 10,
-                max: 200
+                max: 500
             },
             y: {
                 type: 'linear',
@@ -566,6 +567,141 @@ const GraphManager = {
                 }
             }
         });
+    },
+
+    // Transfer Function (η₀ normalized, sealed box)
+    createTransferFunction(canvasId, driver, vb) {
+        if (this.charts[canvasId]) {
+            this.charts[canvasId].destroy();
+        }
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+
+        // Use cookbook layer for all calculations
+        const vasM3 = driver.vas / 1000;  // L to m³
+        const result = calculateSealedTransferFunction(
+            { fs: driver.fs, qts: driver.qts, vas: vasM3 },
+            vb,
+            { freqMin: 10, freqMax: 500, points: 200 }
+        );
+
+        // Add reference lines (0dB and -3dB)
+        const refLine0dB = result.data.map(p => ({ x: p.x, y: 0 }));
+        const refLineMinus3dB = result.data.map(p => ({ x: p.x, y: -3 }));
+
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: [
+                    {
+                        label: `Transfer Function (Qtc=${result.systemParams.qtc}, Fc=${result.systemParams.fc}Hz)`,
+                        data: result.data,
+                        borderColor: '#4a9eff',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        order: 1
+                    },
+                    {
+                        label: '0 dB reference',
+                        data: refLine0dB,
+                        borderColor: '#666',
+                        backgroundColor: 'transparent',
+                        borderWidth: 1,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        order: 2,
+                        hidden: false,
+                        showLine: true
+                    },
+                    {
+                        label: '-3 dB (F3)',
+                        data: refLineMinus3dB,
+                        borderColor: '#888',
+                        backgroundColor: 'transparent',
+                        borderWidth: 1,
+                        borderDash: [3, 3],
+                        pointRadius: 0,
+                        order: 2,
+                        hidden: false,
+                        showLine: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                scales: {
+                    x: {
+                        type: 'logarithmic',
+                        title: { display: true, text: 'Frequency (Hz)' },
+                        grid: { color: '#30363d' },
+                        min: 10,
+                        max: 500
+                    },
+                    y: {
+                        title: { display: true, text: 'Magnitude (dB relative to η₀)' },
+                        grid: { color: '#30363d' },
+                        min: -30,
+                        max: 10
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            filter: (item) => !item.text.includes('reference') && !item.text.includes('dB (F3)')
+                        }
+                    },
+                    tooltip: {
+                        filter: (item) => item.datasetIndex === 0,
+                        callbacks: {
+                            label: (context) => {
+                                return `${context.parsed.y.toFixed(2)} dB @ ${context.parsed.x.toFixed(1)} Hz`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    },
+
+    // Update existing transfer function chart (for real-time slider updates)
+    // Efficient: doesn't destroy/recreate, just updates data
+    updateTransferFunction(canvasId, driver, vb) {
+        const chart = this.charts[canvasId];
+        if (!chart) {
+            // Chart doesn't exist yet, create it
+            this.createTransferFunction(canvasId, driver, vb);
+            return;
+        }
+
+        // Call cookbook for calculations
+        const vasM3 = driver.vas / 1000;
+        const result = calculateSealedTransferFunction(
+            { fs: driver.fs, qts: driver.qts, vas: vasM3 },
+            vb,
+            { freqMin: 10, freqMax: 500, points: 200 }
+        );
+
+        // Update reference lines
+        const refLine0dB = result.data.map(p => ({ x: p.x, y: 0 }));
+        const refLineMinus3dB = result.data.map(p => ({ x: p.x, y: -3 }));
+
+        // Update datasets without destroying chart
+        chart.data.datasets[0].data = result.data;
+        chart.data.datasets[0].label = `Transfer Function (Qtc=${result.systemParams.qtc}, Fc=${result.systemParams.fc}Hz)`;
+        chart.data.datasets[1].data = refLine0dB;
+        chart.data.datasets[2].data = refLineMinus3dB;
+
+        // Update without animation for smooth real-time feel
+        chart.update('none');
     },
 
     // Destroy all charts

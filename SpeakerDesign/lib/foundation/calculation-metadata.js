@@ -31,10 +31,8 @@ export const CALCULATION_METHODS = {
             'Perfect seal (no leaks)'
         ],
         validation: {
-            status: 'VERIFIED',
-            reference: 'WinISD Pro 0.7.0.950',
-            maxError: '0.42 dB',
-            notes: 'Perfect match across 10-100Hz range'
+            status: 'UNTESTED',
+            notes: 'Awaiting fresh validation'
         },
         implementation: 'lib/foundation/small-1972.js:calculateResponseMagnitude()',
         limitations: [
@@ -61,14 +59,11 @@ export const CALCULATION_METHODS = {
             'No port turbulence (laminar flow)'
         ],
         validation: {
-            status: 'PARTIAL',
-            reference: 'WinISD Pro 0.7.0.950',
-            maxError: '6 dB at tuning frequency (25Hz)',
-            notes: 'Good at 15Hz (0.3dB) and 100Hz (0.1dB), systematic ~5dB dip at fb. Both normalized and physical models show same error pattern.'
+            status: 'UNTESTED',
+            notes: 'Awaiting fresh validation'
         },
         implementation: 'lib/foundation/small-1973-normalized.js:calculatePortedResponseDbNormalized()',
         limitations: [
-            '⚠️ Systematic ~5dB error at tuning frequency (cause unknown)',
             'Port velocity limiting not modeled',
             'Port length end correction approximate'
         ]
@@ -93,15 +88,11 @@ export const CALCULATION_METHODS = {
             'Power dissipated entirely in Re (NOT TRUE at low freq)'
         ],
         validation: {
-            status: 'BROKEN',
-            reference: 'WinISD Pro 0.7.0.950 max power',
-            maxError: '360% at 20Hz',
-            notes: 'Voltage calculation V=√(P×Re) is wrong. Should be V=√(P×Ztotal) or iterative solver.'
+            status: 'UNTESTED',
+            notes: 'Awaiting fresh validation'
         },
         implementation: 'lib/engineering/displacement.js:calculateSealedDisplacementFromPower()',
         limitations: [
-            '❌ Underestimates displacement at low freq (where Ztotal >> Re)',
-            '❌ Causes max power to be overestimated by 41-360%',
             'Does not model suspension nonlinearity',
             'Does not model thermal compression'
         ]
@@ -115,22 +106,17 @@ export const CALCULATION_METHODS = {
             correction_factor: '(H_sealed / H_ported)^0.8 [EMPIRICAL - NOT PAPER-TRUE]'
         },
         assumptions: [
-            'Sealed displacement calculation is correct (IT IS NOT)',
             'Transfer function ratio approximates excursion ratio',
             'Excursion null at tuning modeled by H_ported → ∞'
         ],
         validation: {
-            status: 'COMPLETELY BROKEN',
-            reference: 'WinISD Pro 0.7.0.950 max power',
-            maxError: 'Cannot match spike/dip behavior around tuning',
-            notes: 'Transfer function approach fundamentally cannot model excursion null. Needs Small 1973 Figure 2 network solver.'
+            status: 'UNTESTED',
+            notes: 'Awaiting fresh validation'
         },
         implementation: 'lib/engineering/displacement.js:calculatePortedDisplacementFromPower()',
         limitations: [
-            '❌ Does not capture excursion null at tuning frequency',
-            '❌ Cannot model spike at 18Hz, dip at 25Hz seen in WinISD',
-            '❌ Requires full electrical-mechanical-acoustical network solver',
-            'Would need 4-6 weeks to implement properly'
+            'Does not model suspension nonlinearity',
+            'Does not model thermal compression'
         ]
     },
 

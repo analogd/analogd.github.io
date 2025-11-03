@@ -37,7 +37,7 @@ import * as Units from './units.js';
  * @param {Object} options - Configuration
  * @param {string} [options.unit='liters'] - Output volume unit
  * @param {string} [options.vasUnit='liters'] - Input Vas unit
- * @param {Array<number>} [options.responseRange=[10,200]] - Frequency range for response
+ * @param {Array<number>} [options.responseRange=[10,500]] - Frequency range for response
  * @param {number} [options.responsePoints=100] - Number of response points
  * @param {number} [options.volume] - Fixed volume (overrides alignment calculation)
  * @returns {Object} Complete design with all calculated parameters
@@ -47,7 +47,7 @@ export function designSealedBox(driver, alignment, options = {}) {
     const {
         unit = 'liters',
         vasUnit = 'liters',
-        responseRange = [10, 200],
+        responseRange = [10, 500],
         responsePoints = 100,
         volume = null
     } = options;
@@ -205,6 +205,52 @@ export function designSealedBox(driver, alignment, options = {}) {
             'Small, Richard H. "Direct-Radiator Loudspeaker System Analysis" JAES Vol. 20, No. 5 (June 1972)',
             'Thiele, A.N. "Loudspeakers in Vented Boxes" JAES Vol. 19 (1971)'
         ]
+    };
+}
+
+/**
+ * Calculate sealed box transfer function data for graphing
+ *
+ * Pure calculation function - no design workflow, just math
+ * UI layer should use this for graphing
+ *
+ * @param {Object} driverTS - T/S parameters in SI units
+ * @param {number} driverTS.fs - Free-air resonance (Hz)
+ * @param {number} driverTS.qts - Total Q
+ * @param {number} driverTS.vas - Equivalent volume (m³)
+ * @param {number} vbM3 - Box volume (m³)
+ * @param {Object} options - Configuration
+ * @param {number} [options.freqMin=10] - Minimum frequency (Hz)
+ * @param {number} [options.freqMax=500] - Maximum frequency (Hz)
+ * @param {number} [options.points=200] - Number of data points
+ * @returns {Object} Transfer function data and system parameters
+ */
+export function calculateSealedTransferFunction(driverTS, vbM3, options = {}) {
+    const { freqMin = 10, freqMax = 500, points = 200 } = options;
+
+    // Use foundation functions for ALL calculations
+    const alpha = Small1972.calculateAlpha(driverTS.vas, vbM3);
+    const fc = Small1972.calculateFc(driverTS.fs, alpha);
+    const qtc = Small1972.calculateQtc(driverTS.qts, alpha);
+    const f3 = Small1972.calculateF3(fc, qtc);
+
+    // Generate frequency response data using foundation
+    const data = [];
+    for (let i = 0; i <= points; i++) {
+        const f = freqMin * Math.pow(freqMax / freqMin, i / points);
+        const db = Small1972.calculateResponseDb(f, fc, qtc);
+        data.push({ x: f, y: db });
+    }
+
+    return {
+        data,
+        systemParams: {
+            alpha: Number(alpha.toFixed(3)),
+            fc: Number(fc.toFixed(1)),
+            qtc: Number(qtc.toFixed(3)),
+            f3: Number(f3.toFixed(1))
+        },
+        citations: ['Small 1972, Eq. 10 (transfer function magnitude)']
     };
 }
 

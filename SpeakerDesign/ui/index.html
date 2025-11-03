@@ -40,9 +40,9 @@
             </div>
 
             <div class="control-group">
-                <label>Box Volume (Liters)</label>
-                <input type="number" id="boxVolume" value="330" min="10" max="2000" step="10">
-                <button id="findAlignments" class="btn-secondary">Alignments</button>
+                <label>Box Volume: <span id="boxVolumeDisplay">330</span>L</label>
+                <input type="range" id="boxVolumeSlider" min="10" max="1000" value="330" step="1" style="width: 100%;">
+                <button id="findAlignments" class="btn-secondary" style="margin-top: 8px;">Show Alignments</button>
             </div>
 
             <div class="control-group ported-only" style="display: none;">
@@ -134,44 +134,11 @@
 
         <!-- Graphs -->
         <section class="graphs-container">
-            <!-- Frequency Response -->
+            <!-- Transfer Function -->
             <div class="graph-panel">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                    <div>
-                        <h3 style="margin: 0;">📊 Frequency Response</h3>
-                        <p class="graph-subtitle" style="margin: 4px 0 0 0;">1W reference + amp power + limit lines</p>
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <label for="secondaryAxisToggle" style="color: #8b949e; font-size: 12px;">Show:</label>
-                        <select id="secondaryAxisToggle" style="background: #0d1117; border: 1px solid #30363d; color: #c9d1d9; padding: 3px 6px; border-radius: 3px; font-size: 12px;">
-                            <option value="none">SPL only</option>
-                            <option value="power">+ Max Power</option>
-                            <option value="excursion">+ Excursion</option>
-                        </select>
-                    </div>
-                </div>
-                <canvas id="frequencyResponseChart"></canvas>
-            </div>
-
-            <!-- Maximum Power -->
-            <div class="graph-panel">
-                <h3>⚡ Maximum Safe Power</h3>
-                <p class="graph-subtitle">Excursion vs Thermal limiting</p>
-                <canvas id="maxPowerChart"></canvas>
-            </div>
-
-            <!-- Cone Excursion -->
-            <div class="graph-panel">
-                <h3>📍 Cone Excursion</h3>
-                <p class="graph-subtitle">Displacement at specified power</p>
-                <canvas id="excursionChart"></canvas>
-            </div>
-
-            <!-- SPL Ceiling (Bonus) -->
-            <div class="graph-panel">
-                <h3>🎯 SPL Ceiling</h3>
-                <p class="graph-subtitle">Maximum achievable SPL at each frequency</p>
-                <canvas id="splCeilingChart"></canvas>
+                <h3>📈 Bass Response</h3>
+                <p class="graph-subtitle">Normalized transfer function - Small 1972</p>
+                <canvas id="transferFunctionChart"></canvas>
             </div>
         </section>
 

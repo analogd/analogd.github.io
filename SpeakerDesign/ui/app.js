@@ -1,5 +1,6 @@
 // app.js - Main application logic (Cookbook-powered)
 import * as Cookbook from '../lib/cookbook/index.js';
+import { calculateSealedTransferFunction } from '../lib/cookbook/sealed-box-designer.js';
 import * as Engineering from '../lib/engineering/index.js';
 import { GraphManager } from './graphs.js';
 
@@ -60,6 +61,17 @@ const App = {
             });
         });
 
+        // Volume slider - REAL-TIME updates
+        document.getElementById('boxVolumeSlider').addEventListener('input', (e) => {
+            const volume = parseInt(e.target.value);
+            document.getElementById('boxVolumeDisplay').textContent = volume;
+
+            // Update graph in real-time if we have a design
+            if (this.currentDesign) {
+                this.updateGraphWithVolume(volume);
+            }
+        });
+
         // Calculate button
         document.getElementById('calculate').addEventListener('click', () => this.calculate());
 
@@ -94,7 +106,9 @@ const App = {
         }
 
         // Set box volume
-        document.getElementById('boxVolume').value = boxVolumeFromUrl || 200;
+        const defaultVolume = boxVolumeFromUrl || 330;
+        document.getElementById('boxVolumeSlider').value = defaultVolume;
+        document.getElementById('boxVolumeDisplay').textContent = defaultVolume;
 
         // Set amp power
         document.getElementById('ampPower').value = ampPowerFromUrl || 500;
@@ -116,7 +130,7 @@ const App = {
             // Get inputs
             const driverId = document.getElementById('driverSelect').value;
             const enclosureType = document.getElementById('enclosureType').value;
-            const boxVolume = parseFloat(document.getElementById('boxVolume').value);
+            const boxVolume = parseFloat(document.getElementById('boxVolumeSlider').value);
             const ampPower = parseFloat(document.getElementById('ampPower').value);
             const portTuning = parseFloat(document.getElementById('portTuning').value);
 
@@ -192,212 +206,53 @@ const App = {
 
     renderGraphs() {
         const design = this.currentDesign;
-        const ampPower = design.ampPower;
+        if (!design) return;
 
-        window.debug('Rendering unified FR graph...');
+        window.debug('Rendering graphs...');
 
-        // Get secondary axis mode from UI
-        const secondaryMode = document.getElementById('secondaryAxisToggle')?.value || 'none';
-
-        // Build unified FR graph data
-        const graphData = this.buildUnifiedFRData(design, ampPower, secondaryMode);
-
-        GraphManager.createUnifiedFrequencyResponse('frequencyResponseChart', graphData);
+        // Transfer Function (η₀ normalized) - only for sealed box
+        const enclosureType = document.getElementById('enclosureType').value;
+        if (enclosureType === 'sealed' && design.box && design.driverTS) {
+            const vbM3 = design.box.volume.m3;
+            GraphManager.createTransferFunction('transferFunctionChart', design.driverTS, vbM3);
+        }
 
         window.debug('Graphs rendered');
     },
 
-    buildUnifiedFRData(design, ampPower, secondaryMode) {
-        // Frequency range for all curves
-        const frequencies = design.response.frequencies;
+    // Real-time graph update when slider moves
+    // UI layer: NO physics, just calls cookbook and updates display
+    updateGraphWithVolume(volumeLiters) {
+        const design = this.currentDesign;
+        if (!design || !design.driverTS) return;
 
-        // Base response curves at 1W and amp power
-        const response1W = design.response.magnitudesDb;
-        const spl0 = design.efficiency?.spl0 || 88;  // Reference sensitivity
+        const enclosureType = document.getElementById('enclosureType').value;
+        if (enclosureType !== 'sealed') return;
 
-        // Convert to SPL: SPL(f) = SPL0 + 10*log10(power) + response(f)
-        const spl1W = frequencies.map((_, i) => spl0 + response1W[i]);
-        const splAmpPower = frequencies.map((_, i) =>
-            spl0 + 10 * Math.log10(ampPower) + response1W[i]
+        // Call cookbook layer for calculations (maintains layer separation)
+        const vbM3 = volumeLiters / 1000;
+        GraphManager.updateTransferFunction('transferFunctionChart', design.driverTS, vbM3);
+
+        // Also update box parameters display
+        this.updateBoxParamsForVolume(volumeLiters);
+    },
+
+    updateBoxParamsForVolume(volumeLiters) {
+        const design = this.currentDesign;
+        if (!design) return;
+
+        // Use cookbook layer to calculate system parameters
+        const vbM3 = volumeLiters / 1000;
+        const result = calculateSealedTransferFunction(
+            { fs: design.driverTS.fs, qts: design.driverTS.qts, vas: design.driverTS.vas / 1000 },
+            vbM3
         );
 
-        // Calculate limit lines
-        const thermalLimitSPL = this.calculateThermalLimitLine(design, frequencies);
-        const excursionLimitSPL = this.calculateExcursionLimitLine(design, frequencies, ampPower);
-
-        // Build datasets
-        const datasets = [
-            {
-                label: '1W Reference',
-                data: frequencies.map((f, i) => ({ x: f, y: spl1W[i] })),
-                borderColor: '#58a6ff',
-                borderWidth: 1.5,
-                borderDash: [3, 3],
-                pointRadius: 0,
-                yAxisID: 'y'
-            },
-            {
-                label: `${ampPower}W`,
-                data: frequencies.map((f, i) => ({ x: f, y: splAmpPower[i] })),
-                borderColor: '#39d353',
-                borderWidth: 2.5,
-                pointRadius: 0,
-                yAxisID: 'y'
-            },
-            {
-                label: 'Thermal Limit (Pe)',
-                data: thermalLimitSPL.map((spl, i) => ({ x: frequencies[i], y: spl })),
-                borderColor: '#f0883e',
-                borderWidth: 2,
-                borderDash: [5, 5],
-                pointRadius: 0,
-                yAxisID: 'y'
-            },
-            {
-                label: 'Excursion Limit (Xmax)',
-                data: excursionLimitSPL.map((spl, i) => ({ x: frequencies[i], y: spl })),
-                borderColor: '#ff7b72',
-                borderWidth: 2,
-                borderDash: [5, 5],
-                pointRadius: 0,
-                yAxisID: 'y'
-            }
-        ];
-
-        // Add secondary axis data if requested
-        let secondaryDatasets = [];
-        if (secondaryMode === 'power' && design.powerLimits?.fullCurve) {
-            const curve = design.powerLimits.fullCurve;
-            // Just use the curve data directly - don't interpolate
-            const powerData = curve.map(p => ({ x: p.frequency, y: p.maxPower }));
-
-            secondaryDatasets.push({
-                label: 'Max Power',
-                data: powerData,
-                borderColor: '#d29922',
-                borderWidth: 2,
-                pointRadius: 0,
-                yAxisID: 'y2',
-                fill: false,
-                cubicInterpolationMode: 'monotone'  // Monotone cubic spline - smooth but no overshoot
-            });
-        } else if (secondaryMode === 'excursion') {
-            const excursionData = this.calculateExcursionCurve(design, frequencies, ampPower);
-            secondaryDatasets.push({
-                label: `Excursion @ ${ampPower}W`,
-                data: excursionData.map((exc, i) => ({ x: frequencies[i], y: exc })),
-                borderColor: '#bc8cff',
-                borderWidth: 2,
-                pointRadius: 0,
-                yAxisID: 'y2',
-                fill: false
-            });
-        }
-
-        return {
-            datasets: [...datasets, ...secondaryDatasets],
-            secondaryMode: secondaryMode
-        };
-    },
-
-    calculateThermalLimitLine(design, frequencies) {
-        // Thermal limit SPL = SPL0 + 10*log10(Pe) + response(f)
-        const spl0 = design.efficiency?.spl0 || 88;
-        const pe = design.powerLimits?.thermal || 500;
-        const response = design.response.magnitudesDb;
-
-        return frequencies.map((_, i) =>
-            spl0 + 10 * Math.log10(pe) + response[i]
-        );
-    },
-
-    calculateExcursionLimitLine(design, frequencies, ampPower) {
-        // For each frequency, calculate max SPL limited by Xmax
-
-        const spl0 = design.efficiency?.spl0 || 88;
-        const response = design.response.magnitudesDb;
-
-        // Use powerLimits.fullCurve from cookbook if available
-        if (design.powerLimits?.fullCurve) {
-            const curve = design.powerLimits.fullCurve;
-
-            return frequencies.map((freq, i) => {
-                // Interpolate power limit at this frequency
-                const power = this.interpolatePowerLimit(curve, freq);
-                return spl0 + 10 * Math.log10(power) + response[i];
-            });
-        }
-
-        // Fallback: assume flat power limit (shouldn't happen with cookbook)
-        return frequencies.map((_, i) => spl0 + 10 * Math.log10(ampPower) + response[i]);
-    },
-
-    interpolatePowerLimit(curve, targetFreq) {
-        // Find bracketing points
-        let lower = curve[0];
-        let upper = curve[curve.length - 1];
-
-        for (let i = 0; i < curve.length - 1; i++) {
-            if (curve[i].frequency <= targetFreq && curve[i + 1].frequency >= targetFreq) {
-                lower = curve[i];
-                upper = curve[i + 1];
-                break;
-            }
-        }
-
-        // Linear interpolation
-        if (lower.frequency === upper.frequency) {
-            return lower.maxPower;
-        }
-
-        const ratio = (targetFreq - lower.frequency) / (upper.frequency - lower.frequency);
-        return lower.maxPower + ratio * (upper.maxPower - lower.maxPower);
-    },
-
-    buildEngineeringParams(design, freq) {
-        // Build engineering layer params from cookbook design
-        const driver = design.driverTS || design.driver;
-        const params = {
-            boxType: design.alignment.type,
-            re: driver.re || 6.4,
-            bl: driver.bl || 10,
-            mms: driver.mms ? driver.mms / 1000 : 0.050,  // g to kg
-            cms: driver.cms || 0.001,
-            rms: driver.rms || 1.0,
-            alpha: design.box.alpha,
-            fs: driver.fs,
-            qts: driver.qts,
-            xmax: driver.xmax ? driver.xmax / 1000 : 0.010,  // mm to m
-            pe: driver.pe || 1000
-        };
-
-        // Add ported-specific params
-        if (design.tuning) {
-            params.fb = design.tuning.fb;
-            params.ql = design.box.ql || Infinity;
-        }
-
-        return params;
-    },
-
-    calculateExcursionCurve(design, frequencies, power) {
-        // Calculate excursion at each frequency for given power
-        const params = this.buildEngineeringParams(design);
-
-        // Calculate excursion at each frequency
-        return frequencies.map(freq => {
-            try {
-                const displacement_m = Engineering.calculateDisplacementFromPower({
-                    ...params,
-                    frequency: freq,
-                    power: power
-                });
-                return Engineering.displacementToMm(displacement_m);
-            } catch (error) {
-                console.warn(`Failed to calculate excursion at ${freq}Hz:`, error.message);
-                return 0;
-            }
-        });
+        // Update UI with new parameters
+        document.getElementById('qtcValue').textContent = result.systemParams.qtc;
+        document.getElementById('fcValue').textContent = result.systemParams.fc + ' Hz';
+        document.getElementById('f3Value').textContent = result.systemParams.f3 + ' Hz';
+        document.getElementById('alphaValue').textContent = result.systemParams.alpha;
     },
 
     checkWarnings() {
@@ -485,7 +340,8 @@ const App = {
     },
 
     selectAlignment(alignmentName, volume, tuning) {
-        document.getElementById('boxVolume').value = volume.toFixed(0);
+        document.getElementById('boxVolumeSlider').value = volume.toFixed(0);
+        document.getElementById('boxVolumeDisplay').textContent = volume.toFixed(0);
         if (tuning) {
             document.getElementById('portTuning').value = tuning.toFixed(1);
         }
@@ -496,7 +352,7 @@ const App = {
     shareDesign() {
         const driverId = document.getElementById('driverSelect').value;
         const enclosureType = document.getElementById('enclosureType').value;
-        const boxVolume = document.getElementById('boxVolume').value;
+        const boxVolume = document.getElementById('boxVolumeSlider').value;
         const ampPower = document.getElementById('ampPower').value;
 
         const url = new URL(window.location.href);

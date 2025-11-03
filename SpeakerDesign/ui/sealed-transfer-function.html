@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sealed Box Transfer Function</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #4a9eff;
+        }
+
+        .card {
+            background: #2a2a2a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .params {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .param {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        input {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #4a9eff;
+        }
+
+        .calculated {
+            background: #252525;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .calculated h3 {
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .calc-values {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .calc-value {
+            font-size: 16px;
+        }
+
+        .calc-value span {
+            color: #4a9eff;
+            font-weight: bold;
+        }
+
+        canvas {
+            width: 100%;
+            height: 400px;
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sealed Box Transfer Function</h1>
+
+        <div class="card">
+            <h2 style="font-size: 16px; margin-bottom: 15px;">Driver Parameters</h2>
+            <div class="params">
+                <div class="param">
+                    <label>Fs (Hz)</label>
+                    <input type="number" id="fs" value="22" step="0.1">
+                </div>
+                <div class="param">
+                    <label>Qts</label>
+                    <input type="number" id="qts" value="0.53" step="0.01">
+                </div>
+                <div class="param">
+                    <label>Vas (L)</label>
+                    <input type="number" id="vas" value="248.2" step="0.1">
+                </div>
+                <div class="param">
+                    <label>Vb (L)</label>
+                    <input type="number" id="vb" value="100" step="1">
+                </div>
+            </div>
+
+            <div class="calculated">
+                <h3>Calculated System Parameters</h3>
+                <div class="calc-values">
+                    <div class="calc-value">α = <span id="alpha">-</span></div>
+                    <div class="calc-value">Fsc = <span id="fsc">-</span> Hz</div>
+                    <div class="calc-value">Qtc = <span id="qtc">-</span></div>
+                    <div class="calc-value">F3 = <span id="f3">-</span> Hz</div>
+                </div>
+            </div>
+
+            <canvas id="chart"></canvas>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as Small1972 from '../lib/foundation/small-1972.js';
+
+        const inputs = {
+            fs: document.getElementById('fs'),
+            qts: document.getElementById('qts'),
+            vas: document.getElementById('vas'),
+            vb: document.getElementById('vb')
+        };
+
+        const outputs = {
+            alpha: document.getElementById('alpha'),
+            fsc: document.getElementById('fsc'),
+            qtc: document.getElementById('qtc'),
+            f3: document.getElementById('f3')
+        };
+
+        const canvas = document.getElementById('chart');
+        const ctx = canvas.getContext('2d');
+
+        function draw() {
+            const fs = parseFloat(inputs.fs.value);
+            const qts = parseFloat(inputs.qts.value);
+            const vas = parseFloat(inputs.vas.value) / 1000; // L to m³
+            const vb = parseFloat(inputs.vb.value) / 1000; // L to m³
+
+            // Calculate system parameters
+            const alpha = vas / vb;
+            const fc = fs * Math.sqrt(1 + alpha);
+            const qtc = qts * Math.sqrt(1 + alpha);
+
+            // Calculate F3 (-3dB point)
+            const term = 1 - 1 / (2 * qtc * qtc);
+            const sqrt = Math.sqrt(term * term + 1);
+            const f3 = fc / Math.sqrt(term + sqrt);
+
+            // Update displays
+            outputs.alpha.textContent = alpha.toFixed(3);
+            outputs.fsc.textContent = fc.toFixed(2);
+            outputs.qtc.textContent = qtc.toFixed(3);
+            outputs.f3.textContent = f3.toFixed(2);
+
+            // Calculate response curve
+            const freqMin = 10;
+            const freqMax = 500;
+            const points = 200;
+            const data = [];
+
+            for (let i = 0; i <= points; i++) {
+                const f = freqMin * Math.pow(freqMax / freqMin, i / points);
+                const mag = Small1972.calculateResponseMagnitude(f, fc, qtc);
+                const db = 20 * Math.log10(mag);
+                data.push({ f, db });
+            }
+
+            // Draw chart
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = canvas.offsetWidth * dpr;
+            canvas.height = canvas.offsetHeight * dpr;
+            ctx.scale(dpr, dpr);
+
+            const w = canvas.offsetWidth;
+            const h = canvas.offsetHeight;
+            const padding = { left: 60, right: 20, top: 20, bottom: 40 };
+            const plotW = w - padding.left - padding.right;
+            const plotH = h - padding.top - padding.bottom;
+
+            // Clear
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, w, h);
+
+            // Grid and axes
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+
+            // dB grid lines
+            const dbMin = -30;
+            const dbMax = 10;
+            const dbStep = 5;
+
+            ctx.font = '11px sans-serif';
+            ctx.fillStyle = '#666';
+            ctx.textAlign = 'right';
+
+            for (let db = dbMin; db <= dbMax; db += dbStep) {
+                const y = padding.top + plotH * (1 - (db - dbMin) / (dbMax - dbMin));
+
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(padding.left + plotW, y);
+                ctx.stroke();
+
+                ctx.fillText(db + ' dB', padding.left - 5, y + 4);
+            }
+
+            // 0 dB line (thicker)
+            const y0 = padding.top + plotH * (1 - (0 - dbMin) / (dbMax - dbMin));
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, y0);
+            ctx.lineTo(padding.left + plotW, y0);
+            ctx.stroke();
+
+            // -3 dB reference line (dashed)
+            const yMinus3 = padding.top + plotH * (1 - (-3 - dbMin) / (dbMax - dbMin));
+            ctx.strokeStyle = '#888';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(padding.left, yMinus3);
+            ctx.lineTo(padding.left + plotW, yMinus3);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Frequency grid
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 1;
+            ctx.textAlign = 'center';
+
+            const freqs = [10, 20, 30, 50, 100, 200, 500];
+            for (const f of freqs) {
+                const x = padding.left + plotW * Math.log10(f / freqMin) / Math.log10(freqMax / freqMin);
+
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, padding.top + plotH);
+                ctx.stroke();
+
+                ctx.fillText(f + ' Hz', x, h - padding.bottom + 20);
+            }
+
+            // Draw response curve
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            data.forEach((point, i) => {
+                const x = padding.left + plotW * Math.log10(point.f / freqMin) / Math.log10(freqMax / freqMin);
+                const y = padding.top + plotH * (1 - (point.db - dbMin) / (dbMax - dbMin));
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+
+            ctx.stroke();
+
+            // Mark Fc
+            const xFc = padding.left + plotW * Math.log10(fc / freqMin) / Math.log10(freqMax / freqMin);
+            ctx.strokeStyle = '#ff6b6b';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(xFc, padding.top);
+            ctx.lineTo(xFc, padding.top + plotH);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Axes
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding.left, padding.top);
+            ctx.lineTo(padding.left, padding.top + plotH);
+            ctx.lineTo(padding.left + plotW, padding.top + plotH);
+            ctx.stroke();
+        }
+
+        // Attach listeners
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('input', draw);
+        });
+
+        // Initial draw
+        draw();
+        window.addEventListener('resize', draw);
+    </script>
+</body>
+</html>
