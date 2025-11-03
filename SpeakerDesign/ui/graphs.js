@@ -704,6 +704,119 @@ const GraphManager = {
         chart.update('none');
     },
 
+    // Comparison Transfer Function (overlays multiple designs)
+    createComparisonTransferFunction(canvasId, savedDesigns) {
+        if (this.charts[canvasId]) {
+            this.charts[canvasId].destroy();
+        }
+
+        const ctx = document.getElementById(canvasId).getContext('2d');
+        const colors = ['#58a6ff', '#39d353', '#f0883e', '#bc8cff'];
+        const datasets = [];
+
+        // Calculate transfer function for each design
+        savedDesigns.forEach((saved, idx) => {
+            const design = saved.design;
+            if (!design.driverTS) return;
+
+            const vbM3 = saved.boxVolume / 1000;
+            const vasM3 = design.driverTS.vas / 1000;
+            const result = calculateSealedTransferFunction(
+                { fs: design.driverTS.fs, qts: design.driverTS.qts, vas: vasM3 },
+                vbM3,
+                { freqMin: 10, freqMax: 500, points: 200 }
+            );
+
+            datasets.push({
+                label: `${saved.name} (Qtc=${result.systemParams.qtc}, F3=${result.systemParams.f3}Hz)`,
+                data: result.data,
+                borderColor: colors[idx % colors.length],
+                backgroundColor: 'transparent',
+                borderWidth: 2.5,
+                pointRadius: 0,
+                tension: 0.4,
+                order: idx + 1
+            });
+        });
+
+        // Add reference lines
+        const refLine0dB = datasets[0]?.data.map(p => ({ x: p.x, y: 0 })) || [];
+        const refLineMinus3dB = datasets[0]?.data.map(p => ({ x: p.x, y: -3 })) || [];
+
+        datasets.push(
+            {
+                label: '0 dB reference',
+                data: refLine0dB,
+                borderColor: '#666',
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                borderDash: [5, 5],
+                pointRadius: 0,
+                order: 100,
+                hidden: false
+            },
+            {
+                label: '-3 dB (F3)',
+                data: refLineMinus3dB,
+                borderColor: '#888',
+                backgroundColor: 'transparent',
+                borderWidth: 1,
+                borderDash: [3, 3],
+                pointRadius: 0,
+                order: 100,
+                hidden: false
+            }
+        );
+
+        this.charts[canvasId] = new Chart(ctx, {
+            type: 'line',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                scales: {
+                    x: {
+                        type: 'logarithmic',
+                        title: { display: true, text: 'Frequency (Hz)' },
+                        grid: { color: '#30363d' },
+                        min: 10,
+                        max: 500
+                    },
+                    y: {
+                        title: { display: true, text: 'Magnitude (dB relative to η₀)' },
+                        grid: { color: '#30363d' },
+                        min: -30,
+                        max: 10
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            filter: (item) => !item.text.includes('reference') && !item.text.includes('dB (F3)'),
+                            usePointStyle: true,
+                            boxWidth: 6,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        filter: (item) => item.datasetIndex < savedDesigns.length,
+                        callbacks: {
+                            label: (context) => {
+                                return `${context.parsed.y.toFixed(2)} dB @ ${context.parsed.x.toFixed(1)} Hz`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    },
+
     // Destroy all charts
     destroyAll() {
         Object.values(this.charts).forEach(chart => chart.destroy());

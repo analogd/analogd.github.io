@@ -23,26 +23,37 @@
 
         <!-- Controls Panel -->
         <section class="controls-panel">
-            <div class="control-group">
-                <label>Driver</label>
-                <select id="driverSelect">
-                    <option value="">Loading drivers...</option>
-                </select>
-                <button id="browseDrivers" class="btn-secondary">Browse All</button>
+            <!-- Row 1: Driver Selection -->
+            <div class="control-row" style="grid-column: 1 / -1; display: flex; gap: 10px; align-items: end;">
+                <div class="control-group" style="flex: 1;">
+                    <label>Driver</label>
+                    <select id="driverSelect">
+                        <option value="">Loading drivers...</option>
+                    </select>
+                </div>
+                <button id="findAlignments" class="btn-secondary">🎯 Show Alignments</button>
             </div>
 
+            <!-- Row 2: Quick Start Presets -->
+            <div class="control-row" style="grid-column: 1 / -1; margin-top: 0;">
+                <label style="font-size: 12px; color: var(--text-secondary); font-weight: 600; margin-bottom: 8px; display: block;">
+                    Quick Start (optimized starting points)
+                </label>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button id="presetDSP" class="btn-secondary" title="Optimized for DSP room correction (Dirac/ARC) - maximize headroom for EQ boost">🎚️ DSP Ready</button>
+                    <button id="presetRoomGain" class="btn-secondary" title="Optimized for boundary loading - natural rolloff complements room gain">🏠 Room Gain</button>
+                    <button id="presetMaxOutput" class="btn-secondary" title="Maximum raw output at 30Hz - no DSP assumed">🔊 Max Output</button>
+                    <button id="presetCompact" class="btn-secondary" title="Smallest practical enclosure - minimal space">📦 Compact</button>
+                </div>
+            </div>
+
+            <!-- Row 3: Enclosure Settings -->
             <div class="control-group">
                 <label>Enclosure Type</label>
                 <select id="enclosureType">
                     <option value="sealed">Sealed</option>
                     <option value="ported">Ported</option>
                 </select>
-            </div>
-
-            <div class="control-group">
-                <label>Box Volume: <span id="boxVolumeDisplay">330</span>L</label>
-                <input type="range" id="boxVolumeSlider" min="10" max="1000" value="330" step="1" style="width: 100%;">
-                <button id="findAlignments" class="btn-secondary" style="margin-top: 8px;">Show Alignments</button>
             </div>
 
             <div class="control-group ported-only" style="display: none;">
@@ -55,7 +66,14 @@
                 <input type="number" id="ampPower" value="500" min="1" max="5000" step="50">
             </div>
 
-            <div class="control-actions">
+            <!-- Row 4: Volume Slider (full width) -->
+            <div class="control-group" style="grid-column: 1 / -1;">
+                <label>Box Volume: <span id="boxVolumeDisplay">330</span>L <span style="color: #6e7681; font-size: 11px; font-weight: normal;">(drag to update live)</span></label>
+                <input type="range" id="boxVolumeSlider" min="10" max="1000" value="330" step="1" style="width: 100%;">
+            </div>
+
+            <!-- Row 5: Actions -->
+            <div class="control-actions" style="grid-column: 1 / -1;">
                 <button id="calculate" class="btn-primary">Calculate</button>
                 <button id="shareDesign" class="btn-secondary">Share Link</button>
             </div>
@@ -130,6 +148,14 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Comparison Graph -->
+            <div id="comparisonGraph" class="comparison-graph-container" style="display: none; margin-top: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h4>Transfer Function Overlay</h4>
+                </div>
+                <canvas id="comparisonChart" style="background: var(--bg-tertiary); border-radius: 6px; height: 400px;"></canvas>
+            </div>
         </section>
 
         <!-- Graphs -->
@@ -152,7 +178,13 @@
     <!-- Alignment Picker Modal -->
     <div id="alignmentModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <h2>Standard Alignments</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">Standard Alignments</h2>
+                <label style="font-size: 13px; color: var(--text-secondary); cursor: pointer; user-select: none;">
+                    <input type="checkbox" id="showAllAlignments" style="margin-right: 6px;">
+                    Include large enclosures (>500L)
+                </label>
+            </div>
             <div id="alignmentsList"></div>
             <button id="closeAlignments" class="btn-secondary">Close</button>
         </div>
