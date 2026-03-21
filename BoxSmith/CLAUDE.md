@@ -392,7 +392,6 @@ Based on Salvatti 2002 and Bezzola 2019 (Harman/Samsung). Models turbulent flow 
 
 - TypeScript migration for lib/ (priority when bandwidth allows)
 - CI pipeline
-- UI sync cleanup: app.js uses setupSyncedSlider to sync *New elements to hidden legacy elements. Refactor to use state subscriptions, rename IDs, delete hidden div.
 - Missing UI controls: QL (enclosure losses), rectangular port dimensions
 
 ## Future: Graph Dependency Validation

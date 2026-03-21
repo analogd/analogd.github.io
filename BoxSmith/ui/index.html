@@ -19,40 +19,40 @@
                 <div class="driver-select-group">
                     <label>Driver</label>
                     <div class="driver-select-wrapper">
-                        <select id="driverSelectNew">
+                        <select id="driverSelect">
                             <option value="">Select a driver...</option>
                         </select>
-                        <button id="importDriverBtnNew">Browse Library</button>
+                        <button id="importDriverBtn">Browse Library</button>
                     </div>
                 </div>
                 <div class="driver-specs">
                     <div class="driver-spec">
                         <span class="driver-spec-label">Fs</span>
-                        <span class="driver-spec-value" id="driverFsNew">--</span>
+                        <span class="driver-spec-value" id="driverFs">--</span>
                     </div>
                     <div class="driver-spec">
                         <span class="driver-spec-label">Qts</span>
-                        <span class="driver-spec-value" id="driverQtsNew">--</span>
+                        <span class="driver-spec-value" id="driverQts">--</span>
                     </div>
                     <div class="driver-spec">
                         <span class="driver-spec-label">Vas</span>
-                        <span class="driver-spec-value" id="driverVasNew">--</span>
+                        <span class="driver-spec-value" id="driverVas">--</span>
                     </div>
                     <div class="driver-spec">
                         <span class="driver-spec-label">Xmax</span>
-                        <span class="driver-spec-value" id="driverXmaxNew">--</span>
+                        <span class="driver-spec-value" id="driverXmax">--</span>
                     </div>
                     <div class="driver-spec">
                         <span class="driver-spec-label">Pe</span>
-                        <span class="driver-spec-value" id="driverPeNew">--</span>
+                        <span class="driver-spec-value" id="driverPe">--</span>
                     </div>
                     <div class="driver-spec">
                         <span class="driver-spec-label">Sd</span>
-                        <span class="driver-spec-value" id="driverSdNew">--</span>
+                        <span class="driver-spec-value" id="driverSd">--</span>
                     </div>
                     <div class="driver-spec driver-spec-derived">
                         <span class="driver-spec-label">EBP<span class="spec-info">i<span class="tooltip">Efficiency Bandwidth Product (Fs/Qes).<br><br><strong>&lt;50:</strong> Favors sealed (high Qt, good transient response)<br><strong>50-90:</strong> Either works well<br><strong>&gt;90:</strong> Favors ported (low Qt, needs vent loading)</span></span></span>
-                        <span class="driver-spec-value" id="driverEbpNew">--</span>
+                        <span class="driver-spec-value" id="driverEbp">--</span>
                     </div>
                     <button class="driver-info-btn" id="driverInfoBtn" title="View all driver parameters">ⓘ</button>
                 </div>
@@ -62,9 +62,9 @@
             <div class="enclosure-row">
                 <div class="box-type-group">
                     <div class="box-type-buttons">
-                        <button class="box-type-btn active" id="sealedBtnNew">Sealed</button>
-                        <button class="box-type-btn" id="portedBtnNew">Ported</button>
-                        <button class="box-type-btn" id="prBtnNew">PR</button>
+                        <button class="box-type-btn active" id="sealedBtn">Sealed</button>
+                        <button class="box-type-btn" id="portedBtn">Ported</button>
+                        <button class="box-type-btn" id="prBtn">PR</button>
                     </div>
                     <label class="isobaric-toggle" id="isobaricToggleLabel">
                         <input type="checkbox" id="isobaricToggle">
@@ -79,21 +79,21 @@
 
                 <div class="param-group">
                     <label>Volume</label>
-                    <input type="range" id="volumeSliderNew" min="20" max="500" step="5" value="140">
-                    <span class="param-value"><span id="volumeDisplayNew">140</span> L</span>
+                    <input type="range" id="volumeSlider" min="20" max="500" step="5" value="140">
+                    <span class="param-value"><span id="volumeDisplay">140</span> L</span>
                 </div>
 
                 <!-- Ported controls (inline) -->
                 <div class="param-group ported-only" id="tuningGroup">
                     <label>Tuning</label>
-                    <input type="range" id="tuningSliderNew" min="15" max="50" step="1" value="28">
-                    <span class="param-value"><span id="tuningDisplayNew">28</span> Hz</span>
+                    <input type="range" id="tuningSlider" min="15" max="50" step="1" value="28">
+                    <span class="param-value"><span id="tuningDisplay">28</span> Hz</span>
                 </div>
 
                 <div class="param-group ported-only" id="portGroup">
                     <label>Port ⌀</label>
-                    <input type="range" id="portDiameterSliderNew" min="5" max="20" step="0.5" value="10">
-                    <span class="param-value"><span id="portDiameterDisplayNew">10</span> cm</span>
+                    <input type="range" id="portDiameterSlider" min="5" max="20" step="0.5" value="10">
+                    <span class="param-value"><span id="portDiameterDisplay">10</span> cm</span>
                     <span class="port-calc" id="portCalcInline">→ <span id="portLengthInline">--</span>cm, <span id="portVelocityInline">--</span> m/s <span id="portStatusInline"></span></span>
                     <button class="port-options-btn" id="portOptionsBtn" title="Port options">⚙</button>
                 </div>
@@ -101,27 +101,27 @@
                 <!-- PR controls (inline) -->
                 <div class="param-group pr-only hidden" id="prTuningGroup">
                     <label>Tuning</label>
-                    <input type="range" id="prTuningSliderNew" min="15" max="50" step="1" value="28">
-                    <span class="param-value"><span id="prTuningDisplayNew">28</span> Hz</span>
+                    <input type="range" id="prTuningSlider" min="15" max="50" step="1" value="28">
+                    <span class="param-value"><span id="prTuningDisplay">28</span> Hz</span>
                 </div>
 
                 <div class="param-group pr-only hidden" id="prSdGroup">
                     <label>PR Sd</label>
-                    <input type="range" id="prSdSliderNew" min="100" max="1000" step="10" value="400">
-                    <span class="param-value"><span id="prSdDisplayNew">400</span> cm²</span>
+                    <input type="range" id="prSdSlider" min="100" max="1000" step="10" value="400">
+                    <span class="param-value"><span id="prSdDisplay">400</span> cm²</span>
                 </div>
 
                 <div class="param-group pr-only hidden" id="prXmaxGroup">
                     <label>PR Xmax</label>
-                    <input type="range" id="prXmaxSliderNew" min="10" max="40" step="1" value="20">
-                    <span class="param-value"><span id="prXmaxDisplayNew">20</span> mm</span>
+                    <input type="range" id="prXmaxSlider" min="10" max="40" step="1" value="20">
+                    <span class="param-value"><span id="prXmaxDisplay">20</span> mm</span>
                     <span class="pr-calc" id="prCalcInline">→ <span id="prMassInline">--</span>g</span>
                 </div>
 
                 <div class="param-group">
                     <label>Power</label>
-                    <input type="range" id="powerSliderNew" min="100" max="3000" step="50" value="500">
-                    <span class="param-value"><span id="powerDisplayNew">500</span> W</span>
+                    <input type="range" id="powerSlider" min="100" max="3000" step="50" value="500">
+                    <span class="param-value"><span id="powerDisplay">500</span> W</span>
                 </div>
             </div>
 
@@ -160,24 +160,24 @@
         <div class="results-bar">
             <div class="result-item">
                 <span class="result-label">F3</span>
-                <span class="result-value" id="f3ValueNew">--</span>
+                <span class="result-value" id="f3Value">--</span>
                 <span class="result-unit">Hz</span>
             </div>
             <div class="result-divider"></div>
             <div class="result-item">
                 <span class="result-label" id="qtcLabel">Qtc</span>
-                <span class="result-value" id="qtcValueNew">--</span>
+                <span class="result-value" id="qtcValue">--</span>
             </div>
             <div class="result-divider"></div>
             <div class="result-item">
                 <span class="result-label">Sensitivity</span>
-                <span class="result-value" id="sensitivityValueNew">--</span>
+                <span class="result-value" id="sensitivityValue">--</span>
                 <span class="result-unit">dB</span>
             </div>
             <div class="result-divider"></div>
             <div class="result-item">
                 <span class="result-label">Max SPL @30Hz</span>
-                <span class="result-value" id="maxSplValueNew">--</span>
+                <span class="result-value" id="maxSplValue">--</span>
                 <span class="result-unit">dB</span>
             </div>
 
@@ -341,7 +341,7 @@
                     <button class="toolbar-btn" id="collapseAllBtn" title="Collapse all sections">Collapse All</button>
                 </div>
             </div>
-            <div class="charts-grid" id="chartsGridNew">
+            <div class="charts-grid" id="chartsGrid">
                 <div class="chart-section-header">Core Response<span class="chart-info">i<span class="tooltip">Primary analysis: SPL capability, frequency response, excursion, and headroom.</span></span></div>
 
                 <div class="chart-container">
@@ -572,39 +572,6 @@
         </div>
     </div>
 
-    <!--
-        TECH DEBT: Hidden elements for backward compatibility
-
-        The new top-panel UI uses *New IDs (volumeSliderNew, etc.) and syncs
-        to these hidden elements via setupSyncedSlider in app.js. This allows:
-        1. Old setupSlider calls to continue working
-        2. Multiple sliders to share state (prTuningSliderNew and tuningSliderNew
-           both sync to tuningSlider, keeping them in sync)
-
-        TODO: Refactor to use state subscriptions instead of hidden element sync.
-        Then rename *New IDs to original names and delete this section.
-
-        Missing from new UI (features exist but no visible controls):
-        - qlSlider: Enclosure losses Q (currently defaults to 7)
-        - portWidthSlider, portHeightSlider: Rectangular port dimensions
-    -->
-    <div style="display: none;">
-        <!-- Sliders - state sync targets -->
-        <input id="volumeSlider">
-        <input id="tuningSlider">
-        <input id="portDiameterSlider">
-        <input id="prSdSlider">
-        <input id="prXmaxSlider">
-        <input id="powerSlider">
-
-        <!-- Features without new UI yet -->
-        <input id="qlSlider">
-        <input id="portWidthSlider">
-        <input id="portHeightSlider">
-        <span id="qlDisplay"></span>
-        <span id="portWidthDisplay"></span>
-        <span id="portHeightDisplay"></span>
-    </div>
     <!-- Import Modal -->
     <div class="modal-overlay" id="importModal">
         <div class="modal">

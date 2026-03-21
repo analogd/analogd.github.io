@@ -602,10 +602,18 @@ function setupSlider(stateKey, sliderId, displayId, defaultValue, parser = parse
     slider.value = initialValue;
     if (display) display.textContent = initialValue;
 
+    // Slider input -> state
     slider.addEventListener('input', (e) => {
         const value = parser(e.target.value);
         if (display) display.textContent = value;
         state.set(stateKey, value);
+        if (onUpdate) onUpdate(value);
+    });
+
+    // State change -> slider (keeps multiple sliders sharing same state key in sync)
+    state.subscribe(stateKey, (value) => {
+        slider.value = value;
+        if (display) display.textContent = value;
         if (onUpdate) onUpdate(value);
     });
 }
@@ -1007,6 +1015,8 @@ function setupControls() {
     }
 
     // PR sliders (HTML uses 'prSd' not 'prArea' for slider IDs)
+    // PR tuning shares state with ported tuning - both stay in sync via state subscription
+    setupSlider('tuningFrequency', 'prTuningSlider', 'prTuningDisplay', DEFAULTS.tuningFrequency, parseInt);
     setupSlider('prMass', 'prMassSlider', 'prMassDisplay', DEFAULTS.prMass, parseInt);
     setupSlider('prArea', 'prSdSlider', 'prSdDisplay', DEFAULTS.prArea, parseInt);
     setupSlider('prXmax', 'prXmaxSlider', 'prXmaxDisplay', DEFAULTS.prXmax, parseInt);
@@ -1553,7 +1563,7 @@ function initLayoutControls() {
     // DRIVER SECTION
     // ========================================================================
 
-    const driverSelectNew = document.getElementById('driverSelectNew');
+    const driverSelect = document.getElementById('driverSelect');
     const oldDriverSelect = document.getElementById('driverSelect');
 
     // Helper: Calculate EBP (Efficiency Bandwidth Product)
@@ -1574,13 +1584,13 @@ function initLayoutControls() {
     function updateDriverSpecsNew(driverData) {
         const ebp = calculateEbp(driverData);
         const specs = {
-            'driverFsNew': driverData?.fs ? `${driverData.fs} Hz` : '--',
-            'driverQtsNew': driverData?.qts ? driverData.qts.toFixed(2) : '--',
-            'driverVasNew': driverData?.vas ? `${driverData.vas.toFixed(0)} L` : '--',
-            'driverXmaxNew': driverData?.xmax ? `${driverData.xmax} mm` : '--',
-            'driverPeNew': driverData?.pe ? `${driverData.pe} W` : '--',
-            'driverSdNew': driverData?.sd ? `${driverData.sd.toFixed(0)} cm²` : '--',
-            'driverEbpNew': formatEbp(ebp)
+            'driverFs': driverData?.fs ? `${driverData.fs} Hz` : '--',
+            'driverQts': driverData?.qts ? driverData.qts.toFixed(2) : '--',
+            'driverVas': driverData?.vas ? `${driverData.vas.toFixed(0)} L` : '--',
+            'driverXmax': driverData?.xmax ? `${driverData.xmax} mm` : '--',
+            'driverPe': driverData?.pe ? `${driverData.pe} W` : '--',
+            'driverSd': driverData?.sd ? `${driverData.sd.toFixed(0)} cm²` : '--',
+            'driverEbp': formatEbp(ebp)
         };
         for (const [id, value] of Object.entries(specs)) {
             const el = document.getElementById(id);
@@ -1589,26 +1599,26 @@ function initLayoutControls() {
     }
 
     // Sync driver dropdowns
-    if (driverSelectNew && oldDriverSelect) {
+    if (driverSelect && oldDriverSelect) {
         // Copy options from old select
-        driverSelectNew.innerHTML = oldDriverSelect.innerHTML;
-        driverSelectNew.value = oldDriverSelect.value;
+        driverSelect.innerHTML = oldDriverSelect.innerHTML;
+        driverSelect.value = oldDriverSelect.value;
 
-        driverSelectNew.addEventListener('change', () => {
-            oldDriverSelect.value = driverSelectNew.value;
+        driverSelect.addEventListener('change', () => {
+            oldDriverSelect.value = driverSelect.value;
             oldDriverSelect.dispatchEvent(new Event('change'));
         });
 
         // Keep new dropdown in sync when old one changes
         oldDriverSelect.addEventListener('change', () => {
-            driverSelectNew.value = oldDriverSelect.value;
+            driverSelect.value = oldDriverSelect.value;
         });
     }
 
     // Wire up library button - call openDriverLibrary directly
-    const importDriverBtnNew = document.getElementById('importDriverBtnNew');
-    if (importDriverBtnNew) {
-        importDriverBtnNew.addEventListener('click', () => openDriverLibrary());
+    const importDriverBtn = document.getElementById('importDriverBtn');
+    if (importDriverBtn) {
+        importDriverBtn.addEventListener('click', () => openDriverLibrary());
     }
 
     // Update specs when driver changes
@@ -1826,9 +1836,9 @@ function initLayoutControls() {
     // ENCLOSURE SECTION - Dense inline controls
     // ========================================================================
 
-    const sealedBtnNew = document.getElementById('sealedBtnNew');
-    const portedBtnNew = document.getElementById('portedBtnNew');
-    const prBtnNew = document.getElementById('prBtnNew');
+    const sealedBtn = document.getElementById('sealedBtn');
+    const portedBtn = document.getElementById('portedBtn');
+    const prBtn = document.getElementById('prBtn');
     const portInfoDisplay = document.getElementById('portInfoDisplay');
 
     // Ported-only controls
@@ -1851,15 +1861,15 @@ function initLayoutControls() {
     const portFlareOne = document.getElementById('portFlareOne');
     const portFlareBoth = document.getElementById('portFlareBoth');
 
-    function updateBoxTypeUINew(boxType) {
+    function updateBoxTypeUI(boxType) {
         const isSealed = boxType === 'sealed';
         const isPorted = boxType === 'ported';
         const isPR = boxType === 'pr';
 
         // Button states
-        sealedBtnNew?.classList.toggle('active', isSealed);
-        portedBtnNew?.classList.toggle('active', isPorted);
-        prBtnNew?.classList.toggle('active', isPR);
+        sealedBtn?.classList.toggle('active', isSealed);
+        portedBtn?.classList.toggle('active', isPorted);
+        prBtn?.classList.toggle('active', isPR);
 
         // Show/hide ported controls
         tuningGroup?.classList.toggle('hidden', !isPorted);
@@ -1877,21 +1887,17 @@ function initLayoutControls() {
 
         // Results bar port info
         if (portInfoDisplay) portInfoDisplay.classList.toggle('hidden', !isPorted);
-
-        // Sync old buttons
-        document.getElementById('sealedBtn')?.classList.toggle('active', isSealed);
-        document.getElementById('portedBtn')?.classList.toggle('active', isPorted || isPR);
     }
 
-    sealedBtnNew?.addEventListener('click', () => {
+    sealedBtn?.addEventListener('click', () => {
         state.set('boxType', 'sealed');
     });
 
-    portedBtnNew?.addEventListener('click', () => {
+    portedBtn?.addEventListener('click', () => {
         state.set('boxType', 'ported');
     });
 
-    prBtnNew?.addEventListener('click', () => {
+    prBtn?.addEventListener('click', () => {
         state.set('boxType', 'pr');
     });
 
@@ -1956,51 +1962,8 @@ function initLayoutControls() {
     });
 
     // Subscribe to boxType changes
-    state.subscribe('boxType', updateBoxTypeUINew);
-    updateBoxTypeUINew(state.require('boxType'));
-
-    // Setup two-way synced slider helper
-    function setupSyncedSlider(newId, newDisplayId, oldId, oldDisplayId, stateKey, defaultVal, parser = parseInt) {
-        const newSlider = document.getElementById(newId);
-        const newDisplay = document.getElementById(newDisplayId);
-        const oldSlider = document.getElementById(oldId);
-        const oldDisplay = document.getElementById(oldDisplayId);
-
-        if (!newSlider) return;
-
-        // Initialize
-        const initialVal = state.get(stateKey) ?? defaultVal;
-        newSlider.value = initialVal;
-        if (newDisplay) newDisplay.textContent = initialVal;
-
-        // New slider -> state + old slider
-        newSlider.addEventListener('input', (e) => {
-            const val = parser(e.target.value);
-            if (newDisplay) newDisplay.textContent = val;
-            state.set(stateKey, val);
-            if (oldSlider) oldSlider.value = val;
-            if (oldDisplay) oldDisplay.textContent = val;
-        });
-
-        // Keep in sync when old slider changes
-        if (oldSlider) {
-            oldSlider.addEventListener('input', () => {
-                const val = parser(oldSlider.value);
-                newSlider.value = val;
-                if (newDisplay) newDisplay.textContent = val;
-            });
-        }
-    }
-
-    setupSyncedSlider('volumeSliderNew', 'volumeDisplayNew', 'volumeSlider', 'volumeDisplay', 'volumeLiters', DEFAULTS.volumeLiters);
-    setupSyncedSlider('tuningSliderNew', 'tuningDisplayNew', 'tuningSlider', 'tuningDisplay', 'tuningFrequency', DEFAULTS.tuningFrequency);
-    setupSyncedSlider('powerSliderNew', 'powerDisplayNew', 'powerSlider', 'powerDisplay', 'power', DEFAULTS.power);
-    setupSyncedSlider('portDiameterSliderNew', 'portDiameterDisplayNew', 'portDiameterSlider', 'portDiameterDisplay', 'portDiameter', DEFAULTS.portDiameter, parseFloat);
-
-    // PR-specific sliders (PR tuning uses same state as ported tuning)
-    setupSyncedSlider('prTuningSliderNew', 'prTuningDisplayNew', 'tuningSlider', 'tuningDisplay', 'tuningFrequency', DEFAULTS.tuningFrequency);
-    setupSyncedSlider('prSdSliderNew', 'prSdDisplayNew', 'prSdSlider', 'prSdDisplay', 'prArea', DEFAULTS.prArea);
-    setupSyncedSlider('prXmaxSliderNew', 'prXmaxDisplayNew', 'prXmaxSlider', 'prXmaxDisplay', 'prXmax', DEFAULTS.prXmax);
+    state.subscribe('boxType', updateBoxTypeUI);
+    updateBoxTypeUI(state.require('boxType'));
 
     // PR mass calculation display
     // Formula: Mmp = ρc² / (4π²fb²Vb) where ρc² ≈ 141000 Pa (at 20°C)
@@ -2497,14 +2460,14 @@ function initLayoutControls() {
         const includeEnv = state.get('includeEnvironment');
 
         // F3
-        const f3El = document.getElementById('f3ValueNew');
+        const f3El = document.getElementById('f3Value');
         if (f3El) {
             f3El.textContent = box.f3 ? `${box.f3.toFixed(1)} Hz` : '--';
         }
 
         // Qtc (sealed) or Fb (ported)
         const qtcLabel = document.getElementById('qtcLabel');
-        const qtcEl = document.getElementById('qtcValueNew');
+        const qtcEl = document.getElementById('qtcValue');
         if (qtcEl && qtcLabel) {
             if (box.qtc !== undefined) {
                 qtcLabel.textContent = 'Qtc';
@@ -2523,13 +2486,13 @@ function initLayoutControls() {
         }
 
         // Sensitivity
-        const sensEl = document.getElementById('sensitivityValueNew');
+        const sensEl = document.getElementById('sensitivityValue');
         if (sensEl) {
             sensEl.textContent = driver?.sensitivity ? `${driver.sensitivity.toFixed(1)} dB` : '--';
         }
 
         // Max SPL @ 30Hz
-        const maxSplEl = document.getElementById('maxSplValueNew');
+        const maxSplEl = document.getElementById('maxSplValue');
         if (maxSplEl && box.canCalculateSpl && box.canCalculateLimits) {
             try {
                 const result = box.maxSplAt(30);
