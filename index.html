@@ -3,173 +3,249 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Monorepo</title>
+    <title>analogd — Audio Tools</title>
     <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
       body {
-        font-family: sans-serif;
-        margin: 0;
-        padding: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background: #0f1117;
+        color: #ccc;
+        min-height: 100vh;
+      }
+      header {
+        text-align: center;
+        padding: 48px 24px 16px;
+      }
+      header h1 {
+        font-size: 2em;
+        font-weight: 700;
+        color: #e8e8e8;
+        letter-spacing: -0.02em;
+      }
+      header p {
+        margin-top: 8px;
+        font-size: 1.05em;
+        color: #888;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 24px;
+        max-width: 1100px;
+        margin: 32px auto;
+        padding: 0 24px;
+      }
+      .card {
+        background: #1a1d27;
+        border: 1px solid #2a2d3a;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: border-color 0.2s, transform 0.2s;
         display: flex;
         flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        background-color: #f5f5f5;
-      }
-      .container {
-        text-align: center;
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      h1 {
-        font-size: 2.5em;
-        color: #333;
-      }
-      p {
-        font-size: 1.2em;
-        color: #666;
-      }
-      .gallery {
-        margin-bottom: 20px;
-      }
-      .gallery {
-        white-space: nowrap;
-        text-align: center; /* Optional: Center the images horizontally */
-      }
-      .gallery img {
-        max-width: 200px;
-        white-space: nowrap;
-        margin: 10px;
+        text-decoration: none;
+        color: inherit;
         cursor: pointer;
-        border: 2px solid #ddd;
+      }
+      .card:hover {
+        border-color: #4a7cff;
+        transform: translateY(-3px);
+      }
+      .card-img-wrap {
+        position: relative;
+      }
+      .card-img {
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        object-fit: cover;
+        object-position: top;
+        display: block;
+        background: #12141c;
+      }
+      .zoom-btn {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        width: 32px;
+        height: 32px;
+        background: rgba(0, 0, 0, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        color: #aaa;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.15s;
+        text-decoration: none;
+        line-height: 1;
+      }
+      .card:hover .zoom-btn {
+        opacity: 1;
+      }
+      .zoom-btn:hover {
+        background: rgba(74, 124, 255, 0.5);
+        color: #fff;
+      }
+      .card-placeholder {
+        width: 100%;
+        aspect-ratio: 16 / 10;
+        background: linear-gradient(135deg, #1e2130, #252839);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #444;
+        font-size: 2.5em;
+      }
+      .card-body {
+        padding: 20px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .card-title {
+        font-size: 1.15em;
+        font-weight: 600;
+        color: #e0e0e0;
+      }
+      .card:hover .card-title {
+        color: #6b9bff;
+      }
+      .card-desc {
+        margin-top: 8px;
+        font-size: 0.92em;
+        color: #888;
+        line-height: 1.5;
+        flex: 1;
+      }
+      footer {
+        text-align: center;
+        padding: 40px 24px 32px;
+        color: #555;
+        font-size: 0.85em;
+      }
+      footer a {
+        color: #6b9bff;
+        text-decoration: none;
+        border-bottom: 1px solid transparent;
+        transition: border-color 0.15s;
+      }
+      footer a:hover {
+        border-bottom-color: #6b9bff;
       }
       .lightbox {
         display: none;
         position: fixed;
         z-index: 999;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.8);
+        inset: 0;
+        background: rgba(0, 0, 0, 0.88);
         justify-content: center;
         align-items: center;
+        cursor: zoom-out;
       }
-      .lightbox img {
-        max-width: 90%;
-        max-height: 90%;
-      }
-      .lightbox:target {
+      .lightbox.open {
         display: flex;
       }
-      .projects {
-        margin-top: 20px;
-        text-align: left;
-      }
-      .project {
-        margin-bottom: 20px;
-      }
-      .project-link {
-        font-size: 1.2em;
-        color: #007bff;
-        text-decoration: none;
-      }
-      .project-link:hover {
-        text-decoration: underline;
-      }
-      .project-description {
-        font-size: 1em;
-        color: #666;
-        margin: 5px 0 0 10px;
-      }
-      .github-link {
-        display: block;
-        margin-top: 20px;
-        font-size: 1em;
-        color: #333;
-        text-decoration: none;
-        border: 1px solid #007bff;
-        padding: 10px 20px;
-        border-radius: 5px;
-      }
-      .github-link:hover {
-        background-color: #007bff;
-        color: #fff;
-      }
-      main {
-        display: block;
-      }
-      footer {
-        margin-top: 20px;
-        font-size: 0.9em;
-        color: #999;
-        display: block;
+      .lightbox img {
+        max-width: 92%;
+        max-height: 92%;
+        border-radius: 6px;
       }
     </style>
   </head>
   <body>
-    <main>
-      <div class="container">
-        <h1>Welcome to My Monorepo</h1>
-        <p>I sometimes tinker with things. Explore the projects hosted here:</p>
+    <header>
+      <h1>analogd</h1>
+      <p>Audio and acoustics tools</p>
+    </header>
 
-        <!-- Gallery Section -->
-        <div class="gallery">
-          <a href="#img0"><img src="./screenshot5.png" alt="BoxSmith" /></a>
-          <a href="#img1"><img src="./screenshot1.jpg" alt="Screenshot 1" /></a>
-          <a href="#img2"><img src="./screenshot2.jpg" alt="Screenshot 2" /></a>
-          <a href="#img3"><img src="./screenshot3.jpg" alt="Screenshot 3" /></a>
-          <a href="#img4"><img src="./screenshot4.jpg" alt="Screenshot 4" /></a>
+    <div class="cards">
+      <!-- BoxSmith -->
+      <a class="card" href="./BoxSmith/ui/">
+        <div class="card-img-wrap">
+          <img class="card-img" src="./screenshot5.png" alt="BoxSmith screenshot" />
+          <button class="zoom-btn" data-img="./screenshot5.png" title="View screenshot">&#x1F50D;</button>
         </div>
+        <div class="card-body">
+          <span class="card-title">BoxSmith</span>
+          <p class="card-desc">Paper-true subwoofer enclosure design. Sealed, ported, passive radiator, isobaric. 32 interactive graphs.</p>
+        </div>
+      </a>
 
-        <!-- Lightbox for Gallery -->
-        <div id="img0" class="lightbox">
-          <a href="#"><img src="./screenshot5.png" alt="BoxSmith" /></a>
+      <!-- Audyssey Curve and Crossover Optimizer -->
+      <a class="card" href="./AudysseyCurveAndCrossoverOptimizer">
+        <div class="card-img-wrap">
+          <img class="card-img" src="./screenshot1.jpg" alt="Audyssey Curve and Crossover Optimizer screenshot" />
+          <button class="zoom-btn" data-img="./screenshot1.jpg" title="View screenshot">&#x1F50D;</button>
         </div>
-        <div id="img1" class="lightbox">
-          <a href="#"><img src="./screenshot1.jpg" alt="Screenshot 1" /></a>
+        <div class="card-body">
+          <span class="card-title">Audyssey Curve and Crossover Optimizer</span>
+          <p class="card-desc">Add a house curve — not just for the sub — without messing up your levels, and fix the missing high-pass slopes for your Audyssey calibrations.</p>
         </div>
-        <div id="img2" class="lightbox">
-          <a href="#"><img src="./screenshot2.jpg" alt="Screenshot 2" /></a>
-        </div>
-        <div id="img3" class="lightbox">
-          <a href="#"><img src="./screenshot3.jpg" alt="Screenshot 3" /></a>
-        </div>
-        <div id="img4" class="lightbox">
-          <a href="#"><img src="./screenshot4.jpg" alt="Screenshot 4" /></a>
-        </div>
+      </a>
 
-        <div class="projects">
-          <div class="project">
-            <a class="project-link" href="./BoxSmith/ui/">BoxSmith</a>
-            <p class="project-description">Paper-true subwoofer enclosure design. Sealed, ported, passive radiator, isobaric. 32 interactive graphs.</p>
-          </div>
-          <div class="project">
-            <a class="project-link" href="./AudysseyCurveAndCrossoverOptimizer">Audyssey Curve and Crossover Optimizer</a>
-            <p class="project-description">
-              Add a house curve, not just for the sub, without messing up your levels, and fix the missing high-pass slopes for your
-              Audyssey system calibrations.
-            </p>
-          </div>
-          <div class="project">
-            <a class="project-link" href="./AudysseyNOPE">Audyssey NOPE</a>
-            <p class="project-description">Totally replace all of Audyssey's calculations by leveraging the power of REW.</p>
-          </div>
-          <div class="project">
-            <a class="project-link" href="./AudusseyFileAnalyzer">Audyssey File Analyzer</a>
-            <p class="project-description">Decode and visualize Audyssey files.</p>
-          </div>
+      <!-- Audyssey NOPE -->
+      <a class="card" href="./AudysseyNOPE">
+        <div class="card-img-wrap">
+          <img class="card-img" src="./screenshot2.jpg" alt="Audyssey NOPE screenshot" />
+          <button class="zoom-btn" data-img="./screenshot2.jpg" title="View screenshot">&#x1F50D;</button>
         </div>
-        <a class="github-link" href="https://github.com/analogd/analogd.github.io" target="_blank">Visit on GitHub</a>
-      </div>
-    </main>
-    <footer>&copy; 2024 Daniel Nilsson. All rights reserved.</footer>
+        <div class="card-body">
+          <span class="card-title">Audyssey NOPE</span>
+          <p class="card-desc">Totally replace all of Audyssey's calculations by leveraging the power of REW.</p>
+        </div>
+      </a>
+
+      <!-- Audyssey File Analyzer -->
+      <a class="card" href="./AudusseyFileAnalyzer">
+        <div class="card-img-wrap">
+          <img class="card-img" src="./screenshot4.jpg" alt="Audyssey File Analyzer screenshot" />
+          <button class="zoom-btn" data-img="./screenshot4.jpg" title="View screenshot">&#x1F50D;</button>
+        </div>
+        <div class="card-body">
+          <span class="card-title">Audyssey File Analyzer</span>
+          <p class="card-desc">Decode and visualize Audyssey .ady calibration files. View target curves, channel settings, and speaker configuration.</p>
+        </div>
+      </a>
+
+      <!-- Acoustic Calculation Tools -->
+      <a class="card" href="./AcousticCalculationTools/">
+        <div class="card-placeholder">~</div>
+        <div class="card-body">
+          <span class="card-title">Acoustic Calculation Tools</span>
+          <p class="card-desc">Room mode calculator, speaker boundary interference, and other acoustic utilities.</p>
+        </div>
+      </a>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+      <img id="lightbox-img" src="" alt="Screenshot" />
+    </div>
+
+    <footer>
+      <a href="https://github.com/analogd/analogd.github.io" target="_blank">GitHub</a>
+      &nbsp;&middot;&nbsp;
+      &copy; 2024 Daniel Nilsson
+    </footer>
+
     <script>
-      document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") {
-          window.location.hash = "";
-        }
+      const lightbox = document.getElementById('lightbox');
+      const lightboxImg = document.getElementById('lightbox-img');
+
+      document.querySelectorAll('.zoom-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          lightboxImg.src = btn.dataset.img;
+          lightbox.classList.add('open');
+        });
+      });
+
+      lightbox.addEventListener('click', () => lightbox.classList.remove('open'));
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') lightbox.classList.remove('open');
       });
     </script>
   </body>

@@ -12,6 +12,7 @@ import { runToolsTests } from './Tools.test.js';
 import { runIsobaricTests } from './Isobaric.test.js';
 import { runExternalAPITests } from './ExternalAPI.test.js';
 import { runPortCompressionTests } from './PortCompression.test.js';
+import { runScenariosTests } from './Scenarios.test.js';
 
 // Test statistics
 const testStats = {
@@ -194,6 +195,11 @@ log('Testing turbulence and compression modeling\n', colors.cyan);
 runPortCompressionTests(TestFramework);
 const portCompressionCount = testStats.total - foundationCount - invariantCount - engineeringCount - modelsCount - filtersCount - klippelCount - toolsCount - isobaricCount - externalAPICount;
 
+log('\n📚 PART 11: Scenarios ("What would a human see?")', colors.cyan);
+log('Testing full model pipeline with real drivers\n', colors.cyan);
+runScenariosTests(TestFramework);
+const scenariosCount = testStats.total - foundationCount - invariantCount - engineeringCount - modelsCount - filtersCount - klippelCount - toolsCount - isobaricCount - externalAPICount - portCompressionCount;
+
 // Summary
 const successRate = testStats.total > 0
     ? ((testStats.passed / testStats.total) * 100).toFixed(1)
@@ -213,6 +219,7 @@ log(`Tools:        ${toolsCount} tests`, colors.cyan);
 log(`Isobaric:     ${isobaricCount} tests`, colors.cyan);
 log(`ExternalAPI:  ${externalAPICount} tests`, colors.cyan);
 log(`PortCompress: ${portCompressionCount} tests`, colors.cyan);
+log(`Scenarios:    ${scenariosCount} tests`, colors.cyan);
 log(`Total:        ${testStats.total} tests`, colors.cyan);
 log(`Passed:       ${testStats.passed}`, colors.green);
 log(`Failed:       ${testStats.failed}`, testStats.failed > 0 ? colors.red : colors.green);

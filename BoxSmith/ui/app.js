@@ -3166,3 +3166,62 @@ if (document.readyState === 'loading') {
 }
 
 export { state };
+
+// ============================================================================
+// DEBUG: Graph data export for development feedback loop
+// ============================================================================
+// Usage from browser console:
+//   debugGraphs()          — summary of all graphs (name, layer count, point counts)
+//   debugGraphs('response') — full data dump for a specific graph (by key or partial match)
+//   debugGraphs('all')     — full data dump for every graph (large output)
+//   copy(debugGraphs('response')) — copy to clipboard for pasting
+//
+window.debugGraphs = function(filter) {
+    const result = {};
+
+    for (const [key, graph] of Object.entries(graphs)) {
+        if (!graph.chart) continue;
+
+        const config = GRAPH_REGISTRY[key];
+        if (!config) continue;
+
+        // If filter is a specific graph key or partial match, dump full data
+        if (filter && filter !== 'all') {
+            const match = key.toLowerCase().includes(filter.toLowerCase()) ||
+                          config.label?.toLowerCase().includes(filter.toLowerCase());
+            if (!match) continue;
+        }
+
+        const datasets = graph.chart.data.datasets;
+        const entry = {
+            label: config.label,
+            id: config.id,
+            layers: datasets.map(ds => {
+                const info = {
+                    label: ds.label || '(unlabeled)',
+                    points: ds.data.length,
+                    hidden: ds.hidden || false
+                };
+                // Full data only when filtering to specific graph(s) or 'all'
+                if (filter) {
+                    info.data = ds.data.map(p => ({ x: +p.x.toFixed(2), y: +p.y.toFixed(4) }));
+                    // Quick shape summary: min, max, value at a few key frequencies
+                    const ys = ds.data.map(p => p.y).filter(y => isFinite(y));
+                    if (ys.length > 0) {
+                        info.yMin = +Math.min(...ys).toFixed(4);
+                        info.yMax = +Math.max(...ys).toFixed(4);
+                        info.yRange = +(info.yMax - info.yMin).toFixed(4);
+                    }
+                }
+                return info;
+            })
+        };
+
+        result[key] = entry;
+    }
+
+    // Pretty-print for console readability
+    const json = JSON.stringify(result, null, 2);
+    console.log(json);
+    return result;
+};
