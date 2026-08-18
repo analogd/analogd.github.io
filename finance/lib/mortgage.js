@@ -54,6 +54,41 @@ function requiredAmortisationRate(balance, propertyValue, income) {
   return rate;
 }
 
+// ---------- annuitetslan ----------
+//
+// The fixed monthly payment that clears a loan in exactly N months, and the
+// interest that payment stream costs in total. Closed form, so it can be
+// asserted against the textbook formula rather than against itself.
+//
+// This lives in the shared library rather than in the app that first needed it
+// (BilTCO) because "what does this loan actually cost in interest" is not a car
+// question: a billan, a topplan, a privatlan and a student loan are the same
+// arithmetic with different numbers. comparePayoffVsInvest below cannot use it,
+// and that is not an oversight: a Swedish mortgage amortises by the FI ladder,
+// a percentage of the original loan that steps down as the LTV falls, so its
+// payment is not an annuity and has to be stepped month by month. Anything with
+// a fixed term and a fixed payment belongs here instead.
+//
+// Swedish consumer car loans are annuities in practice: the bank quotes one
+// monthly cost for the whole term. Rak amortering (equal principal, falling
+// payment) exists but is the exception, so the annuity is the default worth
+// modelling. It also costs more interest than equal principal at the same rate,
+// because the balance falls more slowly, which is the direction an honest
+// calculator should err in.
+function annuityPayment(loan, rate, months) {
+  if (!(months > 0) || loan <= 0) return 0;
+  const rM = rate / 12;
+  if (Math.abs(rM) < 1e-12) return loan / months;
+  return (loan * rM) / (1 - Math.pow(1 + rM, -months));
+}
+
+// Total interest over the full term. Every krona paid above the borrowed amount
+// is interest, so this needs no schedule of its own.
+function annuityInterestTotal(loan, rate, months) {
+  if (!(months > 0) || loan <= 0) return 0;
+  return annuityPayment(loan, rate, months) * months - loan;
+}
+
 // Runs both strategies against the SAME monthly budget, month by month, and hands
 // the fund contributions to the shared engine so the compounding, the fee and the
 // ISK treatment are identical to every other calculator here.

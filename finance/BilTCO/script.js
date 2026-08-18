@@ -16,6 +16,49 @@
 // Kalla: skatteverket.se, "Jag reser en del i tjansten..." (privat/FAQ).
 const SKV_MIL_ERSATTNING = 25;
 
+// ---------- sourced defaults ----------
+//
+// Every number below comes from a published table, carries the period it
+// applies to, and is asserted in test/scenarios.mjs against that published
+// figure. A default that is NOT in this block is a reasonable guess and says
+// "Overifierat" in its hint. That distinction is the whole point of the block:
+// a reader can tell which of the numbers on the page are claims and which are
+// placeholders.
+
+// Trafikanalys, Korstrackor 2025, Tabell PB1 (ny metod), publicerad
+// 2026-04-17: genomsnittlig korstracka per personbil i trafik var 1 242,72
+// mil under 2025. Trafikanalys ar statistikansvarig myndighet, sa detta ar
+// officiell statistik, inte en branschuppskattning.
+// Kalla: trafa.se/vagtrafik/korstrackor/
+const TRAFA_SNITT_MIL_2025 = 1243;
+
+// SCB, Elpriser och elavtal (EN0301), halvarsstatistik: totalpris pa el for
+// hushall i forbrukarkategori DD (5 000 till 14 999 kWh/ar, alltsa en villa
+// som ocksa laddar bil) var 239,84 ore/kWh under andra halvaret 2025.
+// Totalpris betyder allt hushallet faktiskt betalar: handelspris, natpris,
+// elskatt och moms. Kalla: SCB:s statistikdatabas, tabell SSDHalvarElHus.
+const SCB_ELPRIS_ORE_2025H2 = 239.84;
+
+// Transportstyrelsen, fordonsskattens storlek: for en personbil av model 2006
+// eller senare ar skatten 360 kr i grundbelopp plus 11 kr per gram koldioxid
+// over 111 g/km vid blandad korning. Detta ar grundformeln, inte malus;
+// malus ligger ovanpa i tre ar for bilar over 75 g/km och star kvar som
+// kontext i fordonsskattens ledtext.
+// Kalla: transportstyrelsen.se/.../fordonsskatt/skattens-storlek/
+const FORDONSSKATT_GRUND = 360;
+const FORDONSSKATT_KR_PER_GRAM = 11;
+const FORDONSSKATT_FRI_GRAM = 111;
+
+// Appens default for fordonsskatt ar den har formeln utvarderad for en
+// bensinbil pa 150 g CO2/km, ett rimligt varde for en begagnad bil i den
+// storlek appen annars utgar fran. Formeln ar kallbelagd, de 150 grammen ar
+// det inte, sa ledtexten sager bada delarna. Rakna aldrig ut siffran for hand
+// och skriv in den: da ar den ratt for exakt ett utslapp.
+function fordonsskatt(co2GramPerKm) {
+  return FORDONSSKATT_GRUND + FORDONSSKATT_KR_PER_GRAM * Math.max(0, co2GramPerKm - FORDONSSKATT_FRI_GRAM);
+}
+const DEFAULT_CO2_GRAM = 150;
+
 // RantaPaRanta's own default for its "monthly" control (see
 // ../RantaPaRanta/script.js CONTROLS). Duplicated here only so the "omit
 // defaults" rule of the URL handover contract can be honoured from this side
@@ -91,16 +134,19 @@ function capitalCost(p) {
   return bal[p.years] - equity;
 }
 
-// Interest cost on the financed share. Modelled as a straight-line
-// amortisation to zero over the ownership horizon (loan term = ownership
-// years), so the outstanding balance averages half the original loan and the
-// interest is simple interest on that average. Not an annuity schedule: real
-// loans front-load interest more than this, which understates year-one
-// rantekostnad and overstates the last year's. Documented, not hidden.
+// Interest cost on the financed share: a real annuity schedule, from
+// ../lib/mortgage.js, so this app does not carry a second implementation of
+// loan arithmetic. Loan term is the ownership horizon, which is the one
+// assumption left; the payment is then whatever clears the loan over that term.
+//
+// This used to be simple interest on half the loan, the straight-line
+// approximation. An annuity pays the principal down more slowly, so it costs
+// more interest at the same rate: at 6 % over 6 years on 125 000 kr the gap is
+// about 1 700 kr. The old number was low, not conservative.
 function interestCost(p) {
   const loan = p.price * p.financedShare;
   if (loan <= 0) return 0;
-  return (loan / 2) * p.interestRate * p.years;
+  return annuityInterestTotal(loan, p.interestRate, p.years * 12);
 }
 
 function fuelPerMil(p) {
@@ -114,6 +160,18 @@ function fuelPerMil(p) {
 // change when annualMil changes, and marginalAnnualTotal is defined as
 // everything else. Fixed + marginal therefore always equals the total; the
 // test suite checks this holds, it does not need to be true by luck.
+//
+// Tyres and service are split, not moved: a share of each goes to the
+// marginal bucket, the rest stays fixed, and the sum is untouched. The split
+// is calibrated at the mileage the user stated, because that is what the two
+// input controls already describe. "Mina däck håller fyra säsonger" and "en
+// service kostar 3 000 kr" are statements about how this person drives, not
+// about a car in the abstract, so the honest reading of tireMilShare is "av
+// den däckkostnad du just angav, så stor del beror på körningen". Driving one
+// more mil then costs tireMileageAnnual / annualMil, which is exactly the
+// number "Dela på kostnaden" needs. What it does NOT do is raise the total
+// when the mileage slider moves: a permanently higher mileage also shortens
+// tireSeasons, and that is the user's control to move. Stated in the notes.
 function computeCar(p) {
   const Y = p.years;
   const dep = carValueSeries(p);
@@ -133,8 +191,15 @@ function computeCar(p) {
   const perMilFuel = fuelPerMil(p);
   const fuelTotal = perMilFuel * p.annualMil * Y;
   const tireAnnual = p.tireSeasons > 0 ? (2 * p.tireCost) / p.tireSeasons : 0;
-  const besiktningAnnual = p.besiktningInterval > 0 ? p.besiktningCost / p.besiktningInterval : 0;
+  // The interval is in months, because Transportstyrelsen's real one is 14 and
+  // a slider in whole years cannot express that.
+  const besiktningAnnual = p.besiktningInterval > 0 ? (p.besiktningCost * 12) / p.besiktningInterval : 0;
   const parkingAnnual = p.parking * 12;
+
+  const tireMileageAnnual = tireAnnual * p.tireMilShare;
+  const tireFixedAnnual = tireAnnual - tireMileageAnnual;
+  const serviceMileageTotal = sumService * p.serviceMilShare;
+  const serviceFixedTotal = sumService - serviceMileageTotal;
 
   const fixedAnnualTotal =
     sumTimeDep +
@@ -143,10 +208,10 @@ function computeCar(p) {
     p.insurance * Y +
     p.vehicleTax * Y +
     besiktningAnnual * Y +
-    tireAnnual * Y +
-    sumService +
+    tireFixedAnnual * Y +
+    serviceFixedTotal +
     parkingAnnual * Y;
-  const marginalAnnualTotal = fuelTotal + sumMileageDep;
+  const marginalAnnualTotal = fuelTotal + sumMileageDep + tireMileageAnnual * Y + serviceMileageTotal;
   const grandTotal = fixedAnnualTotal + marginalAnnualTotal;
 
   const months = Y * 12;
@@ -166,6 +231,10 @@ function computeCar(p) {
     fuelTotal: fuelTotal,
     fuelPerMil: perMilFuel,
     tireAnnual: tireAnnual,
+    tireMileageAnnual: tireMileageAnnual,
+    tireFixedAnnual: tireFixedAnnual,
+    serviceMileageTotal: serviceMileageTotal,
+    serviceFixedTotal: serviceFixedTotal,
     besiktningAnnual: besiktningAnnual,
     fixedAnnualTotal: fixedAnnualTotal,
     marginalAnnualTotal: marginalAnnualTotal,
@@ -241,9 +310,9 @@ const CONTROLS = [
     unit: "mil",
     min: 200,
     max: 4000,
-    step: 100,
-    value: 1200,
-    hint: "SCB:s snitt för svenska personbilar ligger runt 1 100 till 1 300 mil/år. Overifierat här, sätt din egen."
+    step: 10,
+    value: TRAFA_SNITT_MIL_2025,
+    hint: "Snittet för svenska personbilar i trafik var 1 243 mil under 2025. Källa: Trafikanalys, Körsträckor 2025, tabell PB1."
   },
   {
     id: "financedShare",
@@ -352,8 +421,10 @@ const CONTROLS = [
     min: 0.5,
     max: 6,
     step: 0.1,
-    value: 2.5,
-    hint: "Overifierat, snittpris för hemmaladdning."
+    value: Math.round(SCB_ELPRIS_ORE_2025H2 / 10) / 10,
+    hint:
+      "Totalpris för hushåll med 5 000 till 15 000 kWh/år, inklusive nät, elskatt och moms: 239,84 öre/kWh under andra halvåret 2025. " +
+      "Källa: SCB, Elpriser och elavtal. Ditt elområde och avtal kan avvika rejält."
   },
   {
     id: "insurance",
@@ -373,11 +444,11 @@ const CONTROLS = [
     unit: "kr/år",
     min: 0,
     max: 20000,
-    step: 100,
-    value: 2000,
+    step: 1,
+    value: fordonsskatt(DEFAULT_CO2_GRAM),
     hint:
-      "Overifierat. En ny bil med över 75 g CO2/km betalar malus i 3 år: 107 kr/g upp till 125 g, sedan 132 kr/g, plus 360 kr grundbelopp. " +
-      "Källa: transportstyrelsen.se/malus."
+      "Grundformeln är 360 kr plus 11 kr per gram CO2 över 111 g/km. Defaulten är den formeln för en bensinbil på 150 g/km. " +
+      "En ny bil över 75 g/km betalar malus ovanpå i 3 år: 107 kr/g upp till 125 g, sedan 132 kr/g. Källa: transportstyrelsen.se."
   },
   {
     id: "besiktningCost",
@@ -394,12 +465,14 @@ const CONTROLS = [
     id: "besiktningInterval",
     group: "drift",
     label: "Besiktning, intervall",
-    unit: "år",
-    min: 1,
-    max: 4,
+    unit: "månader",
+    min: 12,
+    max: 48,
     step: 1,
-    value: 2,
-    hint: "Förenklat till ett jämnt intervall. I verkligheten styrs det av bilens ålder."
+    value: 14,
+    hint:
+      "Transportstyrelsens regel: först efter 36 månader, nästa 24 månader senare, sedan var 14:e månad. " +
+      "Modellen kör ett jämnt intervall, och 14 månader är det en bil äldre än fem år faktiskt ligger på."
   },
   {
     id: "tireCost",
@@ -424,6 +497,17 @@ const CONTROLS = [
     hint: "Antas kräva två satser (sommar och vinter) samtidigt."
   },
   {
+    id: "tireMilShare",
+    group: "drift",
+    label: "Däck, andel som drivs av körsträckan",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    value: 70,
+    hint: "Resten åldras bort oavsett körning: gummi hårdnar, och en sats byts sällan senare än vid sex år. Overifierat."
+  },
+  {
     id: "serviceBase",
     group: "drift",
     label: "Service och reparationer, ny bil",
@@ -444,6 +528,17 @@ const CONTROLS = [
     step: 1,
     value: 12,
     hint: "Modellantagande, inte en uppmätt siffra: reparationer blir dyrare och vanligare med bilens ålder."
+  },
+  {
+    id: "serviceMilShare",
+    group: "drift",
+    label: "Service, andel som drivs av körsträckan",
+    unit: "%",
+    min: 0,
+    max: 100,
+    step: 5,
+    value: 50,
+    hint: "Olja, bromsar och kopplingar slits av mil. Rost, gummi och batteri gör det inte. Overifierat."
   },
   {
     id: "parking",
@@ -529,6 +624,8 @@ function paramsFor(suffix) {
     besiktningCost: readControlValue("besiktningCost"),
     besiktningInterval: readControlValue("besiktningInterval"),
     tireSeasons: readControlValue("tireSeasons"),
+    tireMilShare: readControlValue("tireMilShare") / 100,
+    serviceMilShare: readControlValue("serviceMilShare") / 100,
     parking: readControlValue("parking")
   };
   const electric = suffix === "B" ? flags.electricB : flags.electric;

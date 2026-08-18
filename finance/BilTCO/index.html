@@ -98,10 +98,22 @@
       <section class="notes">
         <h2>Varför två siffror, fast och per mil?</h2>
         <p>
-          Värdeminskning, kapitalkostnad, räntekostnad, försäkring, fordonsskatt, besiktning, däck och service löper oavsett hur mycket du
-          kör. De är prislappen för att äga bilen. Bara drivmedlet och den del av värdeminskningen som drivs av slitage är marginalkostnad,
-          alltså prislappen för att använda den. En bilägare som ställer bensinpriset mot en bussbiljett jämför fel siffror: bussbiljetten
-          slipper den fasta kostnaden, bensinen gör det inte.
+          Värdeminskningens tidsdel, kapitalkostnad, räntekostnad, försäkring, fordonsskatt och besiktning löper oavsett hur mycket du kör.
+          De är prislappen för att äga bilen. Drivmedlet, värdeminskningens slitagedel och den del av däck och service som slitaget driver
+          är marginalkostnad, alltså prislappen för att använda den. En bilägare som ställer bensinpriset mot en bussbiljett jämför fel
+          siffror: bussbiljetten slipper den fasta kostnaden, bensinen gör det inte.
+        </p>
+
+        <h2>Däck och service ligger i båda hinkarna</h2>
+        <p>
+          Ett däck slits av mil, men gummi hårdnar också av år, och en sats byts sällan senare än vid sex år oavsett hur lite den rullat.
+          Service är samma sak: olja och bromsar följer mätarställningen, rost och gummi följer kalendern. Två reglage sätter hur stor del
+          av vardera som körningen driver, och de flyttar bara kostnad mellan fast och marginellt, aldrig totalen.
+        </p>
+        <p>
+          Delningen är kalibrerad mot den körsträcka du angett, för det är vad de underliggande kontrollerna redan beskriver: "mina däck
+          håller fyra säsonger" är ett påstående om hur just du kör. En extra mil kostar då den marginella delen delad med årets mil, vilket
+          är exakt den siffra "Dela på kostnaden" behöver.
         </p>
 
         <h2>Kapitalkostnad är inte räntekostnad</h2>
@@ -122,21 +134,35 @@
         <h2>Vad den inte gör</h2>
         <ul>
           <li>
-            <strong>Lånet är rak amortering, inte en annuitet.</strong> Räntekostnaden räknas på halva lånebeloppet i snitt över
-            ägandetiden. Ett annuitetslån lägger mer ränta först, så modellen underskattar de tidiga åren och överskattar de sena.
+            <strong>Lånetiden antas vara lika lång som ägandetiden.</strong> Lånet räknas som en annuitet, alltså samma månadsbetalning hela
+            vägen, vilket är så svenska billån normalt ser ut. Men den som säljer bilen efter fyra år på ett sjuårigt lån betalar mer ränta
+            än modellen visar, eftersom skulden då fortfarande är stor.
           </li>
-          <li><strong>Besiktning är ett jämnt intervall,</strong> inte Transportstyrelsens verkliga schema som beror på bilens ålder.</li>
           <li>
-            <strong>Däck antas vara två satser, sommar och vinter,</strong> som slits av tid och inte av körsträcka. En bil som körs mycket
-            sliter troligen ut däck fortare än modellen fångar, vilket betyder att marginalkostnaden per mil är i underkant.
+            <strong>Besiktning är ett jämnt intervall.</strong> Transportstyrelsens verkliga schema är 36 månader till första besiktningen,
+            24 till nästa och sedan var 14:e månad, så modellen tar i för en ny bil och stämmer för en äldre.
+          </li>
+          <li>
+            <strong>Däck- och servicekostnaden växer inte när du drar upp körsträckan,</strong> den flyttas bara till den marginella hinken.
+            Kör du permanent mycket mer håller en däcksats färre säsonger, och det är reglaget "hur länge en sats håller" du får ändra
+            själv. Delningen svarar på vad en extra mil kostar, inte på vad ett annat liv kostar.
+          </li>
+          <li>
+            <strong>Hur stor del av däck och service som drivs av körsträckan är en ren uppskattning.</strong> Ingen svensk myndighet eller
+            branschorganisation publicerar den uppdelningen, så 70 respektive 50 procent är valda tal, inte mätta.
           </li>
           <li>
             <strong>Service och reparationer stiger med en konstant procent per års ålder,</strong> vilket är ett modellantagande och inte
             en uppmätt kurva. Verkliga kostnader hoppar (en kamkedja, en battericell), de smyger sig inte på.
           </li>
           <li>
-            <strong>Fordonsskatten är en egen kontroll,</strong> inte räknad från koldioxid och vikt: malusreglerna (3 år, 107 respektive
-            132 kr per gram över 75 g CO2/km) står i ledtexten som referens men matar inte in i beräkningen.
+            <strong>Fordonsskatten är en egen kontroll.</strong> Defaulten kommer från grundformeln (360 kr plus 11 kr per gram över 111
+            g/km) för en bil på 150 g CO2/km, men appen frågar aldrig efter bilens utsläpp, så skriv in din egen siffra. Malus för nya bilar
+            över 75 g/km står i ledtexten som referens och matar inte in i beräkningen.
+          </li>
+          <li>
+            <strong>Bränslepriset är fortfarande ogrundat.</strong> Drivkraft Sverige publicerar månadssnitt för pumppriset, men bara som
+            diagram som inte går att läsa maskinellt, så 18,50 kr/l är en gissning och inget annat.
           </li>
           <li>Ingen osäkerhet i andrahandsvärdet, ingen försäkringsbonus som ändras med skadehistoriken, ingen valutarisk på elpriset.</li>
         </ul>
@@ -158,6 +184,38 @@
             kr grundbelopp. Ligger som kontext i fordonsskattens ledtext och matar inte in i beräkningen.
           </li>
           <li>
+            <a href="https://www.trafa.se/vagtrafik/korstrackor/" target="_blank" rel="noopener">Trafikanalys, Körsträckor 2025</a>: den
+            genomsnittliga körsträckan per personbil i trafik var 1 243 mil under 2025 (tabell PB1, ny metod, publicerad 17 april 2026).
+            Ligger som default på körsträckereglaget.
+          </li>
+          <li>
+            <a
+              href="https://www.transportstyrelsen.se/sv/vagtrafik/fordon/skatter-och-avgifter/fordonsskatt/skattens-storlek/"
+              target="_blank"
+              rel="noopener"
+              >Transportstyrelsen, fordonsskattens storlek</a
+            >: 360 kr grundbelopp plus 11 kr per gram CO2 över 111 g/km för personbil av modell 2006 eller senare. Ger fordonsskattens
+            default, räknad för 150 g/km.
+          </li>
+          <li>
+            <a
+              href="https://www.transportstyrelsen.se/sv/vagtrafik/fordon/aga-kopa-eller-salja-fordon/fordonsbesiktning/besiktningsregler/personbil-och-lastbil-som-inte-overstiger-3500-kg-i-totalvikt/"
+              target="_blank"
+              rel="noopener"
+              >Transportstyrelsen, besiktningsregler</a
+            >: första besiktningen senast 36 månader efter första registrering, nästa senast 24 månader därefter, sedan senast var 14:e
+            månad. Ger besiktningsintervallets default.
+          </li>
+          <li>
+            <a
+              href="https://www.statistikdatabasen.scb.se/pxweb/sv/ssd/START__EN__EN0301__EN0301A/SSDHalvarElHus/"
+              target="_blank"
+              rel="noopener"
+              >SCB, Elpriser och elavtal</a
+            >: totalpris på el för hushåll med 5 000 till 14 999 kWh/år, inklusive nät, elskatt och moms, var 239,84 öre/kWh andra halvåret
+            2025. Ger elprisets default.
+          </li>
+          <li>
             <a href="../RantaPaRanta/" target="_blank" rel="noopener">Ränta på ränta</a> är dit jämförelseläget länkar: vad
             månadsbesparingen från att välja den billigare bilen är värd om den investeras i stället.
           </li>
@@ -172,6 +230,7 @@
 
     <script src="../lib/engine.js"></script>
     <script src="../lib/ui.js"></script>
+    <script src="../lib/mortgage.js"></script>
     <script src="./script.js"></script>
   </body>
 </html>
