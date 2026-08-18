@@ -12,7 +12,6 @@ time, and a Monte Carlo spread instead of one smooth line.
 ```
 RantaPaRanta/
 ├── index.html            markup and all the explanatory prose
-├── styles.css            dark theme, matches the site palette
 ├── script.js             engine + chart + UI, plain script (no modules)
 └── test/scenarios.mjs    headless Node runner, the only way this gets verified
 ```
