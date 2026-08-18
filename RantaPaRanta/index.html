@@ -34,7 +34,6 @@
           <div id="adv" class="controls"></div>
           <div class="toggles">
             <label><input type="checkbox" id="isk" checked /> ISK-schablonskatt</label>
-            <label><input type="checkbox" id="volOn" checked /> Visa utfallsspann (Monte Carlo)</label>
             <label><input type="checkbox" id="lysaOn" checked /> Visa referenssiffra utan justeringar</label>
           </div>
         </details>
@@ -55,11 +54,11 @@
       </section>
 
       <section class="chart-wrap">
-        <div class="legend">
-          <span><i class="sw-in"></i> Insatt</span>
-          <span><i class="sw-ret"></i> Avkastning</span>
-          <span><i class="sw-loss"></i> Förlorad köpkraft</span>
-          <span class="band-legend"><i class="sw-band"></i> Spann p10 till p90</span>
+        <div class="legend" id="legend">
+          <button type="button" data-series="in"><i class="sw-in"></i> <span>Insatt</span></button>
+          <button type="button" data-series="ret"><i class="sw-ret"></i> <span>Avkastning</span></button>
+          <button type="button" data-series="loss"><i class="sw-loss"></i> <span>Förlorad köpkraft</span></button>
+          <button type="button" data-series="band" class="off"><i class="sw-band"></i> <span>Spann p10 till p90</span></button>
         </div>
         <div id="chart"></div>
         <div id="tip" class="tip"></div>
@@ -109,7 +108,9 @@
           <li>
             <strong>Avkastningen är inte 7 % varje år.</strong> Spannet kommer från 1 200 simulerade utfall med lognormal månadsavkastning,
             median satt till din angivna avkastning. Poängen är inte precisionen i p10 och p90, det är att de ligger så långt ifrån
-            varandra. Ett enda tal på 45 års horisont är alltid en förenkling.
+            varandra. Ett enda tal på 45 års horisont är alltid en förenkling. Bandet är avstängt från början eftersom p90 annars sätter
+            skalan och trycker ner staplarna: klicka "Spann p10 till p90" i förklaringen ovanför diagrammet. Alla fyra posterna i
+            förklaringen går att klicka på, och axeln skalar om efter det som syns.
           </li>
           <li>
             <strong>Den streckade medianlinjen ligger över staplarna</strong>, och det är inte ett fel. Staplarna är ett enda scenario där

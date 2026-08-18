@@ -15,9 +15,10 @@ import path from "path";
 const here = path.dirname(new URL(import.meta.url).pathname);
 const code = fs.readFileSync(path.join(here, "..", "script.js"), "utf8");
 const sandbox = { document: { addEventListener() {} }, window: { addEventListener() {} }, requestAnimationFrame() {}, Intl, Math, console };
-const { simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, PRESETS, CONTROLS } =
+const { simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, PRESETS, CONTROLS, SHOW } =
   vm.runInContext(
-    code + ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, PRESETS, CONTROLS})",
+    code +
+      ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, PRESETS, CONTROLS, SHOW})",
     vm.createContext(sandbox)
   );
 
@@ -241,6 +242,15 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
     });
     check("preset " + preset.name + " har en horisont", preset.v.years > 0);
   });
+}
+
+// 17. Opening state of the chart series: bars on, spread off, so the axis opens
+//     scaled to the bars.
+{
+  check("insatt syns fran borjan", SHOW.in === true);
+  check("avkastning syns fran borjan", SHOW.ret === true);
+  check("forlorad kopkraft syns fran borjan", SHOW.loss === true);
+  check("spannet ar avstangt fran borjan", SHOW.band === false);
 }
 
 console.log("\n" + pass + " passerade, " + fail + " misslyckades");

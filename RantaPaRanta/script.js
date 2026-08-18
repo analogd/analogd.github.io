@@ -117,6 +117,10 @@ const PRESETS = [
 const el = {};
 let basis = "life";
 
+// The legend is the series control. The spread starts off, so the axis opens
+// scaled to the bars rather than to p90.
+const SHOW = { in: true, ret: true, loss: true, band: false };
+
 // ---------- formatting ----------
 
 const NF = new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 0 });
@@ -318,7 +322,7 @@ let bandVal = null;
 let bandTimer = null;
 
 function getBand(p) {
-  if (!el.volOn.checked || p.vol <= 0) {
+  if (!SHOW.band || p.vol <= 0) {
     bandKey = null;
     bandVal = null;
     return null;
@@ -379,7 +383,7 @@ function render() {
           "p10 till p90 av " + NF.format(NPATHS) + " simulerade utfall",
           false
         ]
-      : ["Utfallsspann", "Avstängt", "slås på under Avancerat", false],
+      : ["Utfallsspann", "Avstängt", "klicka Spann p10 till p90 i diagramförklaringen", false],
     [
       "Bankmodellens siffra",
       kr(naiveBal[Y]),
@@ -482,9 +486,17 @@ function drawChart(v) {
     }
   }
 
+  // Only what is actually drawn sets the scale, so hiding a series rescales.
+  const barTop = (y) => {
+    if (SHOW.in && SHOW.ret) return Math.max(val[y], SHOW.loss ? paid[y] : val[y]);
+    if (SHOW.ret) return Math.max(0, val[y] - paid[y]);
+    if (SHOW.in) return paid[y];
+    return 0;
+  };
+
   let max = 0;
   for (let y = 0; y <= Y; y++) {
-    max = Math.max(max, val[y], paid[y], v.band ? hi[y] : 0);
+    max = Math.max(max, barTop(y), v.band ? hi[y] : 0);
   }
   // Pick a round step first, then derive the top, so the labels read
   // 1 mkr / 2 mkr / 3 mkr rather than 875 tkr / 1,8 mkr / 2,6 mkr.
@@ -567,12 +579,19 @@ function drawChart(v) {
     const bx = x(y) - barW / 2;
     const vTop = yy(val[y]);
     const pTop = yy(paid[y]);
-    if (val[y] >= paid[y]) {
+    if (SHOW.in && SHOW.ret) {
+      if (val[y] >= paid[y]) {
+        s += rect(bx, pTop, barW, zero - pTop, "var(--in)");
+        s += rect(bx, vTop, barW, pTop - vTop, "var(--ret)");
+      } else {
+        s += rect(bx, vTop, barW, zero - vTop, "var(--in)");
+        if (SHOW.loss) s += rect(bx, pTop, barW, vTop - pTop, "var(--loss)", 0.55);
+      }
+    } else if (SHOW.ret) {
+      const gain = Math.max(0, val[y] - paid[y]);
+      s += rect(bx, yy(gain), barW, zero - yy(gain), "var(--ret)");
+    } else if (SHOW.in) {
       s += rect(bx, pTop, barW, zero - pTop, "var(--in)");
-      s += rect(bx, vTop, barW, pTop - vTop, "var(--ret)");
-    } else {
-      s += rect(bx, vTop, barW, zero - vTop, "var(--in)");
-      s += rect(bx, pTop, barW, vTop - pTop, "var(--loss)", 0.55);
     }
   }
 
@@ -792,7 +811,6 @@ function init() {
   buildPresets();
 
   el.isk = document.getElementById("isk");
-  el.volOn = document.getElementById("volOn");
   el.lysaOn = document.getElementById("lysaOn");
   el.stats = document.getElementById("stats");
   el.chart = document.getElementById("chart");
@@ -819,7 +837,18 @@ function init() {
     }
   });
 
-  [el.isk, el.volOn, el.lysaOn].forEach((c) => c.addEventListener("change", schedule));
+  [el.isk, el.lysaOn].forEach((c) => c.addEventListener("change", schedule));
+
+  document.querySelectorAll("#legend button").forEach((b) => {
+    const key = b.dataset.series;
+    b.setAttribute("aria-pressed", String(SHOW[key]));
+    b.addEventListener("click", () => {
+      SHOW[key] = !SHOW[key];
+      b.classList.toggle("off", !SHOW[key]);
+      b.setAttribute("aria-pressed", String(SHOW[key]));
+      render();
+    });
+  });
 
   document.querySelectorAll("#basis button").forEach((b) => {
     b.addEventListener("click", () => {
