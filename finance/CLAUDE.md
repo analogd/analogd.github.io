@@ -4,11 +4,27 @@ Personal-finance calculators. Swedish rules, Swedish audience, Swedish UI text.
 The root `CLAUDE.md` bar applies in full; this file adds what the domain needs on
 top of it.
 
+## Shared libraries
+
+Loaded as plain scripts, in dependency order, before each app script. ES modules do
+not load over `file://`, so they define their names in global scope.
+
+| File              | Holds                                                                                                                                                                                        |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/engine.js`   | The fund arithmetic. `simulateFlows` takes a month-by-month deposit series; `simulate` is the geometric-ramp special case. Bases, deflators, money-weighted return, Monte Carlo band.        |
+| `lib/ui.js`       | Formatters, the squared slider curve, the `fieldText`/`parseField` pair, `niceStep`, and the URL contract (`parseUrlValues`, `buildUrlQuery`), which take the app's control list explicitly. |
+| `lib/mortgage.js` | Swedish mortgage mechanics: interest deduction with its cap, the amortisation ladder, and the payoff-versus-invest comparison.                                                               |
+| `lib/app.css`     | The shared stylesheet.                                                                                                                                                                       |
+
+Each app builds its own DOM, because the layouts genuinely differ. No app
+reimplements a formatter, the link format, or any arithmetic.
+
 ## Apps
 
-| Directory       | What it answers                                                                                                                             |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RantaPaRanta/` | What a monthly saving is actually worth after inflation, standardglidning, avgift and ISK-skatt. The reference engine the others link into. |
+| Directory                 | What it answers                                                                                                                                |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RantaPaRanta/`           | What a monthly saving is actually worth after inflation, standardglidning, avgift and ISK-skatt. The calculator the others hand a scenario to. |
+| `AmorteraEllerInvestera/` | Mortgage versus index fund, answered as a break-even expected return. Both branches spend the same monthly budget.                             |
 
 ## Tax and rate numbers
 

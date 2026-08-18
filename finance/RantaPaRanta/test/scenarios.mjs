@@ -15,7 +15,7 @@ import path from "path";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
 const read = (...p) => fs.readFileSync(path.join(here, ...p), "utf8");
-const code = read("..", "..", "lib", "engine.js") + "\n" + read("..", "script.js");
+const code = [read("..", "..", "lib", "engine.js"), read("..", "..", "lib", "ui.js"), read("..", "script.js")].join("\n");
 const sandbox = {
   document: { addEventListener() {} },
   window: { addEventListener() {} },
@@ -385,21 +385,21 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
 
   // Defaults are never written, so a link stays short and a revised default is
   // not frozen into every old link.
-  near("inga defaultvarden i lanken", buildUrlQuery(defaults, { isk: true, ref: true }, "life", false).length, 0, 0);
+  near("inga defaultvarden i lanken", buildUrlQuery(CONTROLS, defaults, { isk: true, ref: true }, "life", false).length, 0, 0);
 
   // Anything that differs is written, as a plain number a foreign app can build.
-  const q = buildUrlQuery({ ...defaults, monthly: 417, years: 37, growth: 2 }, { isk: true, ref: true }, "life", false);
+  const q = buildUrlQuery(CONTROLS, { ...defaults, monthly: 417, years: 37, growth: 2 }, { isk: true, ref: true }, "life", false);
   check("bara det som avviker skrivs ut", q === "monthly=417&years=37&growth=2", q, "monthly=417&years=37&growth=2");
   check("inga lokaliserade tal i lanken", !/[\s,]/.test(q), q, "punkt som decimaltecken, inga blanksteg");
 
   // Flags and basis only appear when they leave their default.
-  check("avstangda flaggor syns", buildUrlQuery(defaults, { isk: false, ref: false }, "life", false) === "isk=0&ref=0");
-  check("basmatt syns bara nar det inte ar life", buildUrlQuery(defaults, {}, "cpi", false) === "basis=cpi");
-  check("spannet syns nar det ar pa", buildUrlQuery(defaults, {}, "life", true) === "band=1");
+  check("avstangda flaggor syns", buildUrlQuery(CONTROLS, defaults, { isk: false, ref: false }, "life", false) === "isk=0&ref=0");
+  check("basmatt syns bara nar det inte ar life", buildUrlQuery(CONTROLS, defaults, {}, "cpi", false) === "basis=cpi");
+  check("spannet syns nar det ar pa", buildUrlQuery(CONTROLS, defaults, {}, "life", true) === "band=1");
 
   // Round trip: what is written is what comes back.
   const wanted = { ...defaults, start: 250000, monthly: 1500, age: 41, years: 26, ret: 6.5, growth: -2.5 };
-  const back = parseUrlValues("?" + buildUrlQuery(wanted, { isk: false, ref: true }, "nom", true));
+  const back = parseUrlValues(CONTROLS, "?" + buildUrlQuery(CONTROLS, wanted, { isk: false, ref: true }, "nom", true));
   Object.keys(wanted).forEach((id) => {
     if (Math.abs(wanted[id] - defaults[id]) > 1e-9) near("url round-trip " + id, back.values[id], wanted[id], 1e-9);
   });
@@ -409,13 +409,13 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
   check("spannet foljer med", back.band === true);
 
   // A hostile or hand-edited link must not poison the state.
-  const junk = parseUrlValues("?monthly=abc&years=&basis=nonsense&start=1e5&nope=1");
+  const junk = parseUrlValues(CONTROLS, "?monthly=abc&years=&basis=nonsense&start=1e5&nope=1");
   check("skrapvarden ignoreras", junk.values.monthly === undefined && junk.values.years === undefined);
   check("okant basmatt ignoreras", junk.basis === null, junk.basis, "null");
   near("exponentform ar giltigt tal", junk.values.start, 100000, 0);
 
   // Comma as decimal separator, because someone will hand-edit a link.
-  near("kommatecken funkar i lanken", parseUrlValues("?ret=6,5").values.ret, 6.5, 0);
+  near("kommatecken funkar i lanken", parseUrlValues(CONTROLS, "?ret=6,5").values.ret, 6.5, 0);
 }
 
 // 23. Wiring. The engine and the UI are separate files now, and the script asks
@@ -444,9 +444,16 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
 
   // Load order is load-bearing: script.js reads names the engine declares.
   const engineAt = page.indexOf("../lib/engine.js");
-  const uiAt = page.indexOf("./script.js");
+  const libAt = page.indexOf("../lib/ui.js");
+  const appAt = page.indexOf("./script.js");
   check("motorn laddas", engineAt > -1);
-  check("motorn laddas fore ui:t", engineAt > -1 && uiAt > engineAt, engineAt + " vs " + uiAt, "motorn forst");
+  check("ui-biblioteket laddas", libAt > -1);
+  check(
+    "laddordningen ar motor, ui, app",
+    engineAt > -1 && libAt > engineAt && appAt > libAt,
+    [engineAt, libAt, appAt].join(" "),
+    "vaxande"
+  );
 
   // Both preset rows have a host, and the cost row is not accidentally empty.
   check("bada presetraderna finns i sidan", page.includes('id="presets"') && page.includes('id="cost-presets"'));

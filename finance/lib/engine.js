@@ -47,9 +47,16 @@ const Z = (function () {
 
 // ---------- engine ----------
 
-// Runs one path month by month. zOff = null gives the deterministic path.
-// bal/contrib are written per completed year (index 0 = today).
-function simulate(p, zOff, bal, contrib) {
+// Runs one path month by month, taking the deposit for month m from contribOf(m).
+// zOff = null gives the deterministic path. bal/contrib are written per completed
+// year (index 0 = today).
+//
+// The contribution series is a callback rather than a rate so that a caller with
+// an irregular cash flow (a mortgage being paid off frees money gradually) gets
+// the same compounding, fee and ISK treatment as a flat monthly saving. simulate()
+// below is the special case where the series is a geometric ramp. There is one
+// implementation of this arithmetic on the site, and this is it.
+function simulateFlows(p, contribOf, zOff, bal, contrib) {
   const N = p.years * 12;
   const detM = Math.pow(1 + p.ret, 1 / 12);
   const feeM = Math.pow(1 - p.fee, 1 / 12);
@@ -70,7 +77,7 @@ function simulate(p, zOff, bal, contrib) {
   for (let m = 0; m < N; m++) {
     if (m % 3 === 0) qSum += b;
 
-    const c = p.monthly * Math.pow(1 + p.growth, (m / 12) | 0);
+    const c = contribOf(m);
     b += c;
     paid += c;
     dep += c;
@@ -96,6 +103,16 @@ function simulate(p, zOff, bal, contrib) {
     }
   }
   return { fees: fees, tax: tax };
+}
+
+// The flat-monthly-saving case: a contribution that steps up (or down) once a year
+// by p.growth. This is what RantaPaRanta drives.
+function rampOf(p) {
+  return (m) => p.monthly * Math.pow(1 + p.growth, (m / 12) | 0);
+}
+
+function simulate(p, zOff, bal, contrib) {
+  return simulateFlows(p, rampOf(p), zOff, bal, contrib);
 }
 
 function percentileBand(p) {
@@ -143,11 +160,12 @@ function deflator(p, y) {
 // entirely, which made "forlorad kopkraft" unreachable.
 function realContributions(p) {
   const f = basisFactor(p);
+  const ramp = rampOf(p);
   const out = new Float64Array(p.years + 1);
   let acc = p.start;
   out[0] = acc;
   for (let m = 0; m < p.years * 12; m++) {
-    acc += (p.monthly * Math.pow(1 + p.growth, (m / 12) | 0)) / Math.pow(f, (m + 1) / 12);
+    acc += ramp(m) / Math.pow(f, (m + 1) / 12);
     if (m % 12 === 11) out[(m + 1) / 12] = acc;
   }
   return out;

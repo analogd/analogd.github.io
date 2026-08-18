@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Amortera eller investera</title>
+    <link rel="stylesheet" href="../lib/app.css" />
+  </head>
+  <body>
+    <a class="back" href="../../">analogd</a>
+
+    <header>
+      <h1>Amortera eller investera</h1>
+      <p class="lede">
+        Frågan avgörs av två tal: bolåneräntan efter ränteavdrag, som är garanterad, och avkastningen efter avgift och ISK-skatt, som inte
+        är det. Här räknas båda grenarna på samma månadsbudget, så att den som betalar mindre ränta också får investera skillnaden.
+      </p>
+    </header>
+
+    <main>
+      <section class="panel">
+        <div class="presets-row">
+          <span class="presets-label">Utgå från</span>
+          <div id="presets" class="presets"></div>
+        </div>
+
+        <div id="basic" class="controls"></div>
+
+        <details id="adv-wrap">
+          <summary>
+            Avancerat
+            <span id="adv-summary" class="adv-summary"></span>
+          </summary>
+          <div id="adv" class="controls"></div>
+          <div class="toggles">
+            <label><input type="checkbox" id="isk" checked /> ISK-schablonskatt</label>
+          </div>
+        </details>
+      </section>
+
+      <section class="result">
+        <div class="basis" id="basis" role="tablist">
+          <button data-basis="life" class="active">Livsstilsjusterat</button>
+          <button data-basis="cpi">Dagens kronor (KPI)</button>
+          <button data-basis="nom">Nominellt</button>
+        </div>
+
+        <p class="result-label" id="result-label"></p>
+        <p class="result-total" id="result-total"></p>
+        <p class="result-split" id="result-split"></p>
+
+        <div class="stats" id="stats"></div>
+
+        <p class="links" style="margin-top: 18px"><a id="handover" href="../RantaPaRanta/"></a></p>
+      </section>
+
+      <section class="chart-wrap">
+        <div class="legend" id="legend">
+          <button type="button" data-series="invest"><i class="sw-ret"></i> <span>Investera, netto</span></button>
+          <button type="button" data-series="amortise"><i class="sw-start"></i> <span>Amortera, netto</span></button>
+          <button type="button" data-series="debt"><i class="sw-loss"></i> <span>Kvar av lånet</span></button>
+        </div>
+        <div id="chart"></div>
+        <div id="tip" class="tip"></div>
+      </section>
+
+      <section class="notes">
+        <h2>Varför samma budget</h2>
+        <p>
+          De flesta jämförelser låter den ena grenen behålla pengar den andra inte får. Här spenderar båda exakt lika mycket varje månad:
+          ränta, krävd amortering, och det extra beloppet. Grenen som amorterar snabbare får lägre ränta, och den frigjorda kronan går in i
+          fonden samma månad. Utan den regeln vinner amortering på förhand, eftersom vinsten räknas men inte det som vinsten frigör.
+        </p>
+        <p>
+          Jämförelsen görs på <strong>nettoförmögenhet</strong>: fondvärde minus kvarvarande skuld. Amortering flyttar pengar från
+          vänsterkolumnen till att skulden krymper, vilket är samma sak för förmögenheten men inte samma sak för risken.
+        </p>
+
+        <h2>Ränteavdraget är inte 30 %</h2>
+        <p>
+          Avdraget är 30 % av räntan upp till 100 000 kr per person och år, och 21 % över det. Det är den
+          <em>marginella</em> nivån som avgör valet, inte snittet: med hög ränteutgift är nästa amorterade krona värd mindre, eftersom den
+          minskar ränta du bara får 79 öre kvar av. Taket är per person, så två låntagare har dubbla. Justera taket om ni är två.
+        </p>
+
+        <h2>Amorteringskravet, och vad det gör med frågan</h2>
+        <p>
+          Över 70 % belåningsgrad ska 2 % av lånet amorteras per år, över 50 % gäller 1 %, och över en skuldkvot på 4,5 gånger hushållets
+          bruttoinkomst tillkommer 1 procentenhet. Under 50 % finns inget krav. Det betyder att frågan bara är din i den nedre delen av
+          trappan: högt upp amorterar du ändå, och valet gäller enbart de extra kronorna.
+        </p>
+        <p>
+          Modellen läser av trappan mot nuvarande skuld och ett fast bostadsvärde, så kravet trappas ner när lånet krymper. Regelverket
+          kopplar procenten till lånet vid senaste värdering och släpper den först vid en ny, vilket i praktiken betyder att nedtrappningen
+          kan komma senare än här.
+        </p>
+
+        <h2>Brytpunkten är svaret</h2>
+        <p>
+          Brytpunkten är den förväntade avkastning där grenarna slutar på samma nettoförmögenhet. Ligger din förväntan över den vinner
+          fonden, ligger den under vinner amortering. Den ligger alltid högre än räntan efter avdrag, eftersom avgiften och ISK-skatten ska
+          betalas först. Bolåneräntan är samtidigt det enda talet i hela kalkylen du vet säkert.
+        </p>
+
+        <h2>Vad den inte gör</h2>
+        <p>
+          Ingen volatilitet, alltså ingen risk för att sekvensen av avkastning går emot dig, och det är den viktigaste skillnaden mellan
+          grenarna: amortering ger en garanterad avkastning, fondsparande en förväntad. Ingen rörlig ränta över tiden, ingen ränteändring
+          alls. Budgeten står still i nominella kronor, så den blir lättare att bära för varje år som går. Inga uppläggningsavgifter, ingen
+          flyttkostnad, ingen skatt på bostadsvinsten, ingen buffert och ingen arbetslöshet. Fonden ligger på ISK och beskattas som en ISK,
+          inte som en kapitalförsäkring eller ett vanligt depåkonto.
+        </p>
+
+        <h2>Räkna vidare</h2>
+        <ul class="links">
+          <li>
+            <a
+              href="https://www.skatteverket.se/privat/skatter/vardepapper/aktiehistorik/ranteavdrag.4.7459477810df5bccdd4800014145.html"
+              target="_blank"
+              rel="noopener"
+              >Skatteverket, avdrag för ränteutgifter</a
+            >
+            för avdragets nivåer och taket.
+          </li>
+          <li>
+            <a href="https://www.fi.se/sv/bankratt/amorteringskrav/" target="_blank" rel="noopener"
+              >Finansinspektionen, amorteringskravet</a
+            >
+            för trappan och skuldkvotstaket.
+          </li>
+          <li>
+            <a href="../RantaPaRanta/">Ränta på ränta, osockrat</a> är samma räknemotor för sparandesidan, med inflation, standardglidning
+            och utfallsspann.
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <a href="https://github.com/analogd/analogd.github.io" target="_blank" rel="noopener">GitHub</a>
+      &nbsp;&middot;&nbsp; Daniel Nilsson
+    </footer>
+
+    <script src="../lib/engine.js"></script>
+    <script src="../lib/ui.js"></script>
+    <script src="../lib/mortgage.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>
