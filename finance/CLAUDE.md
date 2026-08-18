@@ -34,6 +34,25 @@ top of it.
   return. Small, but the kind of thing that has to be written down rather than
   discovered.
 
+## Pension sources, for when the pension app gets built
+
+A dedicated session is planned for designing the pension calculators. Start from
+these rather than from scratch:
+
+- **pensionsguiden.nu** hosts two calculators, one of them a sparkalkylator that
+  models withdrawals: <https://pensionsguiden.nu/sparkalkylator-med-uttag>. The
+  author is a well-regarded contributor on the RikaTillsammans forum, so the
+  reasoning in the surrounding text is worth reading, not just the arithmetic.
+  This is the closest thing to a peer benchmark, and a candidate external anchor.
+- **Pensionsmyndigheten** for the statutory layer: allmän pension, inkomstbasbelopp,
+  the 7,5 and 8,07 IBB breakpoints, uttagsregler.
+- **minpension.se** for what a real forecast contains, and for the vocabulary
+  people arrive with.
+
+The withdrawal phase is the gap in RantaPaRanta: it accumulates and stops. Any
+pension app has to model drawdown, sequence-of-returns risk in the first years of
+withdrawal, and the tax profile of an uttag, none of which exist here yet.
+
 ## Basis conventions
 
 Any app showing a future amount offers the same three bases, with the same names,

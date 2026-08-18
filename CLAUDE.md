@@ -78,7 +78,14 @@ cannot clear it is not ready to link from the index.
 11. **Mobile is a real target.** SVG geometry and font sizes scale with the
     container, and anything that relies on hover has a touch path.
 
-12. **Language follows the subject, not the repo.** ISK, statslåneränta and
+12. **Presets are how the app teaches.** Not a convenience: they are the fastest
+    path to the insight, because a reader recognises a situation before they
+    understand a slider. Ship a handful of situations people actually recognise,
+    name them in plain language, and make sure one of them shows the effect the
+    app exists to show. A second row is allowed when it asks a different
+    question, as long as both rows only set the situation (see Conventions).
+
+13. **Language follows the subject, not the repo.** ISK, statslåneränta and
     Skatteverket are Swedish concepts, so those apps are written in Swedish.
     Audio apps are written in English, because the literature and the audience
     are. The root gallery is English. Never mix inside one page.
@@ -116,6 +123,14 @@ second concept. In Swedish that mostly means short main clauses and no chains of
 - Presets set the _situation_ only (age, amounts, horizon). They never touch the
   honesty knobs, because "pick a preset" must not quietly re-optimise the
   assumptions in the user's favour.
+- Shared arithmetic lives in a `lib/engine.js` next to the apps that use it, as a
+  plain script defining global names. ES modules do not load over `file://`, so a
+  module import would break rule 9.
+- An app hands state to another app through URL query parameters only: one
+  parameter per control id, plain numbers with a dot decimal separator, flags as
+  0 or 1, and defaults omitted so old links do not freeze a revised default. The
+  parse and build halves are pure functions with tests, because this is an
+  interface between apps and not an implementation detail.
 - The chart legend is the series control, and the axis rescales to what is
   visible.
 - Prettier config lives in `package.json`. `npx prettier --write` before

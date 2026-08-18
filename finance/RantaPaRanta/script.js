@@ -1,11 +1,10 @@
 "use strict";
 
 // Ranta pa ranta, osockrat.
-// Deterministic monthly engine + Monte Carlo band. Everything runs client side,
-// nothing is stored, no dependencies.
+// UI, chart and URL state. The arithmetic lives in ../lib/engine.js, which this
+// page loads first. Everything runs client side, nothing is stored, no
+// dependencies.
 
-const NPATHS = 1200;
-const MAXY = 60;
 // Years of ramp behind the back-solve helper. It mirrors the horizon exactly, and
 // is anchored to the LAST saving year rather than to the horizon end: the
 // contributions run through year Y-1, so (1+g)^(Y-1) is the final monthly amount.
@@ -124,6 +123,20 @@ const PRESETS = [
   { name: "Barnspar till 18", v: { start: 0, monthly: 1000, age: 0, years: 18, growth: 0 } }
 ];
 
+// The same engine read backwards: what a habit costs, priced as the saving it
+// replaces. A phone is not a 15 000 kr purchase, it is 417 kr a month for as long
+// as you keep buying phones, and that is the number worth seeing. Growth is set
+// to the inflation default, so the habit stays the same size in real terms
+// instead of quietly shrinking.
+//
+// These state a price. They do not tell anyone what to buy.
+const COST_PRESETS = [
+  { name: "Telefon, 15 000 kr var 3:e år", v: { start: 0, monthly: 417, age: 30, years: 37, growth: 2 } },
+  { name: "Lunch ute i stället för matlåda", v: { start: 0, monthly: 2000, age: 30, years: 37, growth: 2 } },
+  { name: "En bilklass uppåt", v: { start: 0, monthly: 1500, age: 30, years: 37, growth: 2 } },
+  { name: "Tre streamingtjänster", v: { start: 0, monthly: 500, age: 30, years: 37, growth: 2 } }
+];
+
 const el = {};
 let basis = "life";
 
@@ -144,113 +157,6 @@ function krShort(v) {
   if (a >= 1e6) return NF2.format(v / 1e6) + " mkr";
   if (a >= 1e4) return NF.format(Math.round(v / 1000)) + " tkr";
   return NF.format(Math.round(v));
-}
-
-// ---------- pre-generated standard normals (seeded, so sliders do not jitter) ----------
-
-function mulberry32(a) {
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const Z = (function () {
-  const n = NPATHS * MAXY * 12;
-  const z = new Float32Array(n);
-  const rnd = mulberry32(20260818);
-  for (let i = 0; i < n; i += 2) {
-    let u = rnd();
-    if (u < 1e-12) u = 1e-12;
-    const r = Math.sqrt(-2 * Math.log(u));
-    const th = 2 * Math.PI * rnd();
-    z[i] = r * Math.cos(th);
-    if (i + 1 < n) z[i + 1] = r * Math.sin(th);
-  }
-  return z;
-})();
-
-// ---------- engine ----------
-
-// Runs one path month by month. zOff = null gives the deterministic path.
-// bal/contrib are written per completed year (index 0 = today).
-function simulate(p, zOff, bal, contrib) {
-  const N = p.years * 12;
-  const detM = Math.pow(1 + p.ret, 1 / 12);
-  const feeM = Math.pow(1 - p.fee, 1 / 12);
-  const muM = Math.log(1 + p.ret) / 12;
-  const sdM = p.vol / Math.sqrt(12);
-  const taxRate = 0.3 * Math.max(p.slr + 0.01, 0.0125);
-
-  let b = p.start;
-  let paid = p.start;
-  let fees = 0;
-  let tax = 0;
-  let qSum = 0; // quarter-opening values, the ISK kapitalunderlag base
-  let dep = 0; // deposits during the current year
-
-  bal[0] = b;
-  contrib[0] = paid;
-
-  for (let m = 0; m < N; m++) {
-    if (m % 3 === 0) qSum += b;
-
-    const c = p.monthly * Math.pow(1 + p.growth, (m / 12) | 0);
-    b += c;
-    paid += c;
-    dep += c;
-
-    b *= zOff === null ? detM : Math.exp(muM + sdM * Z[zOff + m]);
-
-    const beforeFee = b;
-    b *= feeM;
-    fees += beforeFee - b;
-
-    if (m % 12 === 11) {
-      if (p.isk) {
-        const t = taxRate * Math.max(0, (qSum + dep) / 4 - p.iskFree);
-        b -= t;
-        tax += t;
-      }
-      qSum = 0;
-      dep = 0;
-      if (b < 0) b = 0;
-      const y = (m + 1) / 12;
-      bal[y] = b;
-      contrib[y] = paid;
-    }
-  }
-  return { fees: fees, tax: tax };
-}
-
-function percentileBand(p) {
-  const Y = p.years;
-  const rows = Y + 1;
-  const mat = new Float64Array(rows * NPATHS);
-  const bal = new Float64Array(rows);
-  const contrib = new Float64Array(rows);
-  const stride = MAXY * 12;
-
-  for (let k = 0; k < NPATHS; k++) {
-    simulate(p, k * stride, bal, contrib);
-    for (let y = 0; y < rows; y++) mat[y * NPATHS + k] = bal[y];
-  }
-
-  const p10 = new Float64Array(rows);
-  const p50 = new Float64Array(rows);
-  const p90 = new Float64Array(rows);
-  const col = new Float64Array(NPATHS);
-  for (let y = 0; y < rows; y++) {
-    col.set(mat.subarray(y * NPATHS, y * NPATHS + NPATHS));
-    const s = Array.prototype.slice.call(col).sort((a, b) => a - b);
-    p10[y] = s[Math.floor(0.1 * (NPATHS - 1))];
-    p50[y] = s[Math.floor(0.5 * (NPATHS - 1))];
-    p90[y] = s[Math.floor(0.9 * (NPATHS - 1))];
-  }
-  return { p10: p10, p50: p50, p90: p90 };
 }
 
 // ---------- state ----------
@@ -274,35 +180,9 @@ function readParams() {
     slr: v.slr / 100,
     iskFree: v.iskFree,
     vol: v.vol / 100,
-    isk: el.isk.checked
+    isk: el.isk.checked,
+    basis: basis
   };
-}
-
-function basisFactor(p) {
-  if (basis === "nom") return 1;
-  return basis === "cpi" ? 1 + p.inflation : (1 + p.inflation) * (1 + p.drift);
-}
-
-function deflator(p, y) {
-  return Math.pow(basisFactor(p), y);
-}
-
-// What the contributions cost in today's purchasing power. Each one is deflated
-// by its OWN date, not by the end year: 1 000 kr paid in 30 years is not the
-// same sacrifice as 1 000 kr paid today, and the start amount is paid today, so
-// it is never deflated at all. Deflating the whole running total by the end-year
-// factor (the earlier version) cancelled inflation out of the comparison
-// entirely, which made "forlorad kopkraft" unreachable.
-function realContributions(p) {
-  const f = basisFactor(p);
-  const out = new Float64Array(p.years + 1);
-  let acc = p.start;
-  out[0] = acc;
-  for (let m = 0; m < p.years * 12; m++) {
-    acc += (p.monthly * Math.pow(1 + p.growth, (m / 12) | 0)) / Math.pow(f, (m + 1) / 12);
-    if (m % 12 === 11) out[(m + 1) / 12] = acc;
-  }
-  return out;
 }
 
 const BASIS_LABEL = {
@@ -317,30 +197,6 @@ const BASIS_NOTE = {
   cpi: "i dagens kronor, KPI-justerat",
   life: "i dagens levnadsstandard, KPI och standardglidning"
 };
-
-// Money-weighted (internal) rate of return on the actual cash flows, so fees,
-// tax and the contribution ramp are all inside the number. Bisection on the
-// monthly rate: the terminal value is monotone in it.
-function moneyWeightedReturn(p, endValue) {
-  const N = p.years * 12;
-  const forward = (rm) => {
-    let v = p.start;
-    for (let m = 0; m < N; m++) {
-      v += p.monthly * Math.pow(1 + p.growth, (m / 12) | 0);
-      v *= rm;
-    }
-    return v;
-  };
-  let lo = 0.5;
-  let hi = 1.05;
-  if (forward(hi) < endValue) return NaN;
-  for (let i = 0; i < 80; i++) {
-    const mid = (lo + hi) / 2;
-    if (forward(mid) < endValue) lo = mid;
-    else hi = mid;
-  }
-  return Math.pow((lo + hi) / 2, 12) - 1;
-}
 
 // ---------- render ----------
 
@@ -402,8 +258,7 @@ function render() {
 
   // Nominal money-weighted return, then Fisher-deflated into the chosen basis.
   const nomRate = moneyWeightedReturn(p, bal[Y]);
-  const deflFactor = basis === "nom" ? 1 : basis === "cpi" ? 1 + p.inflation : (1 + p.inflation) * (1 + p.drift);
-  const realRate = (1 + nomRate) / deflFactor - 1;
+  const realRate = (1 + nomRate) / basisFactor(p) - 1;
 
   // The gap is not always in the bank's favour: a contribution ramping up faster
   // than inflation eats it, so the direction has to be read off the sign rather
@@ -459,6 +314,7 @@ function render() {
   view = { p: p, bal: bal, contrib: contrib, realPaid: realPaid, band: band };
   drawChart(view);
   updateHints(p);
+  writeUrlState();
 }
 
 function updateHints(p) {
@@ -780,9 +636,11 @@ function buildControls() {
     const wrap = document.createElement("div");
     wrap.className = "ctl";
     wrap.innerHTML =
-      '<div class="ctl-head"><span class="ctl-label">' +
+      '<div class="ctl-head"><label class="ctl-label" for="n-' +
+      c.id +
+      '">' +
       c.label +
-      "</span>" +
+      "</label>" +
       '<span class="ctl-value"><input type="text" inputmode="decimal" id="n-' +
       c.id +
       '" value="' +
@@ -795,7 +653,9 @@ function buildControls() {
       "</div>" +
       '<input type="range" id="r-' +
       c.id +
-      '" min="0" max="' +
+      '" aria-label="' +
+      c.label +
+      ', reglage" min="0" max="' +
       SLIDER_STEPS +
       '" step="1" value="' +
       valueToSlider(c, c.value) +
@@ -830,20 +690,108 @@ function setControl(id, value) {
   el[id].rng.value = valueToSlider(c, v);
 }
 
-function buildPresets() {
-  const host = document.getElementById("presets");
-  PRESETS.forEach((preset) => {
+function buildPresets(hostId, list) {
+  const host = document.getElementById(hostId);
+  list.forEach((preset) => {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = preset.name;
     b.addEventListener("click", () => {
       Object.keys(preset.v).forEach((id) => setControl(id, preset.v[id]));
-      host.querySelectorAll("button").forEach((o) => o.classList.remove("active"));
+      // Both rows set the same controls, so only one button anywhere can be lit.
+      document.querySelectorAll(".presets button").forEach((o) => o.classList.remove("active"));
       b.classList.add("active");
       render();
     });
     host.appendChild(b);
   });
+}
+
+// ---------- URL state ----------
+//
+// The address bar is the only persistence this page has, and the contract the
+// other calculators here link through: one query parameter per control id, plain
+// numbers with a dot as decimal separator, so a link survives copy and paste and
+// a foreign app can build one without knowing anything about Swedish formatting.
+// Flags are 0 or 1.
+//
+// Only values that differ from the default are written. That keeps a link short,
+// and it means a default we revise later is not frozen into every old link.
+
+// Pure half of the contract, so the link format can be asserted in the tests
+// without a DOM. The DOM glue is applyUrlState and writeUrlState further down.
+
+function parseUrlValues(search) {
+  const q = new URLSearchParams(search);
+  const out = { values: {}, flags: {}, basis: null, band: null };
+  CONTROLS.forEach((c) => {
+    const raw = q.get(c.id);
+    if (raw === null) return;
+    const v = parseFloat(String(raw).replace(",", "."));
+    if (isFinite(v)) out.values[c.id] = v;
+  });
+  ["isk", "ref"].forEach((k) => {
+    if (q.get(k) !== null) out.flags[k] = q.get(k) !== "0";
+  });
+  if (BASIS_NOTE[q.get("basis")]) out.basis = q.get("basis");
+  if (q.get("band") !== null) out.band = q.get("band") !== "0";
+  return out;
+}
+
+function buildUrlQuery(values, flags, basisName, band) {
+  const q = new URLSearchParams();
+  CONTROLS.forEach((c) => {
+    const v = values[c.id];
+    if (isFinite(v) && Math.abs(v - c.value) > 1e-9) q.set(c.id, String(Math.round(v * 100) / 100));
+  });
+  if (flags && flags.isk === false) q.set("isk", "0");
+  if (flags && flags.ref === false) q.set("ref", "0");
+  if (basisName && basisName !== "life") q.set("basis", basisName);
+  if (band) q.set("band", "1");
+  return q.toString();
+}
+
+function setBasis(b) {
+  basis = b;
+  document.querySelectorAll("#basis button").forEach((o) => o.classList.toggle("active", o.dataset.basis === b));
+}
+
+function setSeries(key, on) {
+  SHOW[key] = on;
+  const b = document.querySelector('#legend button[data-series="' + key + '"]');
+  if (!b) return;
+  b.classList.toggle("off", !on);
+  b.setAttribute("aria-pressed", String(on));
+}
+
+function applyUrlState() {
+  const s = parseUrlValues(location.search);
+  Object.keys(s.values).forEach((id) => setControl(id, s.values[id]));
+  if (s.flags.isk !== undefined) el.isk.checked = s.flags.isk;
+  if (s.flags.ref !== undefined) el.lysaOn.checked = s.flags.ref;
+  if (s.basis) setBasis(s.basis);
+  if (s.band !== null) setSeries("band", s.band);
+}
+
+// Called from render, so it fires on every animation frame while a slider is
+// dragged. Safari rate-limits replaceState, so the write is debounced rather than
+// done inline. A file:// page cannot always rewrite its own URL, and that is not
+// worth an exception on a page that otherwise works offline.
+let urlTimer = null;
+function writeUrlState() {
+  clearTimeout(urlTimer);
+  urlTimer = setTimeout(() => {
+    const values = {};
+    CONTROLS.forEach((c) => {
+      values[c.id] = parseField(el[c.id].num.value);
+    });
+    const s = buildUrlQuery(values, { isk: el.isk.checked, ref: el.lysaOn.checked }, basis, SHOW.band);
+    try {
+      history.replaceState(null, "", s ? "?" + s : location.pathname);
+    } catch (e) {
+      /* file:// or a throttled history, nothing the user needs to hear about */
+    }
+  }, 400);
 }
 
 let pending = false;
@@ -858,7 +806,8 @@ function schedule() {
 
 function init() {
   buildControls();
-  buildPresets();
+  buildPresets("presets", PRESETS);
+  buildPresets("cost-presets", COST_PRESETS);
 
   el.isk = document.getElementById("isk");
   el.lysaOn = document.getElementById("lysaOn");
@@ -893,20 +842,16 @@ function init() {
 
   document.querySelectorAll("#legend button").forEach((b) => {
     const key = b.dataset.series;
-    b.setAttribute("aria-pressed", String(SHOW[key]));
+    setSeries(key, SHOW[key]);
     b.addEventListener("click", () => {
-      SHOW[key] = !SHOW[key];
-      b.classList.toggle("off", !SHOW[key]);
-      b.setAttribute("aria-pressed", String(SHOW[key]));
+      setSeries(key, !SHOW[key]);
       render();
     });
   });
 
   document.querySelectorAll("#basis button").forEach((b) => {
     b.addEventListener("click", () => {
-      document.querySelectorAll("#basis button").forEach((o) => o.classList.remove("active"));
-      b.classList.add("active");
-      basis = b.dataset.basis;
+      setBasis(b.dataset.basis);
       render();
     });
   });
@@ -915,6 +860,7 @@ function init() {
     if (view) drawChart(view);
   });
 
+  applyUrlState();
   render();
 }
 

@@ -13,7 +13,7 @@
       <h1>Ränta på ränta, osockrat</h1>
       <p class="lede">
         Samma matematik som bankernas kalkylatorer, men med det de utelämnar: inflation, stigande levnadsstandard, avgifter, ISK-skatt, ett
-        sparande som växer med lönen, och att avkastningen inte är 7 % varje år utan 7 % i genomsnitt.
+        sparande som växer med lönen, och att 7 % inte händer varje år utan är mitten i en bred fördelning.
       </p>
     </header>
 
@@ -22,6 +22,11 @@
         <div class="presets-row">
           <span class="presets-label">Utgå från</span>
           <div id="presets" class="presets"></div>
+        </div>
+
+        <div class="presets-row">
+          <span class="presets-label">Vad kostar det egentligen</span>
+          <div id="cost-presets" class="presets"></div>
         </div>
 
         <div id="basic" class="controls"></div>
@@ -115,11 +120,13 @@
             modellerat som avdrag på kapitalunderlaget. Defaultsiffrorna är 2026 års: statslåneräntan den 30 november 2025 var 2,55 %,
             vilket ger schablonintäkt 3,55 % och effektiv skatt 1,065 % över fribeloppet, som höjdes till 300 000 kr den 1 januari 2026 och
             gäller ISK, kapitalförsäkring och PEPP sammanlagt. Det är statslåneräntan den 30 november året före som styr, inte dagens.
-            Reglerna ändras, kontrollera siffrorna för ditt år.
+            Skatten dras här vid årsskiftet, medan den i verkligheten betalas via nästa års deklaration, vilket ger dig ett års avkastning
+            på beloppet innan det lämnar kontot. Reglerna ändras, kontrollera siffrorna för ditt år.
           </li>
           <li>
             <strong>Avkastningen är inte 7 % varje år.</strong> Spannet kommer från 1 200 simulerade utfall med lognormal månadsavkastning,
-            median satt till din angivna avkastning. Poängen är inte precisionen i p10 och p90, det är avståndet mellan dem. Bandet är
+            median satt till din angivna avkastning. Median, inte medelvärde: fördelningen är sned uppåt, så medelutfallet vid 16 %
+            volatilitet ligger på drygt 8 % per år. Poängen är inte precisionen i p10 och p90, det är avståndet mellan dem. Bandet är
             avstängt från början eftersom p90 annars sätter skalan och trycker ner staplarna: klicka "Spann p10 till p90" i förklaringen
             ovanför diagrammet. Alla poster där går att klicka på, och axeln skalar om efter det som syns.
           </li>
@@ -190,6 +197,7 @@
       &nbsp;&middot;&nbsp; Daniel Nilsson
     </footer>
 
+    <script src="../lib/engine.js"></script>
     <script src="./script.js"></script>
   </body>
 </html>

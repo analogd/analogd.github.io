@@ -2,19 +2,29 @@
 //
 //   node test/scenarios.mjs
 //
-// The engine lives in script.js and is loaded as a plain script (no ES module),
-// so that the page works when opened straight from disk. This runner therefore
-// evaluates script.js in a vm with a stub DOM and grabs the two functions it
-// needs. Same idea as BoxSmith/lib/test/diagnose.mjs: reproduce what the page
-// computes, in Node, without a browser.
+// The arithmetic lives in ../../lib/engine.js and the UI in ../script.js, both
+// loaded as plain scripts (no ES modules) so that the page works when opened
+// straight from disk. This runner therefore concatenates them in load order and
+// evaluates the result in a vm with a stub DOM, exactly as the browser sees them,
+// then grabs the functions it needs. Same idea as BoxSmith/lib/test/diagnose.mjs:
+// reproduce what the page computes, in Node, without a browser.
 
 import fs from "fs";
 import vm from "vm";
 import path from "path";
 
 const here = path.dirname(new URL(import.meta.url).pathname);
-const code = fs.readFileSync(path.join(here, "..", "script.js"), "utf8");
-const sandbox = { document: { addEventListener() {} }, window: { addEventListener() {} }, requestAnimationFrame() {}, Intl, Math, console };
+const read = (...p) => fs.readFileSync(path.join(here, ...p), "utf8");
+const code = read("..", "..", "lib", "engine.js") + "\n" + read("..", "script.js");
+const sandbox = {
+  document: { addEventListener() {} },
+  window: { addEventListener() {} },
+  requestAnimationFrame() {},
+  URLSearchParams,
+  Intl,
+  Math,
+  console
+};
 const {
   simulate,
   percentileBand,
@@ -25,13 +35,16 @@ const {
   parseField,
   fieldText,
   solveRamp,
+  COST_PRESETS,
+  parseUrlValues,
+  buildUrlQuery,
   realContributions,
   PRESETS,
   CONTROLS,
   SHOW
 } = vm.runInContext(
   code +
-    ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, fieldText, solveRamp, realContributions, PRESETS, CONTROLS, SHOW})",
+    ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, fieldText, solveRamp, COST_PRESETS, parseUrlValues, buildUrlQuery, realContributions, PRESETS, CONTROLS, SHOW})",
   vm.createContext(sandbox)
 );
 
@@ -363,6 +376,93 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
   check("minskande sparande ger mindre an platt", down.end < flat.end, Math.round(down.end), "< " + Math.round(flat.end));
   check("men fortfarande mer an bara startbeloppet", down.end > 500000);
   near("sista arets manadsbelopp har krympt", 21000 * Math.pow(0.97, 16), 12899, 1);
+}
+
+// 22. The URL contract. Other calculators here build these links to hand over a
+//     scenario, so the format is an interface and not an implementation detail.
+{
+  const defaults = CONTROLS.reduce((a, c) => ((a[c.id] = c.value), a), {});
+
+  // Defaults are never written, so a link stays short and a revised default is
+  // not frozen into every old link.
+  near("inga defaultvarden i lanken", buildUrlQuery(defaults, { isk: true, ref: true }, "life", false).length, 0, 0);
+
+  // Anything that differs is written, as a plain number a foreign app can build.
+  const q = buildUrlQuery({ ...defaults, monthly: 417, years: 37, growth: 2 }, { isk: true, ref: true }, "life", false);
+  check("bara det som avviker skrivs ut", q === "monthly=417&years=37&growth=2", q, "monthly=417&years=37&growth=2");
+  check("inga lokaliserade tal i lanken", !/[\s,]/.test(q), q, "punkt som decimaltecken, inga blanksteg");
+
+  // Flags and basis only appear when they leave their default.
+  check("avstangda flaggor syns", buildUrlQuery(defaults, { isk: false, ref: false }, "life", false) === "isk=0&ref=0");
+  check("basmatt syns bara nar det inte ar life", buildUrlQuery(defaults, {}, "cpi", false) === "basis=cpi");
+  check("spannet syns nar det ar pa", buildUrlQuery(defaults, {}, "life", true) === "band=1");
+
+  // Round trip: what is written is what comes back.
+  const wanted = { ...defaults, start: 250000, monthly: 1500, age: 41, years: 26, ret: 6.5, growth: -2.5 };
+  const back = parseUrlValues("?" + buildUrlQuery(wanted, { isk: false, ref: true }, "nom", true));
+  Object.keys(wanted).forEach((id) => {
+    if (Math.abs(wanted[id] - defaults[id]) > 1e-9) near("url round-trip " + id, back.values[id], wanted[id], 1e-9);
+  });
+  check("negativ takt overlever lanken", back.values.growth === -2.5, back.values.growth, -2.5);
+  check("flaggan foljer med", back.flags.isk === false);
+  check("basmattet foljer med", back.basis === "nom", back.basis, "nom");
+  check("spannet foljer med", back.band === true);
+
+  // A hostile or hand-edited link must not poison the state.
+  const junk = parseUrlValues("?monthly=abc&years=&basis=nonsense&start=1e5&nope=1");
+  check("skrapvarden ignoreras", junk.values.monthly === undefined && junk.values.years === undefined);
+  check("okant basmatt ignoreras", junk.basis === null, junk.basis, "null");
+  near("exponentform ar giltigt tal", junk.values.start, 100000, 0);
+
+  // Comma as decimal separator, because someone will hand-edit a link.
+  near("kommatecken funkar i lanken", parseUrlValues("?ret=6,5").values.ret, 6.5, 0);
+}
+
+// 23. Wiring. The engine and the UI are separate files now, and the script asks
+//     the page for elements by id. Nothing above catches a renamed id or a
+//     missing script tag, because the tests never touch the DOM: this does, by
+//     checking the two files against each other as text.
+{
+  const ui = read("..", "script.js");
+  const page = read("..", "index.html");
+
+  // Asked for by the script. Only whole string literals count: a selector built by
+  // concatenation ("#n-" + c.id) names an element the script created itself.
+  const asked = new Set();
+  for (const m of ui.matchAll(/getElementById\("([\w-]+)"\)/g)) asked.add(m[1]);
+  for (const m of ui.matchAll(/querySelector(?:All)?\(\s*(['"])#([\w-]+)(?:\s[^'"]*)?\1\s*\)/g)) asked.add(m[2]);
+  CONTROLS.forEach((c) => asked.add(c.group)); // buildControls appends into the group id
+
+  // Provided by either file: the page markup, or a template the script writes.
+  const provided = new Set();
+  for (const src of [page, ui]) for (const m of src.matchAll(/id="([\w-]+)"/g)) provided.add(m[1]);
+
+  check("scriptet fragar efter minst tio id:n", asked.size >= 10, asked.size, ">= 10");
+  asked.forEach((id) => {
+    check('id="' + id + '" finns', provided.has(id), "saknas", "i index.html eller i en mall i script.js");
+  });
+
+  // Load order is load-bearing: script.js reads names the engine declares.
+  const engineAt = page.indexOf("../lib/engine.js");
+  const uiAt = page.indexOf("./script.js");
+  check("motorn laddas", engineAt > -1);
+  check("motorn laddas fore ui:t", engineAt > -1 && uiAt > engineAt, engineAt + " vs " + uiAt, "motorn forst");
+
+  // Both preset rows have a host, and the cost row is not accidentally empty.
+  check("bada presetraderna finns i sidan", page.includes('id="presets"') && page.includes('id="cost-presets"'));
+  check("kostnadspresets ar ifyllda", COST_PRESETS.length >= 3, COST_PRESETS.length, ">= 3");
+  COST_PRESETS.forEach((p) => {
+    const byId = CONTROLS.reduce((a, c) => ((a[c.id] = c), a), {});
+    Object.keys(p.v).forEach((id) => {
+      const c = byId[id];
+      check(
+        "kostnadspreset " + p.name + ": " + id + " inom grans",
+        c && p.v[id] >= c.min && p.v[id] <= c.max,
+        p.v[id],
+        c ? c.min + " till " + c.max : "okand"
+      );
+    });
+  });
 }
 
 console.log("\n" + pass + " passerade, " + fail + " misslyckades");
