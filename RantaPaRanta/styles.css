@@ -86,6 +86,55 @@ section {
   padding: 26px 28px 22px;
 }
 
+.presets-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.presets-label {
+  font-size: 0.76em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+}
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.presets button {
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82em;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+.presets button:hover {
+  border-color: var(--accent);
+  color: var(--text-strong);
+}
+.presets button.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.links a {
+  color: var(--accent-light);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.links a:hover {
+  border-bottom-color: var(--accent-light);
+}
+
 .controls {
   display: grid;
   /* min() so a narrow phone shrinks the column instead of overflowing sideways */
@@ -216,6 +265,13 @@ summary {
 summary::-webkit-details-marker {
   display: none;
 }
+summary:focus {
+  outline: none;
+}
+summary:focus-visible {
+  outline: 1px dotted var(--accent);
+  outline-offset: 4px;
+}
 summary::before {
   content: "\25B8";
   color: var(--muted);
@@ -316,7 +372,9 @@ details > .controls {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  /* 8 cells: fixed column counts that divide evenly, so the last row never
+     leaves a hole showing the grid background */
+  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
   gap: 1px;
   margin-top: 32px;
   background: var(--line);
@@ -390,7 +448,18 @@ details > .controls {
   background: var(--loss);
 }
 .sw-band {
-  background: #33436e;
+  background: #5b78c4;
+}
+
+@media (min-width: 620px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 900px) {
+  .stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 #chart svg {

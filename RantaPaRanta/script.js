@@ -11,7 +11,7 @@ const SOLVE_H = 20; // horizon (years) for the "sparar X kr/man om 20 ar" helper
 const CONTROLS = [
   { id: "start", group: "basic", label: "Startbelopp", unit: "kr", min: 0, max: 1000000, step: 1000, value: 10000 },
   { id: "monthly", group: "basic", label: "Månadssparande nu", unit: "kr", min: 0, max: 20000, step: 100, value: 1000 },
-  { id: "age", group: "basic", label: "Ålder nu", unit: "år", min: 15, max: 75, step: 1, value: 22 },
+  { id: "age", group: "basic", label: "Ålder nu", unit: "år", min: 0, max: 75, step: 1, value: 22 },
   { id: "years", group: "basic", label: "Sparhorisont", unit: "år", min: 1, max: MAXY, step: 1, value: 45 },
   {
     id: "ret",
@@ -75,9 +75,9 @@ const CONTROLS = [
     unit: "%",
     min: 0,
     max: 8,
-    step: 0.1,
-    value: 2,
-    hint: "Styr ISK-schablonen. Kontrollera aktuell siffra."
+    step: 0.05,
+    value: 2.55,
+    hint: "Den 30 november året före, inte dagens. 2,55 % gällde 30 nov 2025, alltså schablon 3,55 % för 2026."
   },
   {
     id: "iskFree",
@@ -87,8 +87,8 @@ const CONTROLS = [
     min: 0,
     max: 600000,
     step: 10000,
-    value: 150000,
-    hint: "Avdrag på kapitalunderlaget."
+    value: 300000,
+    hint: "Avdrag på kapitalunderlaget. 300 000 kr från 1 jan 2026, för ISK, kapitalförsäkring och PEPP sammanlagt."
   },
   {
     id: "vol",
@@ -101,6 +101,15 @@ const CONTROLS = [
     value: 16,
     hint: "Standardavvikelse. En global aktieindexfond ligger historiskt runt 16 %."
   }
+];
+
+// Starting points, all ending at 67. They set the situation only: the honesty
+// knobs (inflation, standardglidning, avgift, skatt) are deliberately untouched.
+const PRESETS = [
+  { name: "22 år, första jobbet", v: { start: 10000, monthly: 1000, age: 22, years: 45, growth: 3 } },
+  { name: "30 år, etablerad", v: { start: 150000, monthly: 4000, age: 30, years: 37, growth: 2.5 } },
+  { name: "45 år, sent i gång", v: { start: 300000, monthly: 8000, age: 45, years: 22, growth: 1.5 } },
+  { name: "Barnspar till 18", v: { start: 0, monthly: 1000, age: 0, years: 18, growth: 0 } }
 ];
 
 const el = {};
@@ -116,7 +125,7 @@ const kr = (v) => NF.format(Math.round(v)) + " kr";
 
 function krShort(v) {
   const a = Math.abs(v);
-  if (a >= 1e6) return NF1.format(v / 1e6) + " mkr";
+  if (a >= 1e6) return NF2.format(v / 1e6) + " mkr";
   if (a >= 1e4) return NF.format(Math.round(v / 1000)) + " tkr";
   return NF.format(Math.round(v));
 }
@@ -233,7 +242,7 @@ function percentileBand(p) {
 function readParams() {
   const v = {};
   CONTROLS.forEach((c) => {
-    v[c.id] = parseFloat(el[c.id].num.value);
+    v[c.id] = parseField(el[c.id].num.value);
     if (!isFinite(v[c.id])) v[c.id] = c.value;
   });
   return {
@@ -264,6 +273,37 @@ const BASIS_LABEL = {
   cpi: "I dagens kronor (KPI-justerat)",
   life: "I dagens levnadsstandard (KPI och standardglidning)"
 };
+
+// Written in sentence-middle case, so KPI keeps its capitals.
+const BASIS_NOTE = {
+  nom: "nominellt värde",
+  cpi: "i dagens kronor, KPI-justerat",
+  life: "i dagens levnadsstandard, KPI och standardglidning"
+};
+
+// Money-weighted (internal) rate of return on the actual cash flows, so fees,
+// tax and the contribution ramp are all inside the number. Bisection on the
+// monthly rate: the terminal value is monotone in it.
+function moneyWeightedReturn(p, endValue) {
+  const N = p.years * 12;
+  const forward = (rm) => {
+    let v = p.start;
+    for (let m = 0; m < N; m++) {
+      v += p.monthly * Math.pow(1 + p.growth, (m / 12) | 0);
+      v *= rm;
+    }
+    return v;
+  };
+  let lo = 0.5;
+  let hi = 1.05;
+  if (forward(hi) < endValue) return NaN;
+  for (let i = 0; i < 80; i++) {
+    const mid = (lo + hi) / 2;
+    if (forward(mid) < endValue) lo = mid;
+    else hi = mid;
+  }
+  return Math.pow((lo + hi) / 2, 12) - 1;
+}
 
 // ---------- render ----------
 
@@ -317,11 +357,15 @@ function render() {
 
   el.resultLabel.textContent = "Totalt efter " + Y + " år, vid " + Math.round(p.age + Y) + " års ålder";
   el.resultTotal.textContent = kr(total);
-  el.resultSplit.innerHTML =
-    "Varav " + kr(paid) + " insatt och <b>" + kr(gain) + "</b> avkastning &middot; " + BASIS_LABEL[basis].toLowerCase();
+  el.resultSplit.innerHTML = "Varav " + kr(paid) + " insatt och <b>" + kr(gain) + "</b> avkastning &middot; " + BASIS_NOTE[basis];
 
   const lastMonthly = p.monthly * Math.pow(1 + p.growth, Y - 1);
   const naiveGapPct = total > 0 ? (naiveBal[Y] / total - 1) * 100 : 0;
+
+  // Nominal money-weighted return, then Fisher-deflated into the chosen basis.
+  const nomRate = moneyWeightedReturn(p, bal[Y]);
+  const deflFactor = basis === "nom" ? 1 : basis === "cpi" ? 1 + p.inflation : (1 + p.inflation) * (1 + p.drift);
+  const realRate = (1 + nomRate) / deflFactor - 1;
 
   const stats = [
     ["Insatt totalt", kr(paid), "därav " + kr(p.start / d) + " startbelopp", false],
@@ -344,7 +388,13 @@ function render() {
     ],
     ["Avgifter och skatt", kr(cost.fees + cost.tax), "nominellt: " + kr(cost.fees) + " avgift, " + kr(cost.tax) + " ISK-skatt", false],
     ["Månadsuttag", kr((total * 0.04) / 12), "tumregel: 4 % av kapitalet per år, i valt basmått", false],
-    ["Månadssparande sista året", kr(lastMonthly), "nominellt, motsvarar " + kr(lastMonthly / d) + " i valt basmått", false]
+    ["Månadssparande sista året", kr(lastMonthly), "nominellt, motsvarar " + kr(lastMonthly / d) + " i valt basmått", false],
+    [
+      "Faktisk årsavkastning",
+      isFinite(realRate) ? NF2.format(realRate * 100) + " %" : "okänd",
+      "penningvägd, efter avgift och skatt, i valt basmått. Bruttoantagandet är " + NF1.format(p.ret * 100) + " %",
+      realRate < 0
+    ]
   ];
 
   el.stats.innerHTML = stats
@@ -372,10 +422,10 @@ function updateHints(p) {
   el.age.hint.textContent = "";
   el.start.hint.textContent = "Kapital du redan har.";
   el.monthly.hint.textContent = "";
-  el.iskFree.hint.textContent = el.isk.checked ? "Avdrag på kapitalunderlaget." : "ISK-skatten är avstängd.";
+  el.iskFree.hint.textContent = el.isk.checked ? el.iskFree.spec.hint : "ISK-skatten är avstängd.";
 
   const target = p.monthly * Math.pow(1 + p.growth, SOLVE_H);
-  if (document.activeElement !== el.solve) el.solve.value = Math.round(target);
+  if (document.activeElement !== el.solve) el.solve.value = NF.format(Math.round(target));
   el.solveNote.textContent = p.age + SOLVE_H <= 100 ? "(vid " + Math.round(p.age + SOLVE_H) + " års ålder)" : "";
 
   el.advSummary.textContent =
@@ -434,7 +484,12 @@ function drawChart(v) {
   for (let y = 0; y <= Y; y++) {
     max = Math.max(max, val[y], paid[y], v.band ? hi[y] : 0);
   }
-  max = niceCeil(max * 1.04);
+  // Pick a round step first, then derive the top, so the labels read
+  // 1 mkr / 2 mkr / 3 mkr rather than 875 tkr / 1,8 mkr / 2,6 mkr.
+  const TICKS = 4;
+  let step = niceStep((max * 1.04) / TICKS);
+  while (step * TICKS < max) step = niceStep(step * 1.05);
+  max = step * TICKS;
 
   const x = (y) => M.l + (pw * y) / Y;
   const yy = (value) => M.t + ph - (ph * value) / (max || 1);
@@ -443,9 +498,8 @@ function drawChart(v) {
   let s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img">';
 
   // gridlines
-  const ticks = 4;
-  for (let i = 0; i <= ticks; i++) {
-    const gv = (max * i) / ticks;
+  for (let i = 0; i <= TICKS; i++) {
+    const gv = (max * i) / TICKS;
     const gy = yy(gv);
     s +=
       '<line x1="' +
@@ -456,7 +510,9 @@ function drawChart(v) {
       (W - M.r) +
       '" y2="' +
       gy +
-      '" stroke="#242734" stroke-width="1"/>' +
+      '" stroke="#242734" stroke-width="' +
+      G.s +
+      '"/>' +
       '<text x="' +
       (M.l - 10 * G.s) +
       '" y="' +
@@ -474,10 +530,33 @@ function drawChart(v) {
     let dn = "";
     for (let y = 0; y <= Y; y++) up += (y ? " L" : "M") + x(y).toFixed(1) + " " + yy(hi[y]).toFixed(1);
     for (let y = Y; y >= 0; y--) dn += " L" + x(y).toFixed(1) + " " + yy(lo[y]).toFixed(1);
-    s += '<path d="' + up + dn + ' Z" fill="rgba(107,155,255,0.13)"/>';
+    s +=
+      '<path d="' +
+      up +
+      dn +
+      ' Z" fill="rgba(107,155,255,0.09)"/>' +
+      '<path d="' +
+      up +
+      '" fill="none" stroke="#5b78c4" stroke-width="' +
+      1.2 * G.s +
+      '" opacity="0.8"/>' +
+      '<path d="' +
+      dn.replace(/^ L/, "M") +
+      '" fill="none" stroke="#5b78c4" stroke-width="' +
+      1.2 * G.s +
+      '" opacity="0.8"/>';
     let mid = "";
     for (let y = 0; y <= Y; y++) mid += (y ? " L" : "M") + x(y).toFixed(1) + " " + yy(v.band.p50[y] / deflator(p, y)).toFixed(1);
-    s += '<path d="' + mid + '" fill="none" stroke="#8fb0ff" stroke-width="1.4" stroke-dasharray="4 4" opacity="0.75"/>';
+    s +=
+      '<path d="' +
+      mid +
+      '" fill="none" stroke="#8fb0ff" stroke-width="' +
+      1.4 * G.s +
+      '" stroke-dasharray="' +
+      5 * G.s +
+      " " +
+      5 * G.s +
+      '" opacity="0.8"/>';
   }
 
   // bars
@@ -496,7 +575,7 @@ function drawChart(v) {
   }
 
   // x axis
-  s += '<line x1="' + M.l + '" y1="' + zero + '" x2="' + (W - M.r) + '" y2="' + zero + '" stroke="#3a3f52"/>';
+  s += '<line x1="' + M.l + '" y1="' + zero + '" x2="' + (W - M.r) + '" y2="' + zero + '" stroke="#3a3f52" stroke-width="' + G.s + '"/>';
   const stepY = Math.max(1, Math.ceil(Y / 10));
   for (let y = 0; y <= Y; y += stepY) {
     s +=
@@ -536,10 +615,11 @@ function rect(x, y, w, h, fill, op) {
   );
 }
 
-function niceCeil(v) {
-  if (v <= 0) return 1;
+function niceStep(v) {
+  if (!(v > 0)) return 1;
   const mag = Math.pow(10, Math.floor(Math.log10(v)));
-  return Math.ceil(v / (mag / 2)) * (mag / 2);
+  const n = v / mag;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
 }
 
 function wireTooltip(v, val, paid, lo, hi) {
@@ -594,6 +674,36 @@ function wireTooltip(v, val, paid, lo, hi) {
 
 // ---------- build UI ----------
 
+// Kronor sliders run on a squared curve: 10 000 kr out of a 1 000 000 kr range
+// would otherwise sit 1 % along the track, with no resolution where people live.
+const SLIDER_STEPS = 1000;
+const curveOf = (c) => (c.unit === "kr" ? 2 : 1);
+
+function sliderToValue(c, t) {
+  const raw = c.min + (c.max - c.min) * Math.pow(t / SLIDER_STEPS, curveOf(c));
+  const snapped = Math.round(raw / c.step) * c.step;
+  return Math.min(c.max, Math.max(c.min, Math.round(snapped * 100) / 100));
+}
+
+function valueToSlider(c, v) {
+  const frac = Math.max(0, Math.min(1, (v - c.min) / (c.max - c.min)));
+  return Math.round(SLIDER_STEPS * Math.pow(frac, 1 / curveOf(c)));
+}
+
+// Fields are text, not number, so kronor can carry thousand separators.
+function fieldText(c, v) {
+  return c.unit === "kr" ? NF.format(Math.round(v)) : NF2.format(v);
+}
+
+// Strips whatever grouping character the locale used, plain or non-breaking.
+function parseField(s) {
+  return parseFloat(
+    String(s)
+      .replace(/[^0-9.,-]/g, "")
+      .replace(",", ".")
+  );
+}
+
 function buildControls() {
   CONTROLS.forEach((c) => {
     const wrap = document.createElement("div");
@@ -602,16 +712,10 @@ function buildControls() {
       '<div class="ctl-head"><span class="ctl-label">' +
       c.label +
       "</span>" +
-      '<span class="ctl-value"><input type="number" id="n-' +
+      '<span class="ctl-value"><input type="text" inputmode="decimal" id="n-' +
       c.id +
-      '" min="' +
-      c.min +
-      '" max="' +
-      c.max +
-      '" step="' +
-      c.step +
       '" value="' +
-      c.value +
+      fieldText(c, c.value) +
       '" /><span class="ctl-unit">' +
       c.unit +
       "</span></span></div>" +
@@ -620,14 +724,10 @@ function buildControls() {
       "</div>" +
       '<input type="range" id="r-' +
       c.id +
-      '" min="' +
-      c.min +
-      '" max="' +
-      c.max +
-      '" step="' +
-      c.step +
-      '" value="' +
-      c.value +
+      '" min="0" max="' +
+      SLIDER_STEPS +
+      '" step="1" value="' +
+      valueToSlider(c, c.value) +
       '" />';
     document.getElementById(c.group).appendChild(wrap);
 
@@ -636,14 +736,42 @@ function buildControls() {
     el[c.id] = { num: num, rng: rng, hint: wrap.querySelector(".ctl-hint"), spec: c };
 
     rng.addEventListener("input", () => {
-      num.value = rng.value;
+      num.value = fieldText(c, sliderToValue(c, +rng.value));
       schedule();
     });
     num.addEventListener("input", () => {
-      const val = parseFloat(num.value);
-      if (isFinite(val)) rng.value = Math.min(c.max, Math.max(c.min, val));
+      const v = parseField(num.value);
+      if (isFinite(v)) rng.value = valueToSlider(c, v);
       schedule();
     });
+    num.addEventListener("blur", () => {
+      const v = parseField(num.value);
+      num.value = fieldText(c, isFinite(v) ? Math.min(c.max, Math.max(c.min, v)) : c.value);
+      schedule();
+    });
+  });
+}
+
+function setControl(id, value) {
+  const c = el[id].spec;
+  const v = Math.min(c.max, Math.max(c.min, value));
+  el[id].num.value = fieldText(c, v);
+  el[id].rng.value = valueToSlider(c, v);
+}
+
+function buildPresets() {
+  const host = document.getElementById("presets");
+  PRESETS.forEach((preset) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = preset.name;
+    b.addEventListener("click", () => {
+      Object.keys(preset.v).forEach((id) => setControl(id, preset.v[id]));
+      host.querySelectorAll("button").forEach((o) => o.classList.remove("active"));
+      b.classList.add("active");
+      render();
+    });
+    host.appendChild(b);
   });
 }
 
@@ -659,6 +787,7 @@ function schedule() {
 
 function init() {
   buildControls();
+  buildPresets();
 
   el.isk = document.getElementById("isk");
   el.volOn = document.getElementById("volOn");
@@ -677,13 +806,13 @@ function init() {
   el.solveNote.className = "solve-note";
   el.solve.parentElement.appendChild(el.solveNote);
   el.solve.addEventListener("input", () => {
-    const target = parseFloat(el.solve.value);
-    const now = parseFloat(el.monthly.num.value);
+    const target = parseField(el.solve.value);
+    const now = parseField(el.monthly.num.value);
     if (isFinite(target) && target > 0 && now > 0) {
       const g = (Math.pow(target / now, 1 / SOLVE_H) - 1) * 100;
       const clamped = Math.min(el.growth.spec.max, Math.max(0, g));
-      el.growth.num.value = NF1.format(clamped).replace(",", ".");
-      el.growth.rng.value = clamped;
+      el.growth.num.value = fieldText(el.growth.spec, clamped);
+      el.growth.rng.value = valueToSlider(el.growth.spec, clamped);
       schedule();
     }
   });

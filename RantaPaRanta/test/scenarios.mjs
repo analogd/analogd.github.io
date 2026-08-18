@@ -15,7 +15,11 @@ import path from "path";
 const here = path.dirname(new URL(import.meta.url).pathname);
 const code = fs.readFileSync(path.join(here, "..", "script.js"), "utf8");
 const sandbox = { document: { addEventListener() {} }, window: { addEventListener() {} }, requestAnimationFrame() {}, Intl, Math, console };
-const { simulate, percentileBand } = vm.runInContext(code + ";({simulate, percentileBand})", vm.createContext(sandbox));
+const { simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, PRESETS, CONTROLS } =
+  vm.runInContext(
+    code + ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, PRESETS, CONTROLS})",
+    vm.createContext(sandbox)
+  );
 
 const BASE = {
   start: 10000,
@@ -165,6 +169,78 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
     "varde vaxer monotont vid positiv avkastning",
     r.bal.every((v, y) => y === 0 || v >= r.bal[y - 1])
   );
+}
+
+// 12. Money-weighted return: with no fee and no tax it must recover exactly the
+//     assumed return, and every cost must push it below.
+{
+  const clean = run({ years: 30 });
+  near("penningvagd avkastning = antagandet nar inget dras av", moneyWeightedReturn(clean.p, clean.end), 0.07, 1e-6);
+
+  const p = { years: 45, monthly: 1000, fee: 0.004, isk: true, growth: 0.03 };
+  const costly = run(p);
+  const mwr = moneyWeightedReturn(costly.p, costly.end);
+  check("avgift och skatt sanker den under 7 %", mwr < 0.07 && mwr > 0.05, (mwr * 100).toFixed(2) + " %", "5 till 7 %");
+
+  const real = (1 + mwr) / (1.02 * 1.01) - 1;
+  check(
+    "realt efter KPI och standardglidning ar mycket lagre",
+    real < mwr - 0.025,
+    (real * 100).toFixed(2) + " %",
+    "< " + ((mwr - 0.025) * 100).toFixed(2) + " %"
+  );
+}
+
+// 13. Axis steps must be round numbers, and the top must cover the data.
+{
+  near("niceStep valjer 1 mkr for 0,9 mkr", niceStep(900000), 1000000, 0);
+  near("niceStep valjer 2,5 for 2,1", niceStep(2.1), 2.5, 0);
+  const rawMax = 3411000;
+  let step = niceStep((rawMax * 1.04) / 4);
+  while (step * 4 < rawMax) step = niceStep(step * 1.05);
+  check("axeltoppen tacker datan", step * 4 >= rawMax, step * 4, ">= " + rawMax);
+  near("och stegen ar runda", step, 1000000, 0);
+}
+
+// 14. Slider mapping: kronor use a squared curve, round trips must survive it.
+{
+  const kronor = { unit: "kr", min: 0, max: 1000000, step: 1000 };
+  const years = { unit: "ar", min: 1, max: 60, step: 1 };
+  near("10 000 kr hamnar 10 % in pa reglaget, inte 1 %", valueToSlider(kronor, 10000), 100, 1);
+  near("kr round-trip", sliderToValue(kronor, valueToSlider(kronor, 250000)), 250000, 1000);
+  near("linjar round-trip", sliderToValue(years, valueToSlider(years, 45)), 45, 0);
+  near("faltet klarar tusentalsavgransare", parseField("1 059 509"), 1059509, 0);
+  near("faltet klarar decimalkomma", parseField("0,4"), 0.4, 0);
+}
+
+// 15. The 2026 ISK numbers, straight off Skatteverket: statslaneranta 2,55 % on
+//     30 Nov 2025 gives schablon 3,55 % and an effective 1,065 % of the
+//     kapitalunderlag above the fribelopp.
+{
+  const r = run({ start: 1300000, monthly: 0, ret: 0, years: 1, isk: true, iskFree: 300000, slr: 0.0255 });
+  near("effektiv ISK-skatt 1,065 % over fribeloppet", r.tax, 0.01065 * 1000000, 0.01);
+  const defaults = CONTROLS.reduce((a, c) => ((a[c.id] = c.value), a), {});
+  near("default statslaneranta ar 2026-siffran", defaults.slr, 2.55, 0);
+  near("default fribelopp ar 2026-siffran", defaults.iskFree, 300000, 0);
+}
+
+// 16. Every preset must be reachable by the controls it sets.
+{
+  const byId = CONTROLS.reduce((a, c) => ((a[c.id] = c), a), {});
+  PRESETS.forEach((preset) => {
+    Object.keys(preset.v).forEach((id) => {
+      const c = byId[id];
+      const v = preset.v[id];
+      check(
+        "preset " + preset.name + ": " + id + " inom reglagets grans",
+        c && v >= c.min && v <= c.max,
+        v,
+        c ? c.min + " till " + c.max : "okand kontroll"
+      );
+      check("preset " + preset.name + ": " + id + " overlever reglaget", Math.abs(sliderToValue(c, valueToSlider(c, v)) - v) <= c.step);
+    });
+    check("preset " + preset.name + " har en horisont", preset.v.years > 0);
+  });
 }
 
 console.log("\n" + pass + " passerade, " + fail + " misslyckades");
