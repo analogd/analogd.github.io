@@ -33,7 +33,9 @@ const CONTROLS = [
     max: 10,
     step: 0.1,
     value: 3,
-    hintHtml: "om " + SOLVE_H + ' år: <input id="solve" type="number" step="100" min="0" /> kr/mån'
+    // Text, not number: a number field silently blanks a value carrying
+    // thousand separators.
+    hintHtml: "om " + SOLVE_H + ' år: <input id="solve" type="text" inputmode="decimal" /> kr/mån'
   },
   {
     id: "inflation",

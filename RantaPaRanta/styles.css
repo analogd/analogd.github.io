@@ -142,6 +142,13 @@ section {
   gap: 26px 40px;
 }
 
+/* Hints run one to three lines, so push every slider to the bottom of its grid
+   cell instead: then the sliders line up across a row. */
+.ctl {
+  display: flex;
+  flex-direction: column;
+}
+
 .ctl-head {
   display: flex;
   align-items: baseline;
@@ -189,6 +196,7 @@ section {
 }
 
 .ctl-hint {
+  flex: 1;
   margin-top: 5px;
   font-size: 0.78em;
   color: var(--dim);
