@@ -673,11 +673,20 @@ function render() {
   renderShare(result);
 }
 
+// Bars are centred on their tick, so the first and last need half a bar of room
+// inside the axes. Without the inset, x(0) sits exactly on the y axis and half of
+// the first bar covers the axis labels, which is how it shipped.
+function plotX(l, pw, Y, barW) {
+  const inset = barW / 2;
+  const span = Math.max(1, pw - barW);
+  return (t) => l + inset + (span * t) / Y;
+}
+
 function drawValueChart(result, p) {
   const Y = p.years;
   const W = 1000;
   const s = Math.max(1, Math.min(3.2, W / (el.chart.clientWidth || W)));
-  const M = { l: 62 * s, r: 12 * s, t: 16 * s, b: 30 * s };
+  const M = { l: 68 * s, r: 12 * s, t: 16 * s, b: 30 * s };
   const H = Math.round(280 * Math.min(2.05, s));
   const font = 12 * s;
   const pw = W - M.l - M.r;
@@ -689,9 +698,9 @@ function drawValueChart(result, p) {
   while (step * TICKS < max) step = niceStep(step * 1.05);
   max = step * TICKS;
 
-  const x = (y) => M.l + (pw * y) / Y;
   const yy = (v) => M.t + ph - (ph * v) / (max || 1);
   const barW = Math.max(2, Math.min(26 * s, (pw / (Y + 1)) * 0.68));
+  const x = plotX(M.l, pw, Y, barW);
 
   let svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img">';
   for (let i = 0; i <= TICKS; i++) {
@@ -716,8 +725,8 @@ function drawValueChart(result, p) {
       '" fill="#5c6070" font-size="' +
       font +
       '" text-anchor="end">' +
-      NF.format(Math.round(gv / 1000)) +
-      " tkr</text>";
+      krShort(gv) +
+      "</text>";
   }
   for (let t = 0; t <= Y; t++) {
     const bx = x(t) - barW / 2;

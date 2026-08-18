@@ -482,6 +482,26 @@ details > .controls {
   background: #5b78c4;
 }
 
+/* A dashed series gets a dashed swatch, so the legend reads the same way the
+   chart does: same colour means same branch, dashed means the debt rather than
+   the net worth. */
+.legend i.dash {
+  height: 0;
+  border-radius: 0;
+  background: none !important;
+  border-top: 3px dashed currentColor;
+  align-self: center;
+}
+.sw-start.dash {
+  color: var(--start);
+}
+.sw-ret.dash {
+  color: var(--ret);
+}
+.sw-loss.dash {
+  color: var(--loss);
+}
+
 @media (min-width: 620px) {
   .stats {
     grid-template-columns: repeat(2, 1fr);

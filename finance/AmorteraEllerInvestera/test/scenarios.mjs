@@ -41,10 +41,11 @@ const {
   parseUrlValues,
   buildUrlQuery,
   CONTROLS,
-  PRESETS
+  PRESETS,
+  SHOW
 } = vm.runInContext(
   code +
-    ";({interestDeduction, marginalDeductionRate, afterTaxRate, requiredAmortisationRate, comparePayoffVsInvest, breakEvenReturn, fieldText, parseField, parseUrlValues, buildUrlQuery, CONTROLS, PRESETS})",
+    ";({interestDeduction, marginalDeductionRate, afterTaxRate, requiredAmortisationRate, comparePayoffVsInvest, breakEvenReturn, fieldText, parseField, parseUrlValues, buildUrlQuery, CONTROLS, PRESETS, SHOW})",
   vm.createContext(sandbox)
 );
 
@@ -288,6 +289,28 @@ function model(over) {
     "vaxande"
   );
   check("stilmallen ar den delade", page.includes("../lib/app.css"));
+}
+
+// 14. The chart has to carry one debt line per branch. The two branches pay the
+//     loan down at different speeds, so a single line labelled "kvar av lanet"
+//     belongs to one of them and gets read as belonging to both. That shipped
+//     once.
+{
+  const m = model({});
+  const r = comparePayoffVsInvest(m);
+  let differing = 0;
+  for (let y = 1; y <= m.years; y++) if (Math.abs(r.invest.debt[y] - r.amortise.debt[y]) > 1) differing++;
+  check("grenarnas skuldbanor skiljer sig nastan varje ar", differing >= m.years - 1, differing + " av " + m.years, ">= " + (m.years - 1));
+
+  check("det finns en skuldserie per gren", SHOW.debtInvest !== undefined && SHOW.debtAmortise !== undefined);
+  check("och ingen odelbar skuldserie kvar", SHOW.debt === undefined);
+
+  // The legend is the series control, so it and SHOW have to agree exactly:
+  // a button with no key does nothing, a key with no button cannot be turned off.
+  const page = read("..", "index.html");
+  const buttons = [...page.matchAll(/data-series="([\w-]+)"/g)].map((x) => x[1]);
+  Object.keys(SHOW).forEach((k) => check("forklaringen har en knapp for " + k, buttons.indexOf(k) > -1, buttons.join(" "), k));
+  buttons.forEach((b) => check("knappen " + b + " styr en verklig serie", SHOW[b] !== undefined));
 }
 
 console.log("\n" + pass + " passerade, " + fail + " misslyckades");

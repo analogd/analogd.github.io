@@ -144,7 +144,11 @@ const PRESETS = [
 
 const el = {};
 let basis = "life";
-const SHOW = { invest: true, amortise: true, debt: true };
+// Two branches, so two of everything. One debt line would belong to one branch
+// and silently be read as belonging to both: the invest branch only pays the
+// required amortisation, the amortise branch pays the extra on top, so their
+// debt paths genuinely differ. Each debt is drawn in its own branch colour.
+const SHOW = { invest: true, amortise: true, debtInvest: true, debtAmortise: true };
 
 // ---------- state ----------
 
@@ -322,7 +326,8 @@ function drawChart(v) {
   const series = [];
   if (SHOW.invest) series.push({ key: "invest", color: "var(--ret)", data: pathOf(v.r.invest.net, m) });
   if (SHOW.amortise) series.push({ key: "amortise", color: "var(--start)", data: pathOf(v.r.amortise.net, m) });
-  if (SHOW.debt) series.push({ key: "debt", color: "var(--loss)", data: pathOf(v.r.amortise.debt, m, -1) });
+  if (SHOW.debtInvest) series.push({ key: "debtInvest", color: "var(--ret)", dash: true, data: pathOf(v.r.invest.debt, m, -1) });
+  if (SHOW.debtAmortise) series.push({ key: "debtAmortise", color: "var(--start)", dash: true, data: pathOf(v.r.amortise.debt, m, -1) });
 
   let hi = 0;
   let lo = 0;
@@ -372,7 +377,16 @@ function drawChart(v) {
   series.forEach((ser) => {
     let d = "";
     for (let y = 0; y <= Y; y++) d += (y ? " L" : "M") + x(y).toFixed(1) + " " + yy(ser.data[y]).toFixed(1);
-    s += '<path d="' + d + '" fill="none" stroke="' + ser.color + '" stroke-width="' + 2.2 * G.s + '"/>';
+    s +=
+      '<path d="' +
+      d +
+      '" fill="none" stroke="' +
+      ser.color +
+      '" stroke-width="' +
+      (ser.dash ? 1.6 : 2.2) * G.s +
+      '"' +
+      (ser.dash ? ' stroke-dasharray="' + 5 * G.s + " " + 4 * G.s + '"' : "") +
+      "/>";
   });
 
   const stepY = Math.max(1, Math.ceil(Y / 10));
@@ -403,7 +417,12 @@ function wireTooltip(v, series) {
     let y = Math.round(((px - G.l) / (W - G.l - G.r)) * Y);
     y = Math.max(0, Math.min(Y, y));
     let html = "<b>År " + y + "</b><br>";
-    const names = { invest: "Investera, netto", amortise: "Amortera, netto", debt: "Kvar av lånet" };
+    const names = {
+      invest: "Investera, netto",
+      amortise: "Amortera, netto",
+      debtInvest: "Skuld, investera",
+      debtAmortise: "Skuld, amortera"
+    };
     series.forEach((s) => {
       html += '<span class="k">' + names[s.key] + "</span> " + kr(Math.abs(s.data[y])) + "<br>";
     });

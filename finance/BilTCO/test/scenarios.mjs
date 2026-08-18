@@ -31,6 +31,7 @@ const {
   interestCost,
   fuelPerMil,
   computeCar,
+  plotX,
   splitTripCost,
   buildRantaLink,
   parseRantaLink,
@@ -46,7 +47,7 @@ const {
   RANTA_DEFAULT_MONTHLY
 } = vm.runInContext(
   code +
-    ";({carValueSeries, serviceSeries, capitalCost, interestCost, fuelPerMil, computeCar, splitTripCost, buildRantaLink, parseRantaLink, sliderToValue, valueToSlider, parseField, fieldText, niceStep, CONTROLS, CONTROLS_B, PRESETS, SKV_MIL_ERSATTNING, RANTA_DEFAULT_MONTHLY})",
+    ";({carValueSeries, serviceSeries, capitalCost, interestCost, fuelPerMil, computeCar, plotX, splitTripCost, buildRantaLink, parseRantaLink, sliderToValue, valueToSlider, parseField, fieldText, niceStep, CONTROLS, CONTROLS_B, PRESETS, SKV_MIL_ERSATTNING, RANTA_DEFAULT_MONTHLY})",
   vm.createContext(sandbox)
 );
 
@@ -340,6 +341,32 @@ near("Skatteverkets schablon ar 25 kr/mil", SKV_MIL_ERSATTNING, 25, 0);
   check("motorn laddas", engineAt > -1);
   check("motorn laddas fore ui:t", engineAt > -1 && uiAt > engineAt, engineAt + " vs " + uiAt, "motorn forst");
   void fs2;
+}
+
+// Chart geometry: bars are centred on their tick, so no bar may stick out past an
+// axis. The first bar used to be centred exactly on the y axis and covered the
+// value labels.
+{
+  const l = 68;
+  const pw = 920;
+  [1, 5, 12, 25].forEach((Y) => {
+    [4, 26, 80].forEach((barW) => {
+      const x = plotX(l, pw, Y, barW);
+      check(
+        "forsta stapeln ligger inom axeln (Y=" + Y + ", barW=" + barW + ")",
+        x(0) - barW / 2 >= l - 1e-9,
+        (x(0) - barW / 2).toFixed(2),
+        ">= " + l
+      );
+      check(
+        "sista stapeln ligger inom ritytan (Y=" + Y + ", barW=" + barW + ")",
+        x(Y) + barW / 2 <= l + pw + 1e-9,
+        (x(Y) + barW / 2).toFixed(2),
+        "<= " + (l + pw)
+      );
+      check("staplarna ligger i vaxande ordning (Y=" + Y + ")", x(Y) > x(0) || Y === 0);
+    });
+  });
 }
 
 console.log("\n" + pass + " passerade, " + fail + " misslyckades");
