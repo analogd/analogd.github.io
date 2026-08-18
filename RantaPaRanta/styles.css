@@ -88,7 +88,8 @@ section {
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  /* min() so a narrow phone shrinks the column instead of overflowing sideways */
+  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
   gap: 26px 40px;
 }
 
@@ -264,6 +265,8 @@ details > .controls {
 
 .basis {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
@@ -313,7 +316,7 @@ details > .controls {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
   gap: 1px;
   margin-top: 32px;
   background: var(--line);
@@ -481,5 +484,31 @@ footer a:hover {
   }
   .panel {
     padding: 20px 18px 18px;
+  }
+  main {
+    padding: 0 16px 24px;
+  }
+  header {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .basis {
+    display: flex;
+    width: 100%;
+  }
+  .basis button {
+    flex: 1;
+    padding: 10px 6px;
+    font-size: 0.78em;
+  }
+  .chart-wrap {
+    padding: 18px 12px 10px;
+  }
+  .tip {
+    white-space: normal;
+    max-width: min(260px, calc(100vw - 48px));
+  }
+  .notes {
+    font-size: 0.92em;
   }
 }

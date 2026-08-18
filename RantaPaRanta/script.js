@@ -393,13 +393,26 @@ function updateHints(p) {
 
 // ---------- chart ----------
 
-const M = { l: 62, r: 12, t: 16, b: 34 };
 const W = 1000;
-const H = 380;
+
+// Geometry is recomputed on every draw. The svg scales to its container, so on a
+// phone one user unit is a third of a CSS pixel: without scaling the margins and
+// font sizes by the same factor, the axis labels render at 4 px. Scaling the
+// viewBox height too keeps the chart from collapsing into a sliver.
+let G = { l: 62, r: 12, t: 16, b: 34, H: 380, s: 1, font: 12 };
+
+function geometry() {
+  const w = el.chart.clientWidth || W;
+  const s = Math.max(1, Math.min(3.2, W / w));
+  return { l: 62 * s, r: 12 * s, t: 16 * s, b: 34 * s, H: Math.round(380 * Math.min(2.05, s)), s: s, font: 12 * s };
+}
 
 function drawChart(v) {
   const p = v.p;
   const Y = p.years;
+  G = geometry();
+  const M = G;
+  const H = G.H;
   const pw = W - M.l - M.r;
   const ph = H - M.t - M.b;
 
@@ -425,7 +438,7 @@ function drawChart(v) {
 
   const x = (y) => M.l + (pw * y) / Y;
   const yy = (value) => M.t + ph - (ph * value) / (max || 1);
-  const barW = Math.max(2, Math.min(26, (pw / Y) * 0.68));
+  const barW = Math.max(2, Math.min(26 * G.s, (pw / Y) * 0.68));
 
   let s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img">';
 
@@ -445,10 +458,12 @@ function drawChart(v) {
       gy +
       '" stroke="#242734" stroke-width="1"/>' +
       '<text x="' +
-      (M.l - 10) +
+      (M.l - 10 * G.s) +
       '" y="' +
-      (gy + 4) +
-      '" fill="#5c6070" font-size="12" text-anchor="end">' +
+      (gy + 4 * G.s) +
+      '" fill="#5c6070" font-size="' +
+      G.font +
+      '" text-anchor="end">' +
       krShort(gv) +
       "</text>";
   }
@@ -485,9 +500,17 @@ function drawChart(v) {
   const stepY = Math.max(1, Math.ceil(Y / 10));
   for (let y = 0; y <= Y; y += stepY) {
     s +=
-      '<text x="' + x(y) + '" y="' + (H - 14) + '" fill="#5c6070" font-size="12" text-anchor="middle">' + Math.round(p.age + y) + "</text>";
+      '<text x="' +
+      x(y) +
+      '" y="' +
+      (H - 14 * G.s) +
+      '" fill="#5c6070" font-size="' +
+      G.font +
+      '" text-anchor="middle">' +
+      Math.round(p.age + y) +
+      "</text>";
   }
-  s += '<text x="' + M.l + '" y="' + (H - 1) + '" fill="#484d5e" font-size="11">ålder</text>';
+  s += '<text x="' + M.l + '" y="' + (H - 2 * G.s) + '" fill="#484d5e" font-size="' + 11 * G.s + '">ålder</text>';
   s += "</svg>";
 
   el.chart.innerHTML = s;
@@ -522,10 +545,11 @@ function niceCeil(v) {
 function wireTooltip(v, val, paid, lo, hi) {
   const svg = el.chart.firstChild;
   const Y = v.p.years;
-  svg.addEventListener("mousemove", (e) => {
+
+  const show = (clientX, clientY) => {
     const r = svg.getBoundingClientRect();
-    const px = ((e.clientX - r.left) / r.width) * W;
-    let y = Math.round(((px - M.l) / (W - M.l - M.r)) * Y);
+    const px = ((clientX - r.left) / r.width) * W;
+    let y = Math.round(((px - G.l) / (W - G.l - G.r)) * Y);
     y = Math.max(0, Math.min(Y, y));
     const g = val[y] - paid[y];
     let html =
@@ -548,12 +572,24 @@ function wireTooltip(v, val, paid, lo, hi) {
     el.tip.innerHTML = html;
     el.tip.classList.add("on");
     const wrapR = el.chart.parentElement.getBoundingClientRect();
-    let left = e.clientX - wrapR.left + 14;
-    if (left + 210 > wrapR.width) left = e.clientX - wrapR.left - 224;
+    const tipW = el.tip.offsetWidth || 210;
+    let left = clientX - wrapR.left + 14;
+    if (left + tipW > wrapR.width) left = Math.max(4, clientX - wrapR.left - tipW - 14);
     el.tip.style.left = left + "px";
-    el.tip.style.top = e.clientY - wrapR.top - 10 + "px";
-  });
+    el.tip.style.top = Math.max(0, clientY - wrapR.top - 10) + "px";
+  };
+
+  svg.addEventListener("mousemove", (e) => show(e.clientX, e.clientY));
   svg.addEventListener("mouseleave", () => el.tip.classList.remove("on"));
+
+  // Touch: no hover on a phone, so dragging a finger across the chart reads it.
+  // No preventDefault, so vertical page scrolling still works over the chart.
+  const touch = (e) => {
+    if (e.touches && e.touches.length === 1) show(e.touches[0].clientX, e.touches[0].clientY);
+  };
+  svg.addEventListener("touchstart", touch, { passive: true });
+  svg.addEventListener("touchmove", touch, { passive: true });
+  svg.addEventListener("touchend", () => el.tip.classList.remove("on"), { passive: true });
 }
 
 // ---------- build UI ----------
