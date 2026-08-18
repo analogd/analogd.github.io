@@ -10,7 +10,7 @@ const SOLVE_H = 20; // horizon (years) for the "sparar X kr/man om 20 ar" helper
 
 const CONTROLS = [
   { id: "start", group: "basic", label: "Startbelopp", unit: "kr", min: 0, max: 1000000, step: 1000, value: 10000 },
-  { id: "monthly", group: "basic", label: "Månadssparande nu", unit: "kr", min: 0, max: 20000, step: 100, value: 1000 },
+  { id: "monthly", group: "basic", label: "Månadssparande nu", unit: "kr", min: 0, max: 40000, step: 100, value: 1000 },
   { id: "age", group: "basic", label: "Ålder nu", unit: "år", min: 0, max: 75, step: 1, value: 22 },
   { id: "years", group: "basic", label: "Sparhorisont", unit: "år", min: 1, max: MAXY, step: 1, value: 45 },
   {
@@ -27,10 +27,10 @@ const CONTROLS = [
   {
     id: "growth",
     group: "adv",
-    label: "Sparandet växer per år",
+    label: "Sparandet ändras per år",
     unit: "%",
-    min: 0,
-    max: 10,
+    min: -15,
+    max: 15,
     step: 0.1,
     value: 3,
     // Text, not number: a number field silently blanks a value carrying
@@ -111,6 +111,7 @@ const PRESETS = [
   { name: "22 år, första jobbet", v: { start: 10000, monthly: 1000, age: 22, years: 45, growth: 3 } },
   { name: "30 år, etablerad", v: { start: 150000, monthly: 4000, age: 30, years: 37, growth: 2.5 } },
   { name: "45 år, sent i gång", v: { start: 300000, monthly: 8000, age: 45, years: 22, growth: 1.5 } },
+  { name: "50 år, sparar hårt nu", v: { start: 500000, monthly: 21000, age: 50, years: 17, growth: -3 } },
   { name: "Barnspar till 18", v: { start: 0, monthly: 1000, age: 0, years: 18, growth: 0 } }
 ];
 
@@ -463,7 +464,7 @@ function updateHints(p) {
     NF1.format(p.drift * 100) +
     " %, avgift " +
     NF2.format(p.fee * 100) +
-    " %, sparandet växer " +
+    " %, sparandet ändras " +
     NF1.format(p.growth * 100) +
     " %/år, ISK-skatt " +
     (p.isk ? "på" : "av");
@@ -857,7 +858,8 @@ function init() {
     const now = parseField(el.monthly.num.value);
     if (isFinite(target) && target > 0 && now > 0) {
       const g = (Math.pow(target / now, 1 / SOLVE_H) - 1) * 100;
-      const clamped = Math.min(el.growth.spec.max, Math.max(0, g));
+      // Negative is allowed: a target below today's amount means the saving winds down.
+      const clamped = Math.min(el.growth.spec.max, Math.max(el.growth.spec.min, g));
       el.growth.num.value = fieldText(el.growth.spec, clamped);
       el.growth.rng.value = valueToSlider(el.growth.spec, clamped);
       schedule();

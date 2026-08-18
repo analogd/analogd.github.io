@@ -313,5 +313,17 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
   check("7 % gor det inte", balG[good.years] / Math.pow(1.02 * 1.01, good.years) > realContributions(good)[good.years]);
 }
 
+// 20. A shrinking contribution is a legal case, not a clamped one.
+{
+  const g = CONTROLS.find((c) => c.id === "growth");
+  check("forandringstakten far vara negativ", g.min < 0, g.min, "< 0");
+  near("minus 3 % halverar manadsbeloppet pa 23 ar", 1000 * Math.pow(0.97, 23), 500, 6);
+  const down = run({ monthly: 21000, growth: -0.03, years: 17, start: 500000, fee: 0.004, isk: true, slr: 0.0255, iskFree: 300000 });
+  const flat = run({ monthly: 21000, growth: 0, years: 17, start: 500000, fee: 0.004, isk: true, slr: 0.0255, iskFree: 300000 });
+  check("minskande sparande ger mindre an platt", down.end < flat.end, Math.round(down.end), "< " + Math.round(flat.end));
+  check("men fortfarande mer an bara startbeloppet", down.end > 500000);
+  near("sista arets manadsbelopp har krympt", 21000 * Math.pow(0.97, 16), 12899, 1);
+}
+
 console.log("\n" + pass + " passerade, " + fail + " misslyckades");
 process.exit(fail ? 1 : 0);
