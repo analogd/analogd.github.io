@@ -9,6 +9,7 @@
   --dim: #666;
   --accent: #4a7cff;
   --accent-light: #6b9bff;
+  --start: #3f9a6a;
   --in: #3d4a72;
   --ret: #4a7cff;
   --loss: #b5495b;
@@ -464,6 +465,9 @@ details > .controls {
   height: 11px;
   border-radius: 2px;
   display: inline-block;
+}
+.sw-start {
+  background: var(--start);
 }
 .sw-in {
   background: var(--in);

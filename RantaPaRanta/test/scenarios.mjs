@@ -15,12 +15,23 @@ import path from "path";
 const here = path.dirname(new URL(import.meta.url).pathname);
 const code = fs.readFileSync(path.join(here, "..", "script.js"), "utf8");
 const sandbox = { document: { addEventListener() {} }, window: { addEventListener() {} }, requestAnimationFrame() {}, Intl, Math, console };
-const { simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, PRESETS, CONTROLS, SHOW } =
-  vm.runInContext(
-    code +
-      ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, PRESETS, CONTROLS, SHOW})",
-    vm.createContext(sandbox)
-  );
+const {
+  simulate,
+  percentileBand,
+  moneyWeightedReturn,
+  niceStep,
+  sliderToValue,
+  valueToSlider,
+  parseField,
+  realContributions,
+  PRESETS,
+  CONTROLS,
+  SHOW
+} = vm.runInContext(
+  code +
+    ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, realContributions, PRESETS, CONTROLS, SHOW})",
+  vm.createContext(sandbox)
+);
 
 const BASE = {
   start: 10000,
@@ -247,10 +258,59 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
 // 17. Opening state of the chart series: bars on, spread off, so the axis opens
 //     scaled to the bars.
 {
-  check("insatt syns fran borjan", SHOW.in === true);
+  check("startbelopp syns fran borjan", SHOW.start === true);
+  check("manadssparande syns fran borjan", SHOW.mon === true);
   check("avkastning syns fran borjan", SHOW.ret === true);
   check("forlorad kopkraft syns fran borjan", SHOW.loss === true);
   check("spannet ar avstangt fran borjan", SHOW.band === false);
+}
+
+// 18. The real cost basis: every contribution deflated by its own date, the
+//     start amount not at all (it is paid today). Default basis is "life".
+{
+  const p = { start: 100000, monthly: 1000, years: 10, growth: 0, inflation: 0.02, drift: 0.01 };
+  const rc = realContributions(p);
+  const nominal = 100000 + 120 * 1000;
+  const f = 1.02 * 1.01;
+  near("startbeloppet deflateras aldrig", rc[0], 100000, 0);
+  check("realt insatt ar lagre an nominellt", rc[10] < nominal, Math.round(rc[10]), "< " + nominal);
+  check(
+    "men hogre an att deflatera hela summan med slutaret",
+    rc[10] > nominal / Math.pow(f, 10),
+    Math.round(rc[10]),
+    "> " + Math.round(nominal / Math.pow(f, 10))
+  );
+  near("utan inflation ar realt = nominellt", realContributions({ ...p, inflation: 0, drift: 0 })[10], nominal, 0.01);
+}
+
+// 19. Forlorad kopkraft must be reachable: a low enough return leaves the pot
+//     below what was paid in, measured in today's purchasing power.
+{
+  const p = {
+    start: 10000,
+    monthly: 1000,
+    years: 30,
+    growth: 0,
+    ret: 0.02,
+    fee: 0.004,
+    slr: 0.0255,
+    iskFree: 300000,
+    isk: true,
+    vol: 0,
+    inflation: 0.02,
+    drift: 0.01
+  };
+  const bal = new Float64Array(p.years + 1);
+  const contrib = new Float64Array(p.years + 1);
+  simulate(p, null, bal, contrib);
+  const real = bal[p.years] / Math.pow(1.02 * 1.01, p.years);
+  const cost = realContributions(p)[p.years];
+  check("2 % avkastning ger forlorad kopkraft", real < cost, Math.round(real), "< " + Math.round(cost));
+
+  const good = { ...p, ret: 0.07 };
+  const balG = new Float64Array(good.years + 1);
+  simulate(good, null, balG, new Float64Array(good.years + 1));
+  check("7 % gor det inte", balG[good.years] / Math.pow(1.02 * 1.01, good.years) > realContributions(good)[good.years]);
 }
 
 console.log("\n" + pass + " passerade, " + fail + " misslyckades");

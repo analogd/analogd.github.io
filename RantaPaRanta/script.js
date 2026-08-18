@@ -119,7 +119,7 @@ let basis = "life";
 
 // The legend is the series control. The spread starts off, so the axis opens
 // scaled to the bars rather than to p90.
-const SHOW = { in: true, ret: true, loss: true, band: false };
+const SHOW = { start: true, mon: true, ret: true, loss: true, band: false };
 
 // ---------- formatting ----------
 
@@ -268,10 +268,31 @@ function readParams() {
   };
 }
 
-function deflator(p, y) {
+function basisFactor(p) {
   if (basis === "nom") return 1;
-  const f = basis === "cpi" ? 1 + p.inflation : (1 + p.inflation) * (1 + p.drift);
-  return Math.pow(f, y);
+  return basis === "cpi" ? 1 + p.inflation : (1 + p.inflation) * (1 + p.drift);
+}
+
+function deflator(p, y) {
+  return Math.pow(basisFactor(p), y);
+}
+
+// What the contributions cost in today's purchasing power. Each one is deflated
+// by its OWN date, not by the end year: 1 000 kr paid in 30 years is not the
+// same sacrifice as 1 000 kr paid today, and the start amount is paid today, so
+// it is never deflated at all. Deflating the whole running total by the end-year
+// factor (the earlier version) cancelled inflation out of the comparison
+// entirely, which made "forlorad kopkraft" unreachable.
+function realContributions(p) {
+  const f = basisFactor(p);
+  const out = new Float64Array(p.years + 1);
+  let acc = p.start;
+  out[0] = acc;
+  for (let m = 0; m < p.years * 12; m++) {
+    acc += (p.monthly * Math.pow(1 + p.growth, (m / 12) | 0)) / Math.pow(f, (m + 1) / 12);
+    if (m % 12 === 11) out[(m + 1) / 12] = acc;
+  }
+  return out;
 }
 
 const BASIS_LABEL = {
@@ -357,8 +378,9 @@ function render() {
   const band = getBand(p);
 
   const d = deflator(p, Y);
+  const realPaid = realContributions(p);
   const total = bal[Y] / d;
-  const paid = contrib[Y] / d;
+  const paid = realPaid[Y];
   const gain = total - paid;
 
   el.resultLabel.textContent = "Totalt efter " + Y + " år, vid " + Math.round(p.age + Y) + " års ålder";
@@ -374,7 +396,7 @@ function render() {
   const realRate = (1 + nomRate) / deflFactor - 1;
 
   const stats = [
-    ["Insatt totalt", kr(paid), "därav " + kr(p.start / d) + " startbelopp", false],
+    ["Insatt totalt", kr(paid), "i dagens köpkraft, varje insättning räknad från sitt eget datum", false],
     ["Avkastning", kr(gain), paid > 0 ? NF2.format(gain / paid) + " gånger det insatta" : "", gain < 0],
     band
       ? [
@@ -418,7 +440,7 @@ function render() {
     )
     .join("");
 
-  view = { p: p, bal: bal, contrib: contrib, band: band };
+  view = { p: p, bal: bal, contrib: contrib, realPaid: realPaid, band: band };
   drawChart(view);
   updateHints(p);
 }
@@ -474,25 +496,34 @@ function drawChart(v) {
 
   const val = [];
   const paid = [];
+  const startPart = [];
+  const monPart = [];
+  const gainPart = [];
   const lo = [];
   const hi = [];
   for (let y = 0; y <= Y; y++) {
     const d = deflator(p, y);
     val.push(v.bal[y] / d);
-    paid.push(v.contrib[y] / d);
+    paid.push(v.realPaid[y]);
+    startPart.push(p.start);
+    monPart.push(v.realPaid[y] - p.start);
+    gainPart.push(v.bal[y] / d - v.realPaid[y]);
     if (v.band) {
       lo.push(v.band.p10[y] / d);
       hi.push(v.band.p90[y] / d);
     }
   }
 
-  // Only what is actually drawn sets the scale, so hiding a series rescales.
-  const barTop = (y) => {
-    if (SHOW.in && SHOW.ret) return Math.max(val[y], SHOW.loss ? paid[y] : val[y]);
-    if (SHOW.ret) return Math.max(0, val[y] - paid[y]);
-    if (SHOW.in) return paid[y];
-    return 0;
+  // The stack, bottom up, of whatever is switched on. Only what is drawn sets
+  // the scale, so hiding a series rescales the axis.
+  const stack = (y) => {
+    const segs = [];
+    if (SHOW.start && startPart[y] > 0) segs.push([startPart[y], "var(--start)"]);
+    if (SHOW.mon && monPart[y] > 0) segs.push([monPart[y], "var(--in)"]);
+    if (SHOW.ret && gainPart[y] > 0) segs.push([gainPart[y], "var(--ret)"]);
+    return segs;
   };
+  const barTop = (y) => stack(y).reduce((a, s) => a + s[0], 0);
 
   let max = 0;
   for (let y = 0; y <= Y; y++) {
@@ -573,25 +604,20 @@ function drawChart(v) {
       '" opacity="0.8"/>';
   }
 
-  // bars
+  // bars: stacked bottom up, then the shortfall painted over the top of the
+  // paid-in stack when the pot has not kept up with what was put in
   const zero = yy(0);
   for (let y = 1; y <= Y; y++) {
     const bx = x(y) - barW / 2;
-    const vTop = yy(val[y]);
-    const pTop = yy(paid[y]);
-    if (SHOW.in && SHOW.ret) {
-      if (val[y] >= paid[y]) {
-        s += rect(bx, pTop, barW, zero - pTop, "var(--in)");
-        s += rect(bx, vTop, barW, pTop - vTop, "var(--ret)");
-      } else {
-        s += rect(bx, vTop, barW, zero - vTop, "var(--in)");
-        if (SHOW.loss) s += rect(bx, pTop, barW, vTop - pTop, "var(--loss)", 0.55);
-      }
-    } else if (SHOW.ret) {
-      const gain = Math.max(0, val[y] - paid[y]);
-      s += rect(bx, yy(gain), barW, zero - yy(gain), "var(--ret)");
-    } else if (SHOW.in) {
-      s += rect(bx, pTop, barW, zero - pTop, "var(--in)");
+    let acc = 0;
+    stack(y).forEach((seg) => {
+      const from = yy(acc);
+      acc += seg[0];
+      s += rect(bx, yy(acc), barW, from - yy(acc), seg[1]);
+    });
+    if (SHOW.loss && gainPart[y] < 0) {
+      const shortfall = Math.min(-gainPart[y], acc);
+      s += rect(bx, yy(acc), barW, yy(acc - shortfall) - yy(acc), "var(--loss)", 0.6);
     }
   }
 
@@ -614,7 +640,7 @@ function drawChart(v) {
   s += "</svg>";
 
   el.chart.innerHTML = s;
-  wireTooltip(v, val, paid, lo, hi);
+  wireTooltip(v, { val: val, paid: paid, startPart: startPart, monPart: monPart, gainPart: gainPart, lo: lo, hi: hi });
 }
 
 function rect(x, y, w, h, fill, op) {
@@ -643,7 +669,7 @@ function niceStep(v) {
   return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
 }
 
-function wireTooltip(v, val, paid, lo, hi) {
+function wireTooltip(v, series) {
   const svg = el.chart.firstChild;
   const Y = v.p.years;
 
@@ -652,7 +678,7 @@ function wireTooltip(v, val, paid, lo, hi) {
     const px = ((clientX - r.left) / r.width) * W;
     let y = Math.round(((px - G.l) / (W - G.l - G.r)) * Y);
     y = Math.max(0, Math.min(Y, y));
-    const g = val[y] - paid[y];
+    const g = series.gainPart[y];
     let html =
       "<b>" +
       Math.round(v.p.age + y) +
@@ -660,16 +686,17 @@ function wireTooltip(v, val, paid, lo, hi) {
       y +
       ")</span><br>" +
       '<span class="k">Värde</span> <b>' +
-      kr(val[y]) +
+      kr(series.val[y]) +
       "</b><br>" +
-      '<span class="k">Insatt</span> ' +
-      kr(paid[y]) +
-      "<br>" +
       '<span class="k">' +
       (g < 0 ? "Förlorad köpkraft" : "Avkastning") +
       "</span> " +
-      kr(g);
-    if (v.band) html += '<br><span class="k">p10 till p90</span> ' + krShort(lo[y]) + " till " + krShort(hi[y]);
+      kr(g) +
+      '<br><span class="k">Månadssparande</span> ' +
+      kr(series.monPart[y]) +
+      '<br><span class="k">Startbelopp</span> ' +
+      kr(series.startPart[y]);
+    if (v.band) html += '<br><span class="k">p10 till p90</span> ' + krShort(series.lo[y]) + " till " + krShort(series.hi[y]);
     el.tip.innerHTML = html;
     el.tip.classList.add("on");
     const wrapR = el.chart.parentElement.getBoundingClientRect();
