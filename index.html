@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>analogd — Audio Tools</title>
+    <title>analogd — Audio and calculators</title>
     <style>
       * {
         box-sizing: border-box;
@@ -38,6 +38,19 @@
         max-width: 1100px;
         margin: 32px auto;
         padding: 0 24px;
+      }
+      .group-title {
+        max-width: 1100px;
+        margin: 40px auto 0;
+        padding: 0 24px;
+        font-size: 0.78em;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #6b7080;
+      }
+      .group-title + .cards {
+        margin-top: 16px;
       }
       .card {
         background: #1a1d27;
@@ -167,6 +180,7 @@
       <p>Audio, acoustics, and the occasional calculator</p>
     </header>
 
+    <h2 class="group-title">Audio and acoustics</h2>
     <div class="cards">
       <!-- BoxSmith -->
       <a class="card" href="./BoxSmith/ui/">
@@ -221,8 +235,20 @@
         </div>
       </a>
 
+      <!-- Acoustic Calculation Tools -->
+      <a class="card" href="./AcousticCalculationTools/">
+        <div class="card-placeholder">~</div>
+        <div class="card-body">
+          <span class="card-title">Acoustic Calculation Tools</span>
+          <p class="card-desc">Room mode calculator, speaker boundary interference, and other acoustic utilities.</p>
+        </div>
+      </a>
+    </div>
+
+    <h2 class="group-title">Personal finance</h2>
+    <div class="cards">
       <!-- Ränta på ränta -->
-      <a class="card" href="./RantaPaRanta/">
+      <a class="card" href="./finance/RantaPaRanta/">
         <div class="card-placeholder">%</div>
         <div class="card-body">
           <span class="card-title">Ränta på ränta, osockrat</span>
@@ -230,15 +256,6 @@
             Compound interest without the marketing. Inflation, rising living standards, fees, ISK tax, a contribution that grows with your
             salary, and a Monte Carlo band instead of a single flattering line.
           </p>
-        </div>
-      </a>
-
-      <!-- Acoustic Calculation Tools -->
-      <a class="card" href="./AcousticCalculationTools/">
-        <div class="card-placeholder">~</div>
-        <div class="card-body">
-          <span class="card-title">Acoustic Calculation Tools</span>
-          <p class="card-desc">Room mode calculator, speaker boundary interference, and other acoustic utilities.</p>
         </div>
       </a>
     </div>
