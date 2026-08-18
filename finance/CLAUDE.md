@@ -21,10 +21,11 @@ reimplements a formatter, the link format, or any arithmetic.
 
 ## Apps
 
-| Directory                 | What it answers                                                                                                                                |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `RantaPaRanta/`           | What a monthly saving is actually worth after inflation, standardglidning, avgift and ISK-skatt. The calculator the others hand a scenario to. |
-| `AmorteraEllerInvestera/` | Mortgage versus index fund, answered as a break-even expected return. Both branches spend the same monthly budget.                             |
+| Directory                 | What it answers                                                                                                                                                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `RantaPaRanta/`           | What a monthly saving is actually worth after inflation, standardglidning, avgift and ISK-skatt. The calculator the others hand a scenario to.                                                                                      |
+| `AmorteraEllerInvestera/` | Mortgage versus index fund, answered as a break-even expected return. Both branches spend the same monthly budget.                                                                                                                  |
+| `BilTCO/`                 | A car's true monthly cost, split into fixed and per-mil. Declining-balance depreciation, opportunity cost of the tied-up capital kept separate from loan interest, and a small trip-splitting section priced off the marginal cost. |
 
 ## Tax and rate numbers
 
