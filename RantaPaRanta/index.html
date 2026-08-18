@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ränta på ränta, osockrat</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="back" href="../">analogd</a>
+
+    <header>
+      <h1>Ränta på ränta, osockrat</h1>
+      <p class="lede">
+        Samma matematik som bankernas kalkylatorer, men med det de utelämnar: inflation, stigande levnadsstandard, avgifter, ISK-skatt, ett
+        sparande som växer med lönen, och att avkastningen inte är 7 % varje år utan 7 % i genomsnitt.
+      </p>
+    </header>
+
+    <main>
+      <section class="panel">
+        <div id="basic" class="controls"></div>
+
+        <details id="adv-wrap">
+          <summary>
+            Avancerat
+            <span id="adv-summary" class="adv-summary"></span>
+          </summary>
+          <div id="adv" class="controls"></div>
+          <div class="toggles">
+            <label><input type="checkbox" id="isk" checked /> ISK-schablonskatt</label>
+            <label><input type="checkbox" id="volOn" checked /> Visa utfallsspann (Monte Carlo)</label>
+            <label><input type="checkbox" id="lysaOn" checked /> Visa referenssiffra utan justeringar</label>
+          </div>
+        </details>
+      </section>
+
+      <section class="result">
+        <div class="basis" id="basis" role="tablist">
+          <button data-basis="life" class="active">Livsstilsjusterat</button>
+          <button data-basis="cpi">Dagens kronor (KPI)</button>
+          <button data-basis="nom">Nominellt</button>
+        </div>
+
+        <p class="result-label" id="result-label"></p>
+        <p class="result-total" id="result-total"></p>
+        <p class="result-split" id="result-split"></p>
+
+        <div class="stats" id="stats"></div>
+      </section>
+
+      <section class="chart-wrap">
+        <div class="legend">
+          <span><i class="sw-in"></i> Insatt</span>
+          <span><i class="sw-ret"></i> Avkastning</span>
+          <span><i class="sw-loss"></i> Förlorad köpkraft</span>
+          <span class="band-legend"><i class="sw-band"></i> Spann p10 till p90</span>
+        </div>
+        <div id="chart"></div>
+        <div id="tip" class="tip"></div>
+      </section>
+
+      <section class="notes">
+        <h2>Varför tre siffror?</h2>
+        <p>
+          <strong>Nominellt</strong> är kronorna på kontot den dagen. Det är siffran bankerna visar, och den är sann men obrukbar: 1 000 kr
+          1985 var en veckas matkasse, i dag är det en lunchvecka.
+        </p>
+        <p><strong>Dagens kronor</strong> deflaterar med KPI. Det svarar på "hur mycket av dagens varukorg räcker slutbeloppet till".</p>
+        <p>
+          <strong>Livsstilsjusterat</strong> drar av ytterligare en post: standardglidningen. KPI mäter priset på en
+          <em>konstant</em> varukorg, och justerar dessutom bort kvalitetsförbättringar (hedonisk justering, samma logik som gör att en
+          dator som blivit dubbelt så snabb till samma pris räknas som en prissänkning). Effekten är att KPI systematiskt underskattar vad
+          det kostar att ligga på en <em>normal</em> standard, eftersom normalen flyttar sig. En telefon för 15 000 kr är inte ett dyrare
+          inköp av samma vara, det är en annan vara, och den är i praktiken svår att välja bort. Samma sak gäller bostadsyta, resor och
+          sjukvård.
+        </p>
+        <p>
+          Storleken går inte att mäta exakt, men den har en rimlig övre gräns: tillväxten i real BNP per capita, historiskt runt 1,5 till 2
+          % per år i Sverige. Bara en del av din konsumtion är normstyrd, så 0,5 till 1,5 % per år är ett hyfsat intervall. Default här är 1
+          %. Vrid på den och se hur mycket den äter, för på 50 års horisont är den inte kosmetisk: 1 % per år halverar slutvärdet över 70
+          år.
+        </p>
+
+        <h2>Vad mer är osockrat här</h2>
+        <ul>
+          <li>
+            <strong>Sparandet växer.</strong> Ingen sparar 1 000 kr i månaden i 45 år. Ange en tillväxttakt, eller skriv in vad du tror att
+            du sparar om 20 år och låt den räkna ut takten. Effekten är stor och den drar åt din fördel, det är den enda posten här som gör
+            det.
+          </li>
+          <li>
+            <strong>Avgifter</strong> tas på kapitalet varje månad, inte på avkastningen. 0,4 % per år ser ut som ingenting och kostar över
+            40 år ungefär en sjättedel av slutvärdet.
+          </li>
+          <li>
+            <strong>ISK-schablonskatt</strong> beräknas på kapitalunderlaget (värdet vid varje kvartals ingång plus årets insättningar,
+            delat på fyra), med schablonintäkt = statslåneräntan plus 1 procentenhet, aldrig under 1,25 %, beskattad med 30 %. Fribeloppet
+            är modellerat som avdrag på kapitalunderlaget. Reglerna och statslåneräntan ändras, så kontrollera siffrorna för det år du
+            räknar på.
+          </li>
+          <li>
+            <strong>Avkastningen är inte 7 % varje år.</strong> Spannet kommer från 1 200 simulerade utfall med lognormal månadsavkastning,
+            median satt till din angivna avkastning. Poängen är inte precisionen i p10 och p90, det är att de ligger så långt ifrån
+            varandra. Ett enda tal på 45 års horisont är alltid en förenkling.
+          </li>
+          <li>
+            <strong>Den streckade medianlinjen ligger över staplarna</strong>, och det är inte ett fel. Staplarna är ett enda scenario där
+            varje månad ger exakt samma avkastning. När insättningarna sprids över många år får de olika lång tid i marknaden, vilket
+            diversifierar bort en del av fördelningens snedhet, och då kryper medianen uppåt mot medelvärdet. Skillnaden växer med
+            volatiliteten och med horisonten.
+          </li>
+        </ul>
+
+        <h2>Vad den inte gör</h2>
+        <p>
+          Ingen skevhet eller feta svansar i fördelningen, ingen autokorrelation eller värderingsberoende (efter en dyr marknad är kommande
+          avkastning historiskt sämre), inga uttag eller pauser i sparandet, ingen valutarisk, ingen förändrad skattelagstiftning. Det här
+          är en modell, inte en prognos. Den ska visa storleksordningar och vilka antaganden som faktiskt bär resultatet, inget annat.
+        </p>
+        <p>
+          Räknemotorn är avstämd mot Lysas kalkylator: med avgift, skatt, sparandetillväxt och alla justeringar nollade ger den samma krona
+          som de (10 000 kr start, 2 000 kr/mån, 7 %, 20 år ger 1 059 509 kr). Skillnaderna i den här kalkylatorn kommer alltså från
+          antagandena, inte från matematiken.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <a href="https://github.com/analogd/analogd.github.io" target="_blank" rel="noopener">GitHub</a>
+      &nbsp;&middot;&nbsp; Daniel Nilsson
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+</html>

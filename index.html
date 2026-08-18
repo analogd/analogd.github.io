@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>analogd — Audio Tools</title>
     <style>
-      * { box-sizing: border-box; margin: 0; padding: 0; }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
       body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         background: #0f1117;
@@ -40,7 +44,9 @@
         border: 1px solid #2a2d3a;
         border-radius: 10px;
         overflow: hidden;
-        transition: border-color 0.2s, transform 0.2s;
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
         display: flex;
         flex-direction: column;
         text-decoration: none;
@@ -158,7 +164,7 @@
   <body>
     <header>
       <h1>analogd</h1>
-      <p>Audio and acoustics tools</p>
+      <p>Audio, acoustics, and the occasional calculator</p>
     </header>
 
     <div class="cards">
@@ -182,7 +188,10 @@
         </div>
         <div class="card-body">
           <span class="card-title">Audyssey Curve and Crossover Optimizer</span>
-          <p class="card-desc">Add a house curve — not just for the sub — without messing up your levels, and fix the missing high-pass slopes for your Audyssey calibrations.</p>
+          <p class="card-desc">
+            Add a house curve — not just for the sub — without messing up your levels, and fix the missing high-pass slopes for your
+            Audyssey calibrations.
+          </p>
         </div>
       </a>
 
@@ -206,7 +215,21 @@
         </div>
         <div class="card-body">
           <span class="card-title">Audyssey File Analyzer</span>
-          <p class="card-desc">Decode and visualize Audyssey .ady calibration files. View target curves, channel settings, and speaker configuration.</p>
+          <p class="card-desc">
+            Decode and visualize Audyssey .ady calibration files. View target curves, channel settings, and speaker configuration.
+          </p>
+        </div>
+      </a>
+
+      <!-- Ränta på ränta -->
+      <a class="card" href="./RantaPaRanta/">
+        <div class="card-placeholder">%</div>
+        <div class="card-body">
+          <span class="card-title">Ränta på ränta, osockrat</span>
+          <p class="card-desc">
+            Compound interest without the marketing. Inflation, rising living standards, fees, ISK tax, a contribution that grows with your
+            salary, and a Monte Carlo band instead of a single flattering line.
+          </p>
         </div>
       </a>
 
@@ -226,26 +249,25 @@
 
     <footer>
       <a href="https://github.com/analogd/analogd.github.io" target="_blank">GitHub</a>
-      &nbsp;&middot;&nbsp;
-      &copy; 2024 Daniel Nilsson
+      &nbsp;&middot;&nbsp; &copy; 2024 Daniel Nilsson
     </footer>
 
     <script>
-      const lightbox = document.getElementById('lightbox');
-      const lightboxImg = document.getElementById('lightbox-img');
+      const lightbox = document.getElementById("lightbox");
+      const lightboxImg = document.getElementById("lightbox-img");
 
-      document.querySelectorAll('.zoom-btn').forEach(btn => {
-        btn.addEventListener('click', e => {
+      document.querySelectorAll(".zoom-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
           lightboxImg.src = btn.dataset.img;
-          lightbox.classList.add('open');
+          lightbox.classList.add("open");
         });
       });
 
-      lightbox.addEventListener('click', () => lightbox.classList.remove('open'));
-      document.addEventListener('keydown', e => {
-        if (e.key === 'Escape') lightbox.classList.remove('open');
+      lightbox.addEventListener("click", () => lightbox.classList.remove("open"));
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") lightbox.classList.remove("open");
       });
     </script>
   </body>
