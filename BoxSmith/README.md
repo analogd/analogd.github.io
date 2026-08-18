@@ -92,6 +92,7 @@ Known simplifications documented in [lib/future/README.md](lib/future/README.md)
 - **Small 1973**: "Vented-Box Loudspeaker Systems" Parts I-IV
 - **Thiele 1971**: "Loudspeakers in Vented Boxes"
 - **Klippel 2006**: "Loudspeaker Nonlinearities"
+- **[T/S Parameters Explained](https://www.youtube.com/watch?v=JdQ3mLU5zBE)** — excellent walkthrough of Thiele-Small parameters
 
 See [papers/README.md](papers/README.md) for implementation coverage.
 
