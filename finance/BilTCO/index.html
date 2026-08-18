@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bilens verkliga månadskostnad</title>
+    <link rel="stylesheet" href="../lib/app.css" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -35,7 +36,7 @@
 
         <h2 class="group-h">
           Drift
-          <label class="fuel-toggle"><input type="checkbox" id="electric" /> Elbil (kWh i stället för liter)</label>
+          <label class="group-toggle"><input type="checkbox" id="electric" /> Elbil (kWh i stället för liter)</label>
         </h2>
         <div id="drift" class="controls"></div>
         <div id="fuel-fields" class="controls"></div>
@@ -43,8 +44,8 @@
       </section>
 
       <section class="result">
-        <p class="headline-label">Total månadskostnad</p>
-        <p class="headline-total" id="headline-total"></p>
+        <p class="result-label">Total månadskostnad</p>
+        <p class="result-total" id="headline-total"></p>
         <p class="headline-split" id="headline-split"></p>
         <p class="headline-krmil"><span id="headline-krmil"></span> <span class="headline-krmil-label">allt inräknat, per mil</span></p>
 
@@ -60,14 +61,14 @@
       <section class="panel">
         <h2 class="group-h">
           Jämförelseläge
-          <label class="fuel-toggle"><input type="checkbox" id="compare" /> Jämför med en annan bil</label>
+          <label class="group-toggle"><input type="checkbox" id="compare" /> Jämför med en annan bil</label>
         </h2>
         <div id="compare-wrap">
           <p class="compare-note">
             Bil B delar körsträcka, ägandehorisont, lånefinansiering, avkastningsantagande och räntesats med bil A. Här står bara det som
             skiljer en bil från en annan.
           </p>
-          <label class="fuel-toggle"><input type="checkbox" id="electricB" /> Bil B är elbil</label>
+          <label class="group-toggle"><input type="checkbox" id="electricB" /> Bil B är elbil</label>
           <div id="compare-b" class="controls"></div>
           <div id="fuel-fields-b" class="controls"></div>
           <div id="elec-fields-b" class="controls hidden"></div>

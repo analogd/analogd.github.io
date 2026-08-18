@@ -30,6 +30,52 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Utility, shared because every app ends up with a block that is only relevant
+   under one toggle. !important so it beats the display a component sets on
+   itself, which is the whole reason a class like this exists. */
+.hidden {
+  display: none !important;
+}
+
+/* A heading that splits a panel into labelled groups of controls, with room on
+   the right for a toggle that belongs to that group. */
+.group-h {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.05em;
+  font-weight: 700;
+  color: var(--text-strong);
+  margin: 28px 0 16px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.group-h.small {
+  font-size: 0.95em;
+}
+.group-h:first-of-type {
+  margin-top: 0;
+}
+
+/* The toggle that sits in a group heading. Resets the serif and the weight it
+   would otherwise inherit from the heading. */
+.group-toggle {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 0.72em;
+  font-weight: 400;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.group-toggle input {
+  accent-color: var(--accent);
+  width: 14px;
+  height: 14px;
+}
+
 .back {
   position: absolute;
   top: 20px;

@@ -1,291 +1,19 @@
+/* Only what is specific to this page. The base (tokens, layout, panels,
+   controls, presets, stats, chart frame, notes, footer) comes from
+   ../lib/app.css, which is loaded first. Anything added here that a second app
+   would also want belongs in app.css instead. */
+
 :root {
-  --bg: #0f1117;
-  --panel: #1a1d27;
-  --panel-2: #12141c;
-  --line: #2a2d3a;
-  --text: #ccc;
-  --text-strong: #e8e8e8;
-  --muted: #888;
-  --dim: #666;
-  --accent: #4a7cff;
-  --accent-light: #6b9bff;
+  /* The fixed monthly cost is the number this app exists to make visible, so it
+     gets its own colour rather than borrowing the generic accent. */
   --fixed: #3f9a6a;
-  --marginal: #4a7cff;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ---------- headline ---------- */
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  -webkit-font-smoothing: antialiased;
-}
-
-.hidden {
-  display: none !important;
-}
-
-.back {
-  position: absolute;
-  top: 20px;
-  left: 24px;
-  color: var(--muted);
-  text-decoration: none;
-  font-size: 0.9em;
-}
-.back:hover {
-  color: var(--accent-light);
-}
-.back::before {
-  content: "\2190\00a0";
-}
-
-header {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 72px 24px 8px;
-}
-
-header h1 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 2.6em;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--text-strong);
-  line-height: 1.1;
-}
-
-.lede {
-  margin-top: 14px;
-  font-size: 1.05em;
-  line-height: 1.6;
-  color: var(--muted);
-  max-width: 68ch;
-}
-
-main {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 24px 24px;
-}
-
-section {
-  margin-top: 36px;
-}
-
-/* ---------- controls ---------- */
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 26px 28px 22px;
-}
-
-.presets-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 14px;
-  margin-bottom: 24px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--line);
-}
-.presets-label {
-  font-size: 0.76em;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--dim);
-}
-.presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.presets button {
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  color: var(--text);
-  font: inherit;
-  font-size: 0.82em;
-  padding: 6px 14px;
-  cursor: pointer;
-}
-.presets button:hover {
-  border-color: var(--accent);
-  color: var(--text-strong);
-}
-.presets button.active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
-.links a {
-  color: var(--accent-light);
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-}
-.links a:hover {
-  border-bottom-color: var(--accent-light);
-}
-
-.group-h {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.05em;
-  font-weight: 700;
-  color: var(--text-strong);
-  margin: 28px 0 16px;
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.group-h.small {
-  font-size: 0.95em;
-}
-.group-h:first-of-type {
-  margin-top: 0;
-}
-
-.fuel-toggle {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 0.72em;
-  font-weight: 400;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-}
-.fuel-toggle input {
-  accent-color: var(--accent);
-  width: 14px;
-  height: 14px;
-}
-
-.controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
-  gap: 26px 40px;
-}
-
-.ctl {
-  display: flex;
-  flex-direction: column;
-}
-
-.ctl-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.ctl-label {
-  font-size: 0.9em;
-  font-weight: 600;
-  color: var(--text-strong);
-}
-
-.ctl-value {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 2px;
-}
-
-.ctl-value input {
-  width: 5.5em;
-  background: none;
-  border: none;
-  text-align: right;
-  font: inherit;
-  font-size: 1.15em;
-  font-weight: 600;
-  color: var(--text-strong);
-  padding: 0;
-}
-.ctl-value input:focus {
-  outline: none;
-}
-.ctl-value input::-webkit-outer-spin-button,
-.ctl-value input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.ctl-unit {
-  font-size: 0.82em;
-  color: var(--muted);
-}
-
-.ctl-hint {
-  flex: 1;
-  margin-top: 5px;
-  font-size: 0.78em;
-  color: var(--dim);
-  line-height: 1.4;
-  min-height: 1.1em;
-}
-
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 4px;
-  margin-top: 12px;
-  border-radius: 2px;
-  background: var(--line);
-  cursor: pointer;
-}
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--accent);
-  border: none;
-  cursor: grab;
-}
-input[type="range"]::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: 50%;
-  background: var(--accent);
-}
-
-/* ---------- result ---------- */
-
-.result {
-  text-align: center;
-}
-
-.headline-label {
-  font-size: 0.98em;
-  color: var(--muted);
-}
-
-.headline-total {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 3.2em;
-  font-weight: 700;
-  color: var(--text-strong);
-  letter-spacing: -0.02em;
-  line-height: 1.15;
-  margin-top: 4px;
-}
-
+/* .result-label and .result-total come from app.css. These two lines are the
+   ones this page adds to them: the fast/marginellt split, and the kr/mil
+   figure underneath. */
 .headline-split {
   font-size: 1.05em;
   color: var(--text);
@@ -311,69 +39,6 @@ input[type="range"]::-moz-range-thumb {
   margin-left: 4px;
 }
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
-  gap: 1px;
-  margin-top: 32px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  overflow: hidden;
-  text-align: left;
-}
-.stat {
-  background: var(--panel);
-  padding: 16px 18px;
-}
-.stat-k {
-  font-size: 0.76em;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--dim);
-}
-.stat-v {
-  margin-top: 5px;
-  font-size: 1.12em;
-  font-weight: 600;
-  color: var(--text-strong);
-}
-.stat-v.neg {
-  color: #e0798a;
-}
-.stat-n {
-  margin-top: 3px;
-  font-size: 0.76em;
-  color: var(--dim);
-  line-height: 1.4;
-}
-
-@media (min-width: 620px) {
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (min-width: 900px) {
-  .stats {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-/* ---------- chart ---------- */
-
-.chart-wrap {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 22px 20px 14px;
-}
-
-#chart svg {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
 .chart-note {
   margin-top: 12px;
   font-size: 0.8em;
@@ -382,6 +47,16 @@ input[type="range"]::-moz-range-thumb {
 }
 
 /* ---------- jamforelse ---------- */
+
+/* The whole car-B block collapses until the checkbox is ticked. Without this
+   rule the toggle changed nothing on screen: renderCompare() returns early when
+   the flag is off, so the controls just sat there permanently visible. */
+#compare-wrap {
+  display: none;
+}
+#compare-wrap.on {
+  display: block;
+}
 
 .compare-note {
   font-size: 0.82em;
@@ -476,74 +151,4 @@ input[type="range"]::-moz-range-thumb {
 }
 .share-row b {
   color: var(--text-strong);
-}
-
-/* ---------- notes ---------- */
-
-.notes {
-  max-width: 74ch;
-  margin: 48px auto 0;
-  font-size: 0.95em;
-  line-height: 1.7;
-  color: var(--muted);
-}
-.notes h2 {
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 1.35em;
-  color: var(--text-strong);
-  margin: 32px 0 12px;
-  font-weight: 700;
-}
-.notes h2:first-child {
-  margin-top: 0;
-}
-.notes p,
-.notes li {
-  margin-bottom: 12px;
-}
-.notes strong {
-  color: var(--text);
-}
-.notes ul {
-  padding-left: 20px;
-}
-
-footer {
-  text-align: center;
-  padding: 48px 24px 36px;
-  color: #555;
-  font-size: 0.85em;
-}
-footer a {
-  color: var(--accent-light);
-  text-decoration: none;
-}
-footer a:hover {
-  border-bottom: 1px solid var(--accent-light);
-}
-
-@media (max-width: 600px) {
-  header {
-    padding-top: 60px;
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-  header h1 {
-    font-size: 2em;
-  }
-  .headline-total {
-    font-size: 2.3em;
-  }
-  .panel {
-    padding: 20px 18px 18px;
-  }
-  main {
-    padding: 0 16px 24px;
-  }
-  .chart-wrap {
-    padding: 18px 12px 10px;
-  }
-  .notes {
-    font-size: 0.92em;
-  }
 }
