@@ -23,13 +23,15 @@ const {
   sliderToValue,
   valueToSlider,
   parseField,
+  fieldText,
+  solveHorizon,
   realContributions,
   PRESETS,
   CONTROLS,
   SHOW
 } = vm.runInContext(
   code +
-    ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, realContributions, PRESETS, CONTROLS, SHOW})",
+    ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, fieldText, solveHorizon, realContributions, PRESETS, CONTROLS, SHOW})",
   vm.createContext(sandbox)
 );
 
@@ -223,6 +225,30 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
   near("linjar round-trip", sliderToValue(years, valueToSlider(years, 45)), 45, 0);
   near("faltet klarar tusentalsavgransare", parseField("1 059 509"), 1059509, 0);
   near("faltet klarar decimalkomma", parseField("0,4"), 0.4, 0);
+
+  // Regression: sv-SE formats negatives with U+2212, not ASCII hyphen. The field
+  // is written by the same formatter it is read back by, so losing that sign
+  // turned a shrinking contribution into a growing one.
+  const NF2sv = new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 2 });
+  near("faltet klarar lokalens minustecken", parseField(NF2sv.format(-15)), -15, 0);
+  near("och ett vanligt bindestreck", parseField("-15"), -15, 0);
+  near("negativt kronbelopp round-trip", parseField(new Intl.NumberFormat("sv-SE").format(-15000)), -15000, 0);
+  // Every control is written by fieldText and read back by parseField, so the
+  // pair has to be lossless over the whole range, not just for positive numbers.
+  CONTROLS.forEach((c) => {
+    [c.min, c.max, c.value, (c.min + c.max) / 2].forEach((v) => {
+      const want = c.unit === "kr" ? Math.round(v) : Math.round(v * 100) / 100;
+      near("falt-round-trip " + c.id + " vid " + v, parseField(fieldText(c, v)), want, 1e-9);
+    });
+  });
+}
+
+// 21. The back-solve helper never points past the end of the plan.
+{
+  near("20 ars horisont ger ankaret 20 ar", solveHorizon(45), 20, 0);
+  near("17 ars horisont kortar ankaret till 17", solveHorizon(17), 17, 0);
+  near("ett ar ar minimum", solveHorizon(0), 1, 0);
+  near("tomt falt faller tillbaka pa 20", solveHorizon(NaN), 20, 0);
 }
 
 // 15. The 2026 ISK numbers, straight off Skatteverket: statslaneranta 2,55 % on

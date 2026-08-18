@@ -6,7 +6,14 @@
 
 const NPATHS = 1200;
 const MAXY = 60;
-const SOLVE_H = 20; // horizon (years) for the "sparar X kr/man om 20 ar" helper
+const SOLVE_H = 20; // default horizon (years) for the "sparar X kr/man om N ar" helper
+
+// The helper anchors 20 years out, but never past the end of the plan: "om 20 ar"
+// on a 17-year horizon pointed at an age the saving no longer runs to.
+function solveHorizon(years) {
+  const y = isFinite(years) ? Math.round(years) : SOLVE_H;
+  return Math.max(1, Math.min(SOLVE_H, y));
+}
 
 const CONTROLS = [
   { id: "start", group: "basic", label: "Startbelopp", unit: "kr", min: 0, max: 1000000, step: 1000, value: 10000 },
@@ -35,7 +42,7 @@ const CONTROLS = [
     value: 3,
     // Text, not number: a number field silently blanks a value carrying
     // thousand separators.
-    hintHtml: "om " + SOLVE_H + ' år: <input id="solve" type="text" inputmode="decimal" /> kr/mån'
+    hintHtml: 'om <span id="solve-h">' + SOLVE_H + '</span> år: <input id="solve" type="text" inputmode="decimal" /> kr/mån'
   },
   {
     id: "inflation",
@@ -68,7 +75,7 @@ const CONTROLS = [
     max: 2,
     step: 0.05,
     value: 0.4,
-    hint: "Tas på kapitalet, inte på avkastningen."
+    hint: "Fondavgift plus eventuell plattforms- eller förvaltningsavgift, sammanlagt. Tas på kapitalet, inte på avkastningen."
   },
   {
     id: "slr",
@@ -396,6 +403,11 @@ function render() {
   const deflFactor = basis === "nom" ? 1 : basis === "cpi" ? 1 + p.inflation : (1 + p.inflation) * (1 + p.drift);
   const realRate = (1 + nomRate) / deflFactor - 1;
 
+  // The gap is not always in the bank's favour: a contribution ramping up faster
+  // than inflation eats it, so the direction has to be read off the sign rather
+  // than assumed.
+  const gapWord = naiveGapPct >= 0 ? " % högre" : " % lägre";
+
   const stats = [
     ["Insatt totalt", kr(paid), "i dagens köpkraft, varje insättning räknad från sitt eget datum", false],
     ["Avkastning", kr(gain), paid > 0 ? NF2.format(gain / paid) + " gånger det insatta" : "", gain < 0],
@@ -407,14 +419,14 @@ function render() {
           false
         ]
       : ["Utfallsspann", "Avstängt", "klicka Spann p10 till p90 i diagramförklaringen", false],
-    [
-      "Bankmodellens siffra",
-      kr(naiveBal[Y]),
-      el.lysaOn.checked
-        ? NF.format(Math.round(naiveGapPct)) + " % högre. Nominellt, fast månadsbelopp, utan avgift och skatt"
-        : "nominellt, utan avgift och skatt",
-      false
-    ],
+    el.lysaOn.checked
+      ? [
+          "Bankmodellens siffra",
+          kr(naiveBal[Y]),
+          NF.format(Math.abs(Math.round(naiveGapPct))) + gapWord + ". Nominellt, fast månadsbelopp, utan avgift och skatt",
+          false
+        ]
+      : null,
     ["Avgifter och skatt", kr(cost.fees + cost.tax), "nominellt: " + kr(cost.fees) + " avgift, " + kr(cost.tax) + " ISK-skatt", false],
     ["Månadsuttag", kr((total * 0.04) / 12), "tumregel: 4 % av kapitalet per år, i valt basmått", false],
     ["Månadssparande sista året", kr(lastMonthly), "nominellt, motsvarar " + kr(lastMonthly / d) + " i valt basmått", false],
@@ -427,6 +439,7 @@ function render() {
   ];
 
   el.stats.innerHTML = stats
+    .filter(Boolean)
     .map(
       (s) =>
         '<div class="stat"><div class="stat-k">' +
@@ -453,9 +466,11 @@ function updateHints(p) {
   el.monthly.hint.textContent = "";
   el.iskFree.hint.textContent = el.isk.checked ? el.iskFree.spec.hint : "ISK-skatten är avstängd.";
 
-  const target = p.monthly * Math.pow(1 + p.growth, SOLVE_H);
+  const h = solveHorizon(p.years);
+  el.solveH.textContent = h;
+  const target = p.monthly * Math.pow(1 + p.growth, h);
   if (document.activeElement !== el.solve) el.solve.value = NF.format(Math.round(target));
-  el.solveNote.textContent = p.age + SOLVE_H <= 100 ? "(vid " + Math.round(p.age + SOLVE_H) + " års ålder)" : "";
+  el.solveNote.textContent = p.age + h <= 100 ? "(vid " + Math.round(p.age + h) + " års ålder)" : "";
 
   el.advSummary.textContent =
     "inflation " +
@@ -745,9 +760,14 @@ function fieldText(c, v) {
 }
 
 // Strips whatever grouping character the locale used, plain or non-breaking.
+// The dash normalisation is load-bearing, not cosmetic: sv-SE writes a negative
+// number with U+2212 MINUS SIGN, which the character class below dropped. A
+// field written by fieldText() therefore came back with its sign silently
+// removed, and a saving winding down 15 %/ar was read as growing 15 %/ar.
 function parseField(s) {
   return parseFloat(
     String(s)
+      .replace(/[\u2212\u2012\u2013\u2014\u2015]/g, "-")
       .replace(/[^0-9.,-]/g, "")
       .replace(",", ".")
   );
@@ -850,6 +870,7 @@ function init() {
 
   // the back-solve helper lives inside the growth control's hint
   el.solve = document.getElementById("solve");
+  el.solveH = document.getElementById("solve-h");
   el.solveNote = document.createElement("span");
   el.solveNote.className = "solve-note";
   el.solve.parentElement.appendChild(el.solveNote);
@@ -857,7 +878,7 @@ function init() {
     const target = parseField(el.solve.value);
     const now = parseField(el.monthly.num.value);
     if (isFinite(target) && target > 0 && now > 0) {
-      const g = (Math.pow(target / now, 1 / SOLVE_H) - 1) * 100;
+      const g = (Math.pow(target / now, 1 / solveHorizon(parseField(el.years.num.value))) - 1) * 100;
       // Negative is allowed: a target below today's amount means the saving winds down.
       const clamped = Math.min(el.growth.spec.max, Math.max(el.growth.spec.min, g));
       el.growth.num.value = fieldText(el.growth.spec, clamped);
