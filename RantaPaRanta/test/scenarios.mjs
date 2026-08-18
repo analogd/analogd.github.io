@@ -24,14 +24,14 @@ const {
   valueToSlider,
   parseField,
   fieldText,
-  solveHorizon,
+  solveRamp,
   realContributions,
   PRESETS,
   CONTROLS,
   SHOW
 } = vm.runInContext(
   code +
-    ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, fieldText, solveHorizon, realContributions, PRESETS, CONTROLS, SHOW})",
+    ";({simulate, percentileBand, moneyWeightedReturn, niceStep, sliderToValue, valueToSlider, parseField, fieldText, solveRamp, realContributions, PRESETS, CONTROLS, SHOW})",
   vm.createContext(sandbox)
 );
 
@@ -243,12 +243,26 @@ near("matchar Lysas publicerade siffra (10k + 2k/man, 7 %, 20 ar)", run({}).end,
   });
 }
 
-// 21. The back-solve helper never points past the end of the plan.
+// 21. The back-solve helper mirrors the horizon and lands on the same number the
+//     "sista aret" stat shows, so the two can never disagree.
 {
-  near("20 ars horisont ger ankaret 20 ar", solveHorizon(45), 20, 0);
-  near("17 ars horisont kortar ankaret till 17", solveHorizon(17), 17, 0);
-  near("ett ar ar minimum", solveHorizon(0), 1, 0);
-  near("tomt falt faller tillbaka pa 20", solveHorizon(NaN), 20, 0);
+  near("45 ars horisont rampar 44 ar", solveRamp(45), 44, 0);
+  near("17 ars horisont rampar 16 ar", solveRamp(17), 16, 0);
+  near("ett ars horisont har ingen ramp", solveRamp(1), 0, 0);
+  near("tomt falt ger ingen ramp", solveRamp(NaN), 0, 0);
+  near("horisonten kan inte overstiga reglagets tak", solveRamp(9999), 59, 0);
+
+  // The field and the stat are the same quantity, computed the same way.
+  const monthly = 21000;
+  const growth = -0.03;
+  const years = 17;
+  const helper = monthly * Math.pow(1 + growth, solveRamp(years));
+  const stat = monthly * Math.pow(1 + growth, years - 1);
+  near("faltet och sista-aret-statistiken ar samma tal", helper, stat, 0);
+
+  // And the back-solve inverts it exactly.
+  const g = Math.pow(helper / monthly, 1 / solveRamp(years)) - 1;
+  near("baklangeslosningen aterskapar takten", g, growth, 1e-12);
 }
 
 // 15. The 2026 ISK numbers, straight off Skatteverket: statslaneranta 2,55 % on

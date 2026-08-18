@@ -6,13 +6,15 @@
 
 const NPATHS = 1200;
 const MAXY = 60;
-const SOLVE_H = 20; // default horizon (years) for the "sparar X kr/man om N ar" helper
-
-// The helper anchors 20 years out, but never past the end of the plan: "om 20 ar"
-// on a 17-year horizon pointed at an age the saving no longer runs to.
-function solveHorizon(years) {
-  const y = isFinite(years) ? Math.round(years) : SOLVE_H;
-  return Math.max(1, Math.min(SOLVE_H, y));
+// Years of ramp behind the back-solve helper. It mirrors the horizon exactly, and
+// is anchored to the LAST saving year rather than to the horizon end: the
+// contributions run through year Y-1, so (1+g)^(Y-1) is the final monthly amount.
+// That makes this field and the "Manadssparande sista aret" stat the same number
+// instead of two slightly different answers to the same question. A one-year
+// horizon has no ramp to solve for.
+function solveRamp(years) {
+  const y = isFinite(years) ? Math.round(years) : 1;
+  return Math.max(0, Math.min(MAXY, y) - 1);
 }
 
 const CONTROLS = [
@@ -42,7 +44,7 @@ const CONTROLS = [
     value: 3,
     // Text, not number: a number field silently blanks a value carrying
     // thousand separators.
-    hintHtml: 'om <span id="solve-h">' + SOLVE_H + '</span> år: <input id="solve" type="text" inputmode="decimal" /> kr/mån'
+    hintHtml: 'vid horisontens slut: <input id="solve" type="text" inputmode="decimal" /> kr/mån'
   },
   {
     id: "inflation",
@@ -466,11 +468,11 @@ function updateHints(p) {
   el.monthly.hint.textContent = "";
   el.iskFree.hint.textContent = el.isk.checked ? el.iskFree.spec.hint : "ISK-skatten är avstängd.";
 
-  const h = solveHorizon(p.years);
-  el.solveH.textContent = h;
-  const target = p.monthly * Math.pow(1 + p.growth, h);
+  const ramp = solveRamp(p.years);
+  const target = p.monthly * Math.pow(1 + p.growth, ramp);
   if (document.activeElement !== el.solve) el.solve.value = NF.format(Math.round(target));
-  el.solveNote.textContent = p.age + h <= 100 ? "(vid " + Math.round(p.age + h) + " års ålder)" : "";
+  el.solveNote.textContent =
+    p.age + p.years <= 100 ? "(sista sparåret, fram till " + Math.round(p.age + p.years) + " års ålder)" : "(sista sparåret)";
 
   el.advSummary.textContent =
     "inflation " +
@@ -870,15 +872,15 @@ function init() {
 
   // the back-solve helper lives inside the growth control's hint
   el.solve = document.getElementById("solve");
-  el.solveH = document.getElementById("solve-h");
   el.solveNote = document.createElement("span");
   el.solveNote.className = "solve-note";
   el.solve.parentElement.appendChild(el.solveNote);
   el.solve.addEventListener("input", () => {
     const target = parseField(el.solve.value);
     const now = parseField(el.monthly.num.value);
-    if (isFinite(target) && target > 0 && now > 0) {
-      const g = (Math.pow(target / now, 1 / solveHorizon(parseField(el.years.num.value))) - 1) * 100;
+    const ramp = solveRamp(parseField(el.years.num.value));
+    if (isFinite(target) && target > 0 && now > 0 && ramp > 0) {
+      const g = (Math.pow(target / now, 1 / ramp) - 1) * 100;
       // Negative is allowed: a target below today's amount means the saving winds down.
       const clamped = Math.min(el.growth.spec.max, Math.max(el.growth.spec.min, g));
       el.growth.num.value = fieldText(el.growth.spec, clamped);
