@@ -30,7 +30,8 @@ function krShort(v) {
 // Kronor sliders run on a squared curve: 10 000 kr out of a 1 000 000 kr range
 // would otherwise sit 1 % along the track, with no resolution where people live.
 const SLIDER_STEPS = 1000;
-const curveOf = (c) => (c.unit === "kr" ? 2 : 1);
+const isKronor = (c) => c.unit === "kr" || c.unit.indexOf("kr/") === 0;
+const curveOf = (c) => (isKronor(c) ? 2 : 1);
 
 function sliderToValue(c, t) {
   const raw = c.min + (c.max - c.min) * Math.pow(t / SLIDER_STEPS, curveOf(c));
@@ -45,7 +46,7 @@ function valueToSlider(c, v) {
 
 // Fields are text, not number, so kronor can carry thousand separators.
 function fieldText(c, v) {
-  return c.unit === "kr" ? NF.format(Math.round(v)) : NF2.format(v);
+  return isKronor(c) ? NF.format(Math.round(v)) : NF2.format(v);
 }
 
 // Strips whatever grouping character the locale used, plain or non-breaking.
