@@ -215,7 +215,7 @@ const CONTROLS = [
   {
     id: "price",
     group: "basic",
-    label: "Inkopspris",
+    label: "Inköpspris",
     unit: "kr",
     min: 20000,
     max: 1000000,
@@ -226,106 +226,106 @@ const CONTROLS = [
   {
     id: "years",
     group: "basic",
-    label: "Agandehorisont",
-    unit: "ar",
+    label: "Ägandehorisont",
+    unit: "år",
     min: 1,
     max: 15,
     step: 1,
     value: 6,
-    hint: "Hur lange du planerar att aga bilen."
+    hint: "Hur länge du planerar att äga bilen."
   },
   {
     id: "annualMil",
     group: "basic",
-    label: "Korstracka per ar",
+    label: "Körsträcka per år",
     unit: "mil",
     min: 200,
     max: 4000,
     step: 100,
     value: 1200,
-    hint: "SCB:s snitt for svenska personbilar ligger runt 1 100 till 1 300 mil/ar. Overifierat har, satt din egen."
+    hint: "SCB:s snitt för svenska personbilar ligger runt 1 100 till 1 300 mil/år. Overifierat här, sätt din egen."
   },
   {
     id: "financedShare",
     group: "basic",
-    label: "Andel lanefinansierad",
+    label: "Andel lånefinansierad",
     unit: "%",
     min: 0,
     max: 100,
     step: 5,
     value: 50,
-    hint: "Resten ar din egen insats, den som binder kapital."
+    hint: "Resten är din egen insats, den som binder kapital."
   },
   {
     id: "ret",
     group: "capital",
-    label: "Avkastning om pengarna investerats istallet",
+    label: "Avkastning om pengarna investerats i stället",
     unit: "%",
     min: 0,
     max: 12,
     step: 0.1,
     value: 7,
-    hint: "Samma default som Ranta pa ranta har pa sajten: branschens standardantagande for 100 % aktier, nominellt."
+    hint: "Samma default som Ränta på ränta har på sajten: branschens standardantagande för 100 % aktier, nominellt."
   },
   {
     id: "interestRate",
     group: "capital",
-    label: "Ranta pa billan",
+    label: "Ränta på billånet",
     unit: "%",
     min: 0,
     max: 15,
     step: 0.1,
     value: 6,
-    hint: "Overifierat, jamfor med din banks aktuella billanesnitt."
+    hint: "Overifierat, jämför med din banks aktuella snitt för billån."
   },
   {
     id: "depTime",
     group: "value",
-    label: "Vardeminskning, tid",
-    unit: "%/ar",
+    label: "Värdeminskning, tid",
+    unit: "%/år",
     min: 0,
     max: 40,
     step: 0.5,
     value: 15,
-    hint: "Andel av AKTUELLT varde per ar, oavsett korning. Overifierad grovskattning, nya bilar tappar ofta mer de forsta aren."
+    hint: "Andel av aktuellt värde per år, oavsett körning. Overifierad grovskattning, nya bilar tappar ofta mer de första åren."
   },
   {
     id: "depMil",
     group: "value",
-    label: "Vardeminskning, korstracka",
-    unit: "%/1000 mil/ar",
+    label: "Värdeminskning, körsträcka",
+    unit: "%/1000 mil/år",
     min: 0,
     max: 20,
     step: 0.5,
     value: 2,
-    hint: "Extra andel av aktuellt varde, skalad mot hur mycket du kor. Overifierad grovskattning."
+    hint: "Extra andel av aktuellt värde, skalad mot hur mycket du kör. Overifierad grovskattning."
   },
   {
     id: "carAgeAtPurchase",
     group: "value",
-    label: "Bilens alder vid kop",
-    unit: "ar",
+    label: "Bilens ålder vid köp",
+    unit: "år",
     min: 0,
     max: 20,
     step: 1,
     value: 3,
-    hint: "Styr var pa servicealdern kalkylen borjar, inte vardeminskningen."
+    hint: "Styr var på serviceåldern kalkylen börjar, inte värdeminskningen."
   },
   {
     id: "fuelConsumption",
     group: "drift",
-    label: "Bransleforbrukning",
+    label: "Bränsleförbrukning",
     unit: "l/100km",
     min: 3,
     max: 15,
     step: 0.1,
     value: 6.5,
-    hint: "Blandad korning. Oanvand om elbil ar valt nedan."
+    hint: "Blandad körning. Används inte om elbil är valt nedan."
   },
   {
     id: "fuelPrice",
     group: "drift",
-    label: "Branslepris",
+    label: "Bränslepris",
     unit: "kr/l",
     min: 10,
     max: 30,
@@ -336,13 +336,13 @@ const CONTROLS = [
   {
     id: "elecConsumption",
     group: "drift",
-    label: "Elforbrukning",
+    label: "Elförbrukning",
     unit: "kWh/100km",
     min: 10,
     max: 30,
     step: 0.5,
     value: 18,
-    hint: "Blandad korning. Oanvand om elbil inte ar valt."
+    hint: "Blandad körning. Används bara om elbil är valt."
   },
   {
     id: "elecPrice",
@@ -353,37 +353,37 @@ const CONTROLS = [
     max: 6,
     step: 0.1,
     value: 2.5,
-    hint: "Overifierat, snittpris hemmaladdning."
+    hint: "Overifierat, snittpris för hemmaladdning."
   },
   {
     id: "insurance",
     group: "drift",
-    label: "Forsakring",
-    unit: "kr/ar",
+    label: "Försäkring",
+    unit: "kr/år",
     min: 1000,
     max: 30000,
     step: 500,
     value: 8000,
-    hint: "Overifierat, varierar starkt med forare, ort och bilmodell."
+    hint: "Overifierat, varierar starkt med förare, ort och bilmodell."
   },
   {
     id: "vehicleTax",
     group: "drift",
     label: "Fordonsskatt",
-    unit: "kr/ar",
+    unit: "kr/år",
     min: 0,
     max: 20000,
     step: 100,
     value: 2000,
     hint:
-      "Overifierat. En ny bil med over 75 g CO2/km betalar malus i 3 ar: 107 kr/g upp till 125 g, sedan 132 kr/g, plus 360 kr grundbelopp. " +
-      "Kalla: transportstyrelsen.se/malus."
+      "Overifierat. En ny bil med över 75 g CO2/km betalar malus i 3 år: 107 kr/g upp till 125 g, sedan 132 kr/g, plus 360 kr grundbelopp. " +
+      "Källa: transportstyrelsen.se/malus."
   },
   {
     id: "besiktningCost",
     group: "drift",
     label: "Besiktning",
-    unit: "kr/tillfalle",
+    unit: "kr/tillfälle",
     min: 0,
     max: 2000,
     step: 50,
@@ -394,67 +394,67 @@ const CONTROLS = [
     id: "besiktningInterval",
     group: "drift",
     label: "Besiktning, intervall",
-    unit: "ar",
+    unit: "år",
     min: 1,
     max: 4,
     step: 1,
     value: 2,
-    hint: "Forenklat till ett jamnt intervall; i verkligheten styrs det av bilens alder."
+    hint: "Förenklat till ett jämnt intervall. I verkligheten styrs det av bilens ålder."
   },
   {
     id: "tireCost",
     group: "drift",
-    label: "Dack, kostnad per sats",
+    label: "Däck, kostnad per sats",
     unit: "kr",
     min: 1000,
     max: 30000,
     step: 500,
     value: 6000,
-    hint: "Ett sats (sommar eller vinter). Overifierat."
+    hint: "En sats (sommar eller vinter). Overifierat."
   },
   {
     id: "tireSeasons",
     group: "drift",
-    label: "Dack, hur lange ett sats haller",
-    unit: "sasonger",
+    label: "Däck, hur länge en sats håller",
+    unit: "säsonger",
     min: 1,
     max: 8,
     step: 1,
     value: 4,
-    hint: "Antas krava tva sats (sommar och vinter) samtidigt."
+    hint: "Antas kräva två satser (sommar och vinter) samtidigt."
   },
   {
     id: "serviceBase",
     group: "drift",
     label: "Service och reparationer, ny bil",
-    unit: "kr/ar",
+    unit: "kr/år",
     min: 0,
     max: 30000,
     step: 500,
     value: 3000,
-    hint: "Overifierat, kostnad vid alder noll."
+    hint: "Overifierat, kostnad vid ålder noll."
   },
   {
     id: "serviceRise",
     group: "drift",
-    label: "Service och reparationer, okning med alder",
-    unit: "%/ar",
+    label: "Service och reparationer, ökning med ålder",
+    unit: "%/år",
     min: 0,
     max: 30,
     step: 1,
     value: 12,
-    hint: "Modellantagande, inte en uppmatt siffra: reparationer blir dyrare och vanligare med bilens alder."
+    hint: "Modellantagande, inte en uppmätt siffra: reparationer blir dyrare och vanligare med bilens ålder."
   },
   {
     id: "parking",
     group: "drift",
     label: "Parkering",
-    unit: "kr/man",
+    unit: "kr/mån",
     min: 0,
     max: 5000,
     step: 50,
     value: 0,
-    hint: "Valfri post, 0 om du inte betalar for parkering."
+    hint: "Valfri post, 0 om du inte betalar för parkering."
   }
 ];
 
@@ -487,7 +487,7 @@ const CONTROLS_B = CAR_B_IDS.map((id) => {
 // serviceRise stay untouched).
 const PRESETS = [
   {
-    name: "Nyare bensinbil, delvis lanad",
+    name: "Nyare bensinbil, delvis lånad",
     v: { price: 280000, years: 6, annualMil: 1300, financedShare: 60, carAgeAtPurchase: 1, fuelConsumption: 6.5 }
   },
   {
@@ -495,11 +495,11 @@ const PRESETS = [
     v: { price: 90000, years: 6, annualMil: 1000, financedShare: 0, carAgeAtPurchase: 8, fuelConsumption: 7.5 }
   },
   {
-    name: "Ny elbil, mycket korning",
+    name: "Ny elbil, mycket körning",
     v: { price: 400000, years: 8, annualMil: 2000, financedShare: 70, carAgeAtPurchase: 0, elecConsumption: 17 }
   },
   {
-    name: "Firmabilsmassig pendlare",
+    name: "Firmabilsmässig pendlare",
     v: { price: 220000, years: 4, annualMil: 2200, financedShare: 80, carAgeAtPurchase: 2, fuelConsumption: 6 }
   }
 ];
@@ -648,23 +648,23 @@ function render() {
   const p = paramsFor("");
   const result = computeCar(p);
 
-  el.headlineTotal.textContent = kr(result.totalMonthly) + " / man";
+  el.headlineTotal.textContent = kr(result.totalMonthly) + " / mån";
   el.headlineSplit.innerHTML =
     "Varav <b>" +
     kr(result.fixedMonthly) +
-    "</b> fast, oavsett korning, och <b>" +
+    "</b> fast, oavsett körning, och <b>" +
     NF2.format(result.marginalPerMil) +
-    " kr</b> per mil du kor.";
+    " kr</b> per mil du kör.";
   el.headlineKrMil.textContent = isFinite(result.krPerMil) ? NF2.format(result.krPerMil) + " kr/mil" : "-";
 
   const stats = [
-    ["Vardeminskning", kr((result.sumTimeDep + result.sumMileageDep) / p.years), "per ar i snitt, storst de forsta aren", false],
-    ["Kapitalkostnad", kr(result.capitalCostTotal / p.years), "per ar, alternativkostnad pa din egen insats", false],
-    ["Rantekostnad", kr(result.interestCostTotal / p.years), "per ar, pa den lanade delen", false],
-    ["Drivmedel", kr(result.fuelTotal / p.years), "per ar, " + NF2.format(result.fuelPerMil) + " kr/mil", false],
-    ["Forsakring och skatt", kr((p.insurance + p.vehicleTax) * 1), "per ar", false],
-    ["Besiktning, dack, service", kr(result.besiktningAnnual + result.tireAnnual + result.sumService / p.years), "per ar i snitt", false],
-    ["Totalt over horisonten", kr(result.grandTotal), "over " + p.years + " ar, allt inraknat", false]
+    ["Värdeminskning", kr((result.sumTimeDep + result.sumMileageDep) / p.years), "per år i snitt, störst de första åren", false],
+    ["Kapitalkostnad", kr(result.capitalCostTotal / p.years), "per år, alternativkostnad på din egen insats", false],
+    ["Räntekostnad", kr(result.interestCostTotal / p.years), "per år, på den lånade delen", false],
+    ["Drivmedel", kr(result.fuelTotal / p.years), "per år, " + NF2.format(result.fuelPerMil) + " kr/mil", false],
+    ["Försäkring och skatt", kr((p.insurance + p.vehicleTax) * 1), "per år", false],
+    ["Besiktning, däck, service", kr(result.besiktningAnnual + result.tireAnnual + result.sumService / p.years), "per år i snitt", false],
+    ["Totalt över horisonten", kr(result.grandTotal), "över " + p.years + " år, allt inräknat", false]
   ];
   el.stats.innerHTML = stats.map((s) => statRow(s[0], s[1], s[2], s[3])).join("");
 
@@ -752,18 +752,18 @@ function renderCompare(resultA, pShared) {
   const abs = Math.abs(delta);
 
   el.compareResult.innerHTML =
-    (cheaper ? "Bil " + cheaper + " kostar " + kr(abs) + " mindre per manad." : "Bilarna kostar lika mycket per manad.") +
+    (cheaper ? "Bil " + cheaper + " kostar " + kr(abs) + " mindre per månad." : "Bilarna kostar lika mycket per månad.") +
     "<br>Bil A: " +
     kr(resultA.totalMonthly) +
-    " / man &middot; Bil B: " +
+    " / mån &middot; Bil B: " +
     kr(resultB.totalMonthly) +
-    " / man";
+    " / mån";
 
   const link = buildRantaLink(abs);
   el.compareLink.href = link;
   el.compareLink.textContent = cheaper
-    ? "Se vad " + kr(abs) + "/man ar vart sparat i " + Math.round(pShared.years) + " ar"
-    : "Oppna Ranta pa ranta";
+    ? "Se vad " + kr(abs) + "/mån är värt sparat i " + Math.round(pShared.years) + " år"
+    : "Öppna Ränta på ränta";
 }
 
 function renderShare(result) {
@@ -773,7 +773,7 @@ function renderShare(result) {
   const n = isFinite(passengers) ? passengers : 0;
 
   const rows = [
-    ["Bara bransle", result.fuelPerMil],
+    ["Bara bränsle", result.fuelPerMil],
     ["Skatteverkets schablon (25 kr/mil)", SKV_MIL_ERSATTNING],
     ["Bilens egen marginalkostnad", result.marginalPerMil]
   ];

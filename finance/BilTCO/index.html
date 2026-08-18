@@ -3,39 +3,39 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bilens verkliga manadskostnad</title>
+    <title>Bilens verkliga månadskostnad</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <a class="back" href="../../">analogd</a>
 
     <header>
-      <h1>Bilens verkliga manadskostnad</h1>
+      <h1>Bilens verkliga månadskostnad</h1>
       <p class="lede">
-        Inte leasingfakturan, inte bransleprisernas ryckningar. Vad bilen faktiskt kostar per manad, uppdelat i det som kostar oavsett om du
-        kor eller inte och det som kostar per mil. De flesta underskattar den fasta delen kraftigt.
+        Inte leasingfakturan, inte bränsleprisernas ryckningar. Vad bilen faktiskt kostar per månad, uppdelat i det som kostar oavsett om du
+        kör eller inte och det som kostar per mil. De flesta underskattar den fasta delen kraftigt.
       </p>
     </header>
 
     <main>
       <section class="panel">
         <div class="presets-row">
-          <span class="presets-label">Utga fran</span>
+          <span class="presets-label">Utgå från</span>
           <div id="presets" class="presets"></div>
         </div>
 
-        <h2 class="group-h">Bilen och hur du kor</h2>
+        <h2 class="group-h">Bilen och hur du kör</h2>
         <div id="basic" class="controls"></div>
 
-        <h2 class="group-h">Kapital och lan</h2>
+        <h2 class="group-h">Kapital och lån</h2>
         <div id="capital" class="controls"></div>
 
-        <h2 class="group-h">Vardeminskning</h2>
+        <h2 class="group-h">Värdeminskning</h2>
         <div id="value" class="controls"></div>
 
         <h2 class="group-h">
           Drift
-          <label class="fuel-toggle"><input type="checkbox" id="electric" /> Elbil (kWh istallet for liter)</label>
+          <label class="fuel-toggle"><input type="checkbox" id="electric" /> Elbil (kWh i stället för liter)</label>
         </h2>
         <div id="drift" class="controls"></div>
         <div id="fuel-fields" class="controls"></div>
@@ -43,33 +43,31 @@
       </section>
 
       <section class="result">
-        <p class="headline-label">Total manadskostnad</p>
+        <p class="headline-label">Total månadskostnad</p>
         <p class="headline-total" id="headline-total"></p>
         <p class="headline-split" id="headline-split"></p>
-        <p class="headline-krmil"><span id="headline-krmil"></span> <span class="headline-krmil-label">allt inraknat, per mil</span></p>
+        <p class="headline-krmil"><span id="headline-krmil"></span> <span class="headline-krmil-label">allt inräknat, per mil</span></p>
 
         <div class="stats" id="stats"></div>
       </section>
 
       <section class="chart-wrap">
-        <h2 class="group-h">Bilens vardekurva</h2>
+        <h2 class="group-h">Bilens värdekurva</h2>
         <div id="chart"></div>
-        <p class="chart-note">
-          Aktuellt varde efter varje agandear. Kurvan ar brantast forst, det ar poangen med en fallande-saldo-modell.
-        </p>
+        <p class="chart-note">Aktuellt värde efter varje ägandeår. Kurvan är brantast först, och det är poängen med fallande saldo.</p>
       </section>
 
       <section class="panel">
         <h2 class="group-h">
-          Jamforelselage
-          <label class="fuel-toggle"><input type="checkbox" id="compare" /> Jamfor med en annan bil</label>
+          Jämförelseläge
+          <label class="fuel-toggle"><input type="checkbox" id="compare" /> Jämför med en annan bil</label>
         </h2>
         <div id="compare-wrap">
           <p class="compare-note">
-            Bil B delar korstracka, agandehorisont, lanefinansiering, avkastningsantagande och rantesats med bil A. Bara det som skiljer en
-            bil fran en annan star har.
+            Bil B delar körsträcka, ägandehorisont, lånefinansiering, avkastningsantagande och räntesats med bil A. Här står bara det som
+            skiljer en bil från en annan.
           </p>
-          <label class="fuel-toggle"><input type="checkbox" id="electricB" /> Bil B ar elbil</label>
+          <label class="fuel-toggle"><input type="checkbox" id="electricB" /> Bil B är elbil</label>
           <div id="compare-b" class="controls"></div>
           <div id="fuel-fields-b" class="controls"></div>
           <div id="elec-fields-b" class="controls hidden"></div>
@@ -79,18 +77,18 @@
       </section>
 
       <section class="panel share-box">
-        <h2 class="group-h small">Dela pa kostnaden</h2>
+        <h2 class="group-h small">Dela på kostnaden</h2>
         <p class="share-note">
-          Bilen ager du oavsett om nagon foljer med. Det en medresenar egentligen kostar dig ar marginalkostnaden, inte en andel av det
-          fasta. Har ar samma resa prisad pa tre satt.
+          Bilen äger du oavsett om någon följer med. Det en medresenär egentligen kostar dig är marginalkostnaden, inte en andel av det
+          fasta. Här är samma resa prissatt på tre sätt.
         </p>
         <div class="share-inputs">
           <span class="share-field">
-            <label for="n-tripMil">Resans langd</label>
+            <label for="n-tripMil">Resans längd</label>
             <input type="text" inputmode="decimal" id="n-tripMil" value="50" /> mil
           </span>
           <span class="share-field">
-            <label for="n-passengers">Medresenarer</label>
+            <label for="n-passengers">Medresenärer</label>
             <input type="text" inputmode="decimal" id="n-passengers" value="1" />
           </span>
         </div>
@@ -98,71 +96,70 @@
       </section>
 
       <section class="notes">
-        <h2>Varfor tva siffror, fast och per mil?</h2>
+        <h2>Varför två siffror, fast och per mil?</h2>
         <p>
-          Vardeminskning, kapitalkostnad, rantekostnad, forsakring, fordonsskatt, besiktning, dack och service lopper oavsett hur mycket du
-          kor. De ar prislappen for att AGA bilen. Bara drivmedel och den del av vardeminskningen som drivs av slitage ar marginalkostnad,
-          prislappen for att ANVANDA den. En bilagare som bara racknar bensinpriset mot att ta bussen jamfor fel siffror: bussbiljetten
-          slapper den fasta kostnaden, bensinen gor det inte.
+          Värdeminskning, kapitalkostnad, räntekostnad, försäkring, fordonsskatt, besiktning, däck och service löper oavsett hur mycket du
+          kör. De är prislappen för att äga bilen. Bara drivmedlet och den del av värdeminskningen som drivs av slitage är marginalkostnad,
+          alltså prislappen för att använda den. En bilägare som ställer bensinpriset mot en bussbiljett jämför fel siffror: bussbiljetten
+          slipper den fasta kostnaden, bensinen gör det inte.
         </p>
 
-        <h2>Kapitalkostnad ar inte rantekostnad</h2>
+        <h2>Kapitalkostnad är inte räntekostnad</h2>
         <p>
-          Kapitalkostnaden ar vad din egen insats (priset minus den lanefinansierade delen) skulle ha vaxt till om den hade investerats i
-          stallet, rankat med samma motor som Ranta pa ranta anvander. Rantekostnaden ar vad banken tar for den lanade delen. De ar olika
-          pengar: den lanade delen ar aldrig din att investera, sa den kan inte samtidigt kosta en alternativkostnad OCH en ranta utan att
-          rakna samma krona tva ganger. Kapitalkostnaden pa insatsen och rantekostnaden pa lanet lagger man ihop, inte den ena pa hela
-          priset.
+          Kapitalkostnaden är vad din egen insats, alltså priset minus den lånefinansierade delen, skulle ha vuxit till om den investerats i
+          stället. Den räknas med samma motor som Ränta på ränta. Räntekostnaden är vad banken tar för den lånade delen. Det är olika
+          pengar: den lånade delen är aldrig din att investera, så den kan inte samtidigt kosta en alternativkostnad och en ränta utan att
+          samma krona räknas två gånger. Kapitalkostnaden på insatsen och räntekostnaden på lånet läggs ihop, inte den ena på hela priset.
         </p>
 
-        <h2>Vardeminskningen ar fallande saldo, inte rak linje</h2>
+        <h2>Värdeminskningen är fallande saldo, inte rak linje</h2>
         <p>
-          Varje ar tappar bilen en andel av sitt DA aktuella varde, en tidsdel och en korstrackadel. En konstant andel av ett krympande tal
-          ger ett krympande kronbelopp, vilket ar exakt formen alla vet fran verkligheten: en tva ar gammal bil tappar mer i kronor an en
-          tio ar gammal, aven om bada tappar samma procent.
+          Varje år tappar bilen en andel av sitt då aktuella värde, en del driven av tid och en av körsträcka. En konstant andel av ett
+          krympande tal ger ett krympande kronbelopp, och det är precis den form alla känner igen från verkligheten: en två år gammal bil
+          tappar mer i kronor än en tio år gammal, även om båda tappar samma procent.
         </p>
 
-        <h2>Vad den inte gor</h2>
+        <h2>Vad den inte gör</h2>
         <ul>
           <li>
-            <strong>Lanet ar rak amortering, inte en annuitet.</strong> Rantekostnaden racknas pa halva lanebeloppet i snitt over
-            agandetiden. En verklig annuitetslan lagger mer ranta forst, sa ar ett understatter och sena ar overstatter denna forenkling.
+            <strong>Lånet är rak amortering, inte en annuitet.</strong> Räntekostnaden räknas på halva lånebeloppet i snitt över
+            ägandetiden. Ett annuitetslån lägger mer ränta först, så modellen underskattar de tidiga åren och överskattar de sena.
           </li>
-          <li><strong>Besiktning ar ett jamnt intervall,</strong> inte Transportstyrelsens verkliga schema som beror pa bilens alder.</li>
+          <li><strong>Besiktning är ett jämnt intervall,</strong> inte Transportstyrelsens verkliga schema som beror på bilens ålder.</li>
           <li>
-            <strong>Dack antas alltid vara tva sats, sommar och vinter,</strong> och slits av tid, inte av korstracka. En bil som kors
-            mycket slitar troligen ut dack fortare an denna modell fangar.
-          </li>
-          <li>
-            <strong>Service och reparationer stiger med en konstant procent per ars alder,</strong> ett modellantagande, inte en uppmatt
-            kurva. Verkliga kostnader hoppar (en kamkedja, en battericell), de smyger inte.
+            <strong>Däck antas vara två satser, sommar och vinter,</strong> som slits av tid och inte av körsträcka. En bil som körs mycket
+            sliter troligen ut däck fortare än modellen fångar, vilket betyder att marginalkostnaden per mil är i underkant.
           </li>
           <li>
-            <strong>Fordonsskatten ar en egen kontroll,</strong> inte rankad fran CO2 och vikt: malus-reglerna (3 ar, 107 respektive 132
-            kr/gram over 75 g CO2/km) star i ledtexten som referens men matar inte in i berakningen.
+            <strong>Service och reparationer stiger med en konstant procent per års ålder,</strong> vilket är ett modellantagande och inte
+            en uppmätt kurva. Verkliga kostnader hoppar (en kamkedja, en battericell), de smyger sig inte på.
           </li>
-          <li>Ingen andrahandsvarde-osakerhet, ingen forsakringsbonus som andras med skadehistorik, ingen valutarisk pa elpriset.</li>
+          <li>
+            <strong>Fordonsskatten är en egen kontroll,</strong> inte räknad från koldioxid och vikt: malusreglerna (3 år, 107 respektive
+            132 kr per gram över 75 g CO2/km) står i ledtexten som referens men matar inte in i beräkningen.
+          </li>
+          <li>Ingen osäkerhet i andrahandsvärdet, ingen försäkringsbonus som ändras med skadehistoriken, ingen valutarisk på elpriset.</li>
         </ul>
 
-        <h2>Kallor</h2>
+        <h2>Källor</h2>
         <ul class="links">
           <li>
             <a
               href="https://www.skatteverket.se/privat/etjansterochblanketter/svarpavanligafragor/avdrag/privattjansteresafaq/jagreserendelitjanstenvilkareglergallerfordekostnadsersattningarsomjagfaravminarbetsgivare.5.10010ec103545f243e80001472.html"
               target="_blank"
               rel="noopener"
-              >Skatteverket, skattefri bilersattning</a
-            >: 25 kr/mil for resa med egen bil, gallande inkomstaren 2025 och 2026. Anvands i "Dela pa kostnaden" ovan.
+              >Skatteverket, skattefri bilersättning</a
+            >: 25 kr/mil för resa med egen bil, gällande inkomståren 2025 och 2026. Används i "Dela på kostnaden" ovan.
           </li>
           <li>
             <a href="https://www.transportstyrelsen.se/sv/vagtrafik/fordon/skatter-och-avgifter/malus/" target="_blank" rel="noopener"
               >Transportstyrelsen, malus</a
-            >: forhojd fordonsskatt i 3 ar for bilar over 75 g CO2/km, 107 kr/gram upp till 125 g och 132 kr/gram darover, plus 360 kr
-            grundbelopp. Kontext i fordonsskattens ledtext, matar inte in i berakningen.
+            >: förhöjd fordonsskatt i 3 år för bilar över 75 g CO2/km, 107 kr per gram upp till 125 g och 132 kr per gram däröver, plus 360
+            kr grundbelopp. Ligger som kontext i fordonsskattens ledtext och matar inte in i beräkningen.
           </li>
           <li>
-            <a href="../RantaPaRanta/" target="_blank" rel="noopener">Ranta pa ranta</a> ar dit jamforelselaget lankar: vad
-            manadsbesparingen fran att valja den billigare bilen ar vard om den investeras i stallet.
+            <a href="../RantaPaRanta/" target="_blank" rel="noopener">Ränta på ränta</a> är dit jämförelseläget länkar: vad
+            månadsbesparingen från att välja den billigare bilen är värd om den investeras i stället.
           </li>
         </ul>
       </section>
