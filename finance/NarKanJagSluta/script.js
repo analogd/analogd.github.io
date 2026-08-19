@@ -171,16 +171,23 @@ function searchEarliest(rows, globals) {
       ok: ev.ok,
       okFloor: ev.okFloor,
       okDrop: ev.okDrop,
+      // Den naiva golvtesten är bara FÖRSTA årets nettobelopp mot golvet,
+      // exakt det en engångsprognos (minPension vid en vald ålder) visar.
+      // ev.okFloor prövar golvet över HELA kurvan (rätt för det ärliga
+      // villkoret, se evaluate()), men skulle den återanvändas här hade
+      // "naiv" tyst blivit "golvet håller för alltid, fallet struntar vi i"
+      // i stället för "bara det första året räknas", planens definition.
+      okFloorFirstYear: curve[0].netMonthly >= globals.floor,
       startNet: ev.startNet,
       minNet: ev.minNet,
       minAtAge: ev.minAtAge
     });
   }
   const firstOk = map.find((r) => r.ok);
-  const firstFloorOk = map.find((r) => r.okFloor);
+  const firstNaiveOk = map.find((r) => r.okFloorFirstYear);
   return {
     earliest: firstOk ? firstOk.age : null,
-    earliestNaive: firstFloorOk ? firstFloorOk.age : null,
+    earliestNaive: firstNaiveOk ? firstNaiveOk.age : null,
     map: map
   };
 }
@@ -402,17 +409,17 @@ const CONTROLS = [
 function rowFieldSpecs(i) {
   const p = "p" + i;
   return [
-    { id: p + "kind", unit: "1=tjänste, 2=privat/ISK", min: 1, max: 2, step: 1, value: 1 },
-    { id: p + "mode", unit: "0=kapital känt, 1=månadsbelopp känt", min: 0, max: 1, step: 1, value: 0 },
-    { id: p + "cap", unit: "kr", min: 0, max: 5000000, step: 10000, value: 300000 },
-    { id: p + "mon", unit: "kr/mån", min: 0, max: 50000, step: 100, value: 0 },
-    { id: p + "refage", unit: "år", min: 55, max: 80, step: 1, value: 65 },
-    { id: p + "start", unit: "år", min: 55, max: 80, step: 1, value: 65 },
-    { id: p + "years", unit: "år", min: 0, max: 30, step: 1, value: 10 },
-    { id: p + "liv", unit: "0=nej, 1=ja", min: 0, max: 1, step: 1, value: 0 },
-    { id: p + "flex", unit: "0=nej, 1=ja", min: 0, max: 1, step: 1, value: 1 },
-    { id: p + "minstart", unit: "år", min: 55, max: 80, step: 1, value: 60 },
-    { id: p + "contrib", unit: "kr/mån", min: 0, max: 20000, step: 100, value: 0 }
+    { id: p + "kind", label: "Typ", unit: "1=tjänste, 2=privat/ISK", min: 1, max: 2, step: 1, value: 1 },
+    { id: p + "mode", label: "Vad som är känt", unit: "0=kapital känt, 1=månadsbelopp känt", min: 0, max: 1, step: 1, value: 0 },
+    { id: p + "cap", label: "Kapital", unit: "kr", min: 0, max: 5000000, step: 10000, value: 300000 },
+    { id: p + "mon", label: "Månadsbelopp", unit: "kr/mån", min: 0, max: 50000, step: 100, value: 0 },
+    { id: p + "refage", label: "...vid den åldern", unit: "år", min: 55, max: 80, step: 1, value: 65 },
+    { id: p + "start", label: "Startålder", unit: "år", min: 55, max: 80, step: 1, value: 65 },
+    { id: p + "years", label: "Antal år den betalas ut", unit: "år", min: 0, max: 30, step: 1, value: 10 },
+    { id: p + "liv", label: "Livsvarig", unit: "0=nej, 1=ja", min: 0, max: 1, step: 1, value: 0 },
+    { id: p + "flex", label: "Startar när jag går i pension", unit: "0=nej, 1=ja", min: 0, max: 1, step: 1, value: 1 },
+    { id: p + "minstart", label: "Tidigast startålder", unit: "år", min: 55, max: 80, step: 1, value: 60 },
+    { id: p + "contrib", label: "Fortsatt avsättning fram till start", unit: "kr/mån", min: 0, max: 20000, step: 100, value: 0 }
   ];
 }
 
@@ -447,19 +454,19 @@ const PRESETS = [
       currentAge: 50,
       income: 450000,
       floor: 15000,
-      allmanMonthly: 12000,
+      allmanMonthly: 9000,
       allmanRefAge: 65,
       rows: 3,
       p1kind: 1,
       p1mode: 0,
-      p1cap: 400000,
+      p1cap: 200000,
       p1liv: 1,
       p1flex: 1,
       p1minstart: 63,
       p1contrib: 0,
       p2kind: 1,
       p2mode: 1,
-      p2mon: 8000,
+      p2mon: 14000,
       p2refage: 63,
       p2liv: 0,
       p2flex: 0,
@@ -480,7 +487,7 @@ const PRESETS = [
     v: {
       currentAge: 55,
       income: 300000,
-      floor: 12000,
+      floor: 9000,
       allmanMonthly: 9000,
       allmanRefAge: 65,
       rows: 1,
@@ -497,9 +504,9 @@ const PRESETS = [
   {
     name: "Stort privat kapital, kort utbetalningstid",
     v: {
-      currentAge: 55,
+      currentAge: 50,
       income: 400000,
-      floor: 18000,
+      floor: 11000,
       allmanMonthly: 10000,
       allmanRefAge: 65,
       rows: 1,
@@ -507,12 +514,12 @@ const PRESETS = [
       p1mode: 0,
       p1cap: 3000000,
       p1liv: 0,
-      p1flex: 1,
-      p1minstart: 55,
-      p1years: 5,
+      p1flex: 0,
+      p1start: 60,
+      p1years: 3,
       p1contrib: 0
     },
-    labels: ["Stort privat kapital, 5 år"]
+    labels: ["Stort privat kapital, 3 år"]
   },
   {
     name: "Allt livsvarigt",
@@ -792,7 +799,10 @@ function updateRowsVisibility() {
   const n = Math.round(readControlValue("rows"));
   for (let i = 1; i <= MAX_ROWS; i++) {
     const card = document.querySelector('.row-card[data-row="' + i + '"]');
-    if (card) card.classList.toggle("hidden", i > n);
+    if (!card) continue;
+    card.classList.toggle("hidden", i > n);
+    const removeBtn = card.querySelector(".row-remove");
+    if (removeBtn) removeBtn.disabled = n <= 1;
   }
   const addBtn = document.getElementById("row-add");
   if (addBtn) addBtn.disabled = n >= MAX_ROWS;
@@ -900,7 +910,17 @@ function buildPresets(hostId, list) {
 // omimplementering av samma formel: kvoten (1+inflation) respektive
 // (1+drift) kommer från samma två kontroller, bara applicerade åt andra
 // hållet.
-let basis = "life";
+//
+// Defaulten här är "cpi", INTE "life" som resten av sajten (finance/CLAUDE.md
+// dokumenterar undantaget). Standardglidning prisar in att NORMAL standard
+// stiger över tid, den rätta linsen för en 25-åring som jämför sin framtida
+// pott mot framtida jämnåriga. En pensionär jämför sin EGEN framtida
+// konsumtion mot sin EGEN nuvarande, och forskningen om "the retirement
+// spending smile" visar att den snarare krymper eller planar ut med åldern
+// (mindre resande och konsumtion, färre stora inköp) än fortsätter stiga i
+// takt med samhällets normhöjning. Att köra "life" som default här hade
+// systematiskt överskattat hur mycket man behöver längre fram.
+let basis = "cpi";
 
 const BASIS_NOTE = {
   nom: "nominellt värde, kronor den dag de betalas ut",
@@ -961,7 +981,14 @@ function render() {
   const g = globalsFromState();
   const rows = rowsFromState();
   const result = searchEarliest(rows, g);
-  const A = viewedAge !== null ? viewedAge : result.earliest !== null ? result.earliest : g.currentAge;
+  // Om ingen ålder i sökintervallet klarar villkoren finns inget "earliest"
+  // att falla tillbaka på. g.currentAge (din ålder nu) är fel val då: det
+  // låtsas att du redan är pensionär vid din nuvarande ålder, vilket bakar in
+  // åratal av inte-uppburen allmän pension som ett bortfall i kurvan och gör
+  // den obegriplig. g.minSearchAge, sökintervallets egen nedre gräns, visar i
+  // stället den tidigast rimliga kandidaten, så diagrammet och remsan
+  // fortfarande förklarar VARFÖR sökningen misslyckades.
+  const A = viewedAge !== null ? viewedAge : result.earliest !== null ? result.earliest : g.minSearchAge;
   const curve = incomeCurve(rows, g, A);
   const ev = evaluate(curve, g.floor, g.dropTol);
 

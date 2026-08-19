@@ -56,6 +56,7 @@ const {
   incomeCurve,
   evaluate,
   searchEarliest,
+  DELNINGSTAL_ILLUSTRATIV,
   CONTROLS,
   PRESETS,
   MAX_ROWS,
@@ -69,7 +70,7 @@ const {
   parseField
 } = vm.runInContext(
   code +
-    ";({monthlyFromCapital, growCapital, growCapitalWithContrib, monthlyFromCapitalLifelong, delningstalAt, allmanMonthlyAtAge, pensionsUnderlag, pensionsrattPerYear, brytpunktAllmanPension, allmanShortfallMonthly, grundavdrag, inkomstskattPension, netMonthlyFromGrossYearly, PBB, IBB, SKIKTGRANS, LAGSTA_UTTAGSALDER_ALLMAN, FORHOJT_GRUNDAVDRAG_ALDER, KOMMUNALSKATT_SNITT, SKATTEREDUKTION_ANDEL_APPROX, incomeCurve, evaluate, searchEarliest, CONTROLS, PRESETS, MAX_ROWS, rowFieldSpecs, rowControlSpecs, activeControls, ageStr, parseUrlValues, buildUrlQuery, fieldText, parseField})",
+    ";({monthlyFromCapital, growCapital, growCapitalWithContrib, monthlyFromCapitalLifelong, delningstalAt, allmanMonthlyAtAge, pensionsUnderlag, pensionsrattPerYear, brytpunktAllmanPension, allmanShortfallMonthly, grundavdrag, inkomstskattPension, netMonthlyFromGrossYearly, PBB, IBB, SKIKTGRANS, LAGSTA_UTTAGSALDER_ALLMAN, FORHOJT_GRUNDAVDRAG_ALDER, KOMMUNALSKATT_SNITT, SKATTEREDUKTION_ANDEL_APPROX, incomeCurve, evaluate, searchEarliest, DELNINGSTAL_ILLUSTRATIV, CONTROLS, PRESETS, MAX_ROWS, rowFieldSpecs, rowControlSpecs, activeControls, ageStr, parseUrlValues, buildUrlQuery, fieldText, parseField})",
   vm.createContext(sandbox)
 );
 
@@ -582,49 +583,55 @@ function roundnessOk(spec, v) {
   });
 }
 
+// Delade hjälpfunktioner för presettesterna nedan: bygger globals/rows från
+// en preset exakt som applyPreset()/rowsFromState() gör i script.js, men
+// utan DOM. Använder DELNINGSTAL_ILLUSTRATIV, den TABELL APPEN FAKTISKT
+// SKEPPAR, inte testsvitens egen DT: de här testerna vill veta hur presetens
+// siffror beter sig i appen, inte testa interpolationsmatematiken isolerat
+// (det gör redan test 5 ovan, mot DT).
+function globalsFromPreset(preset) {
+  const g = {};
+  CONTROLS.forEach((c) => {
+    g[c.id] = preset.v[c.id] !== undefined ? preset.v[c.id] : c.value;
+  });
+  return {
+    currentAge: g.currentAge,
+    income: g.income,
+    floor: g.floor,
+    allmanMonthly: g.allmanMonthly,
+    allmanRefAge: g.allmanRefAge,
+    dropTol: g.dropTol / 100,
+    realReturn: g.realReturn / 100,
+    horizonAge: g.horizonAge,
+    maxAge: g.maxAge,
+    minSearchAge: g.minSearchAge,
+    maxSearchAge: g.maxSearchAge,
+    pbb: g.pbb,
+    ibb: g.ibb,
+    kommunalskatt: g.kommunalskatt / 100,
+    skiktgrans: g.skiktgrans,
+    table: DELNINGSTAL_ILLUSTRATIV
+  };
+}
+function rowsFromPreset(preset) {
+  const n = preset.v.rows;
+  const rows = [];
+  for (let i = 1; i <= n; i++) {
+    const specs = rowFieldSpecs(i);
+    const row = {};
+    specs.forEach((s) => {
+      const field = s.id.slice(("p" + i).length);
+      row[field] = preset.v[s.id] !== undefined ? preset.v[s.id] : s.value;
+    });
+    rows.push(row);
+  }
+  return rows;
+}
+
 // 21. Allt-livsvarigt-preseten (PRESETS[3]) ger earliestNaive === earliest
 //     exakt: ingen rad är tidsbegränsad, så det finns ingen klippa att
 //     skilja den naiva och den ärliga åldern åt.
 {
-  function globalsFromPreset(preset) {
-    const g = {};
-    CONTROLS.forEach((c) => {
-      g[c.id] = preset.v[c.id] !== undefined ? preset.v[c.id] : c.value;
-    });
-    return {
-      currentAge: g.currentAge,
-      income: g.income,
-      floor: g.floor,
-      allmanMonthly: g.allmanMonthly,
-      allmanRefAge: g.allmanRefAge,
-      dropTol: g.dropTol / 100,
-      realReturn: g.realReturn / 100,
-      horizonAge: g.horizonAge,
-      maxAge: g.maxAge,
-      minSearchAge: g.minSearchAge,
-      maxSearchAge: g.maxSearchAge,
-      pbb: g.pbb,
-      ibb: g.ibb,
-      kommunalskatt: g.kommunalskatt / 100,
-      skiktgrans: g.skiktgrans,
-      table: DT
-    };
-  }
-  function rowsFromPreset(preset) {
-    const n = preset.v.rows;
-    const rows = [];
-    for (let i = 1; i <= n; i++) {
-      const specs = rowFieldSpecs(i);
-      const row = {};
-      specs.forEach((s) => {
-        const field = s.id.slice(("p" + i).length);
-        row[field] = preset.v[s.id] !== undefined ? preset.v[s.id] : s.value;
-      });
-      rows.push(row);
-    }
-    return rows;
-  }
-
   const preset = PRESETS[3];
   check('den fjärde preseten heter "Allt livsvarigt"', preset.name === "Allt livsvarigt", preset.name, "Allt livsvarigt");
   const rows = rowsFromPreset(preset);
@@ -638,6 +645,46 @@ function roundnessOk(spec, v) {
   const result = searchEarliest(rows, g);
   check("allt-livsvarigt-preseten hittar en giltig ålder", result.earliest !== null, result.earliest, "!== null");
   near("allt-livsvarigt-preseten: naiv och ärlig ålder är identiska", result.earliestNaive, result.earliest, 1e-9);
+}
+
+// 22. Varje presets faktiska sökresultat matchar vad presetens EGEN
+// beskrivning lovar, inte bara att koden råkar köra utan fel. Hittad genom
+// att faktiskt köra siffrorna (node, inte "ser rimligt ut"): presetens
+// ursprungliga tal gav "aldrig någon ålder" för två av fyra presets och
+// "ingen klippa alls" för den som skulle visa klippan, tre tysta fel som
+// bara syns om man frågar algoritmen, inte källkoden.
+{
+  const p0 = rowsAndGlobals(0);
+  const r0 = searchEarliest(p0.rows, p0.g);
+  check(
+    'preset 0 ("tre tjänstepensioner, en tidsbegränsad") visar ett verkligt gap',
+    r0.earliest !== null && r0.earliestNaive !== null && r0.earliest > r0.earliestNaive + 1,
+    { earliest: r0.earliest, naive: r0.earliestNaive },
+    "earliest > naive + 1 år"
+  );
+
+  const p1 = rowsAndGlobals(1);
+  const r1 = searchEarliest(p1.rows, p1.g);
+  check(
+    'preset 1 ("bara allmän + liten tjänstepension") hittar en giltig ålder trots 63/64-tröskeln',
+    r1.earliest !== null,
+    r1.earliest,
+    "!== null"
+  );
+
+  const p2 = rowsAndGlobals(2);
+  const r2 = searchEarliest(p2.rows, p2.g);
+  check(
+    'preset 2 ("stort privat kapital, kort utbetalningstid") visar det största naiv/ärlig-gapet',
+    r2.earliest !== null && r2.earliestNaive !== null && r2.earliest - r2.earliestNaive >= r0.earliest - r0.earliestNaive,
+    { earliest: r2.earliest, naive: r2.earliestNaive },
+    "gap >= preset 0:s gap"
+  );
+
+  function rowsAndGlobals(idx) {
+    const preset = PRESETS[idx];
+    return { rows: rowsFromPreset(preset), g: globalsFromPreset(preset) };
+  }
 }
 
 console.log(pass + " pass, " + fail + " fail");

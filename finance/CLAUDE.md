@@ -83,13 +83,24 @@ app flags this in its UI in the meantime rather than hiding it.
 
 ## Basis conventions
 
-Any app showing a future amount offers the same three bases, with the same names,
-and defaults to the same one:
+Any app showing a future amount offers the same three bases, with the same names:
 
 - **Nominellt**: kronor on the day. What banks show.
 - **Dagens kronor**: deflated by KPI.
-- **Livsstilsjusterat** (default): deflated by KPI _and_ standardglidning, the
-  drift in what counts as normal standard that KPI deliberately excludes.
+- **Livsstilsjusterat**: deflated by KPI _and_ standardglidning, the drift in
+  what counts as normal standard that KPI deliberately excludes.
+
+The default is **livsstilsjusterat**, except in `NarKanJagSluta`, which
+defaults to **dagens kronor**. Standardglidning models rising _expectations_
+of normal, the right lens for comparing a future pot against future peers
+while accumulating. A retirement question compares your own future
+consumption against your own current one, and the "retirement spending
+smile" research shows that tends to flatten or shrink with age, not keep
+rising with the rest of society. Defaulting to livsstilsjusterat there would
+systematically overstate how much a retiree needs later. Any new
+withdrawal-phase app should default the same way, for the same reason; a
+new accumulation-phase app should default to livsstilsjusterat like
+RantaPaRanta.
 
 Contributions are deflated by _their own date_, never by the end year, and an
 amount paid today is not deflated at all. Deflating a running total by the

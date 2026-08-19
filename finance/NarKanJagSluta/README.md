@@ -51,6 +51,14 @@ minPension.se och Pensionsmyndighetens egna verktyg svarar bara på det motsatta
   från planens ursprungliga skiss (som ville låta basen även flytta åldern):
   en ålder som hoppar när man bara byter visningsläge är svårare att lita på
   än en ålder som står still medan siffrorna runt den räknas om.
+- **Defaultbasen är dagens kronor, inte livsstilsjusterat som resten av
+  sajten** (`../CLAUDE.md`s "Basis conventions" dokumenterar undantaget).
+  Standardglidning prisar in att normal standard stiger över tid, rätt lins
+  för ett sparande som jämförs mot framtida jämnåriga, fel lins för en
+  pension där man jämför sin egen framtida konsumtion mot sin egen nuvarande:
+  "the retirement spending smile"-forskningen visar att konsumtionen snarare
+  planar ut eller krymper med åldern. Livsstilsjusterat hade systematiskt
+  överskattat behovet längre fram.
 
 ## Vad "rad 0" betyder
 

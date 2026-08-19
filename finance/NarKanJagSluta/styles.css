@@ -104,6 +104,10 @@
   padding: 6px 10px;
   cursor: pointer;
 }
+.row-remove:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
 .row-remove:hover {
   color: var(--loss);
   border-color: var(--loss);
