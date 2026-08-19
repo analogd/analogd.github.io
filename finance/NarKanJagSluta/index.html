@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>När kan jag sluta</title>
+    <link rel="stylesheet" href="../lib/app.css" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <a class="back" href="../../">analogd</a>
+
+    <header>
+      <h1>När kan jag sluta</h1>
+      <p class="lede">
+        Inte "vänta längre och få mer", frågan minPension och Pensionsmyndigheten redan svarar på. Den här söker åt andra hållet: lägsta
+        möjliga pensionsålder där nettoinkomsten håller sig över ett golv du sätter, hela vägen, även efter att en tidsbegränsad
+        tjänstepension tagit slut.
+      </p>
+    </header>
+
+    <main>
+      <section class="panel">
+        <div class="presets-row">
+          <span class="presets-label">Utgå från</span>
+          <div id="presets" class="presets"></div>
+        </div>
+
+        <h2 class="group-h">Din situation</h2>
+        <div id="situation" class="controls"></div>
+
+        <h2 class="group-h">
+          Pensionsrader
+          <span class="group-toggle">Tjänstepensioner och privat/ISK-sparande, en rad per källa</span>
+        </h2>
+        <div id="rows-host"></div>
+        <button type="button" id="row-add">+ Lägg till en rad</button>
+
+        <details id="adv-wrap">
+          <summary>
+            Ärlighetsknappar
+            <span class="adv-summary">Avkastning, horisont, skattekonstanter. Rörs aldrig av en preset.</span>
+          </summary>
+          <div id="honesty" class="controls"></div>
+        </details>
+      </section>
+
+      <section class="result">
+        <div class="basis" id="basis" role="tablist">
+          <button data-basis="life" class="active">Livsstilsjusterat</button>
+          <button data-basis="cpi">Dagens kronor (KPI)</button>
+          <button data-basis="nom">Nominellt</button>
+        </div>
+
+        <p class="headline-note">
+          Åldern ovan ändras inte när du byter bas: modellen räknar i reala termer hela vägen. Basväljaren styr bara vilka kronor
+          statistiken och diagrammet visar, konsekvent för golvet, nettot och allt annat på samma gång.
+        </p>
+
+        <div class="headline-pair">
+          <div class="headline-block honest">
+            <div class="headline-k">Lägsta möjliga pensionsålder</div>
+            <div class="headline-v" id="headline-earliest"></div>
+          </div>
+          <div class="headline-block naive">
+            <div class="headline-k">Om bara första året räknas</div>
+            <div class="headline-v" id="headline-naive"></div>
+          </div>
+        </div>
+        <p class="headline-note" id="headline-note"></p>
+
+        <div class="stats" id="stats"></div>
+      </section>
+
+      <section class="chart-wrap">
+        <div class="legend" id="legend"></div>
+        <div id="chart"></div>
+        <div id="tip" class="tip"></div>
+
+        <div class="strip-wrap">
+          <p class="strip-label">
+            Uppfyllbarhet per ålder, klicka för att se just den åldern i diagrammet. Lägsta godkända: <b id="strip-earliest"></b>
+          </p>
+          <div id="strip"></div>
+        </div>
+      </section>
+
+      <section class="notes">
+        <h2>Varför två åldrar, och varför de kan ligga långt ifrån varandra</h2>
+        <p>
+          Den naiva åldern uppfyller bara golvet det första året, exakt vad minPensions "Simulera olika val" och de flesta
+          pensionskalkylatorer visar: en engångsprognos vid en vald ålder. Den ärliga åldern kräver att nettot håller sig över golvet
+          <em>och</em> aldrig faller mer än falltoleransen under startnivån, hela vägen till kurvans slutålder. Gapet mellan dem är åren en
+          tidsbegränsad tjänstepension täcker innan den tar slut, ett hål ingen av de två siffrorna visar för sig.
+        </p>
+
+        <h2>Allmän pension flyttas med delningstalet, räknas inte om</h2>
+        <p>
+          En prognos avläst vid en ålder flyttas till en annan med Pensionsmyndighetens egen delningstalskvot:
+          <code>prognos vid ny ålder = prognos vid gammal ålder * delningstal(gammal ålder) / delningstal(ny ålder)</code>. Det är samma
+          behållning, bara omfördelad över fler eller färre år, inte en ny beräkning från din inkomsthistorik. Att sluta jobba innan
+          prognosens ålder kostar dessutom de uteblivna årens pensionsrätt, prissatt separat och synlig i statistikraden "Allmän pension".
+        </p>
+        <p>
+          <strong>Delningstalstabellen som används här är overifierad.</strong> Det verkliga delningstalet publiceras per födelseårgång i
+          Pensionsmyndighetens föreskrifter, inte i en gemensam tabell, och den siffran är inte hämtad än. Storleksordningen är rimlig, men
+          läs inte av en exakt krona ur den, bara formen på kurvan.
+        </p>
+
+        <h2>Skatten är den riktiga grundavdragsmodellen, åldersstegad</h2>
+        <p>
+          Grundavdraget (och det förhöjda grundavdraget från och med det år du fyller 66 år) är den fulla brakettabellen ur
+          inkomstskattelagen, inte en platt sats. Steget vid 66 år syns som en vertikal linje i diagrammet, och är en riktig nettohöjning,
+          inte ett modellfel: samma bruttoinkomst ger lägre skatt efter det året.
+        </p>
+
+        <h2>Vad den inte gör</h2>
+        <ul>
+          <li>
+            <strong>Enkel real avkastning, ingen fördelning.</strong> Ingen avkastningsordningsrisk (sequence-of-returns), den största
+            enskilda uteslutningen: två personer med samma genomsnittliga avkastning kan få helt olika utfall beroende på när i uttagsfasen
+            en dålig period inträffar. <code>lib/engine.js</code>s Monte Carlo-band finns på sajten men är inte invävt här: ett spann runt
+            en ålder är ett svårare objekt att rita än ett spann runt ett saldo.
+          </li>
+          <li>
+            <strong>Garantipension, bostadstillägg, efterlevandeskydd och änkepension modelleras inte.</strong> Att utesluta garantipension
+            gör modellen för pessimistisk för en låginkomsttagare, snarare än för optimistisk.
+          </li>
+          <li>
+            <strong>Livsvariga privata och tjänstepensionspotter självannuitiseras till en horisontålder,</strong> de poolas inte mot
+            dödlighet. Ett försäkringsbolags livsvariga annuitet kan betala mer från samma kapital, eftersom den delar risken över alla
+            försäkrade. Horisontåldern är en ärlighetsratt i "Ärlighetsknappar", inte en dold konstant.
+          </li>
+          <li>
+            <strong>Premiepensionen antas dela inkomstpensionens delningstal.</strong> I verkligheten har den sin egen, något annorlunda,
+            beräkning.
+          </li>
+          <li>
+            <strong>En rad med känt månadsbelopp (inte kapital) flyttad till en annan startålder bär beloppet ojusterat.</strong> Om du
+            flyttar en sådan rads start via "Startar när jag går i pension" räknas inte beloppet om för den nya åldern, ett
+            försäkringsbolags utfäst belopp gäller normalt bara vid den ålder det är tecknat för.
+          </li>
+          <li>
+            <strong>Skatten beräknas på hela beskattningsåret.</strong> En pension som börjar mitt i året, med lön tidigare samma år,
+            modelleras inte: det första året blir därför optimistiskt i modellen, den verkliga skatten på det första årets pension kan bli
+            högre.
+          </li>
+          <li>
+            <strong>Ingen uttagsordningsoptimering.</strong> Vilken pott man tar ut ur först för att minimera skatt är en annan fråga än när
+            man kan sluta, och besvaras inte här.
+          </li>
+          <li>
+            <strong>Ingen automatisk lösning för "hur mycket behöver jag ha sparat" i en privat/ISK-rad.</strong> Storleksbestäm den för
+            hand, som vilken kapitalrad som helst, och kör om sökningen. Tillräckligt snabbt via sliders att en dedikerad lösare inte är
+            värd komplexiteten.
+          </li>
+          <li>
+            <strong>Ingen ISK-schablonskatt under uppbyggnadsfasen.</strong> Avsättningsfältet (kr/mån fram till radens startålder) växer
+            med real avkastning rakt av. Väv in schablonskatten i avkastningsantagandet om du vill ha med den, samma förenkling som
+            RantaPaRanta gör synlig i sin egen modell.
+          </li>
+          <li>
+            <strong>Brytpunkten för allmän pension räknas på ett enda konstant lönebelopp,</strong> inte en verklig lönebana. Löneväxling
+            som en egen fråga (särskild löneskatt kontra arbetsgivaravgift, SGI-skydd, marginalskatt nu kontra vid uttag) är medvetet inte
+            modellerad här: de påverkar om löneväxling lönar sig, inte vid vilken ålder du kan sluta.
+          </li>
+          <li>
+            Taket runt 20-25 tkr/mån för allmän pension som ofta nämns är inte en egen regel här, det är en följd av 7,5-IBB-taket
+            ackumulerat över ett helt arbetsliv, och syns bara implicit i den prognossiffra du matar in. Appen räknar inte ut den
+            självständigt från en hel PGI-historik.
+          </li>
+        </ul>
+
+        <h2>Källor</h2>
+        <ul class="links">
+          <li>
+            <a href="https://www.pensionsmyndigheten.se/" target="_blank" rel="noopener">Pensionsmyndigheten</a>: lägsta uttagsålder,
+            riktålder, delningstal per födelseårgång (inte hämtat till appen än, se ovan), och prognosen du läser av för "Allmän pension
+            enligt prognos".
+          </li>
+          <li>
+            <a href="https://www.skatteverket.se/" target="_blank" rel="noopener">Skatteverket</a>: grundavdrag och förhöjt grundavdrag (63
+            kap 3-3a § inkomstskattelagen), skiktgränsen för statlig skatt.
+          </li>
+          <li>
+            <a href="https://pensionsguiden.nu/sparkalkylator-med-uttag" target="_blank" rel="noopener"
+              >Pensionsguidens sparkalkylator med uttag</a
+            >: närmaste peer till den här appen, en av få svenska kalkylatorer som modellerar uttagsfasen i stället för att bara ackumulera.
+          </li>
+          <li>
+            <a href="https://minpension.se/" target="_blank" rel="noopener">minPension</a>: den samlade prognosen (allmän, tjänste, privat)
+            som "Simulera olika val" bara söker uppåt ifrån, det den här appen söker nedåt ifrån i stället.
+          </li>
+          <li>
+            <a href="../RantaPaRanta/" target="_blank" rel="noopener">Ränta på ränta</a>: sanity-check för en privat/ISK-rads
+            avkastningsantaganden, med full ISK-schablonskatt och ett Monte Carlo-spann den här appen medvetet inte bygger om.
+          </li>
+        </ul>
+        <p class="strip-label">
+          Länken kodar dina belopp i adressfältet, inget skickas någonstans. Radernas namn kodas inte, klistra ändå inte in länken
+          någonstans publikt om du skrivit in riktiga belopp.
+        </p>
+      </section>
+    </main>
+
+    <footer>
+      <a href="https://github.com/analogd/analogd.github.io" target="_blank" rel="noopener">GitHub</a>
+      &nbsp;&middot;&nbsp; Daniel Nilsson
+    </footer>
+
+    <script src="../lib/engine.js"></script>
+    <script src="../lib/ui.js"></script>
+    <script src="../lib/pension.js"></script>
+    <script src="./script.js"></script>
+  </body>
+</html>

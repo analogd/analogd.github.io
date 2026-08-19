@@ -14,6 +14,7 @@ not load over `file://`, so they define their names in global scope.
 | `lib/engine.js`   | The fund arithmetic. `simulateFlows` takes a month-by-month deposit series; `simulate` is the geometric-ramp special case. Bases, deflators, money-weighted return, Monte Carlo band.        |
 | `lib/ui.js`       | Formatters, the squared slider curve, the `fieldText`/`parseField` pair, `niceStep`, and the URL contract (`parseUrlValues`, `buildUrlQuery`), which take the app's control list explicitly. |
 | `lib/mortgage.js` | Swedish mortgage mechanics: interest deduction with its cap, the amortisation ladder, and the payoff-versus-invest comparison.                                                               |
+| `lib/pension.js`  | Pension mechanics: capital-to-annuity math, delningstal carry-forward for allmän pension, the full grundavdrag/förhöjt grundavdrag closed-form tax formulas.                                 |
 | `lib/app.css`     | The shared stylesheet.                                                                                                                                                                       |
 
 Each app builds its own DOM, because the layouts genuinely differ. No app
@@ -26,6 +27,7 @@ reimplements a formatter, the link format, or any arithmetic.
 | `RantaPaRanta/`           | What a monthly saving is actually worth after inflation, standardglidning, avgift and ISK-skatt. The calculator the others hand a scenario to.                                                                                      |
 | `AmorteraEllerInvestera/` | Mortgage versus index fund, answered as a break-even expected return. Both branches spend the same monthly budget.                                                                                                                  |
 | `BilTCO/`                 | A car's true monthly cost, split into fixed and per-mil. Declining-balance depreciation, opportunity cost of the tied-up capital kept separate from loan interest, and a small trip-splitting section priced off the marginal cost. |
+| `NarKanJagSluta/`         | Lowest retirement age where lifelong net income stays above a floor, with no cliff when a time-limited tjänstepension payout ends. Per-policy rows, searched downward, unlike minPension/Pensionsmyndigheten's own tools.           |
 
 ## Tax and rate numbers
 
@@ -51,10 +53,10 @@ reimplements a formatter, the link format, or any arithmetic.
   return. Small, but the kind of thing that has to be written down rather than
   discovered.
 
-## Pension sources, for when the pension app gets built
+## Pension sources
 
-A dedicated session is planned for designing the pension calculators. Start from
-these rather than from scratch:
+`NarKanJagSluta/` is built. Start from these rather than from scratch when
+extending it, especially the delningstal table (see below, still unverified):
 
 - **pensionsguiden.nu** hosts two calculators, one of them a sparkalkylator that
   models withdrawals: <https://pensionsguiden.nu/sparkalkylator-med-uttag>. The
@@ -66,9 +68,18 @@ these rather than from scratch:
 - **minpension.se** for what a real forecast contains, and for the vocabulary
   people arrive with.
 
-The withdrawal phase is the gap in RantaPaRanta: it accumulates and stops. Any
-pension app has to model drawdown, sequence-of-returns risk in the first years of
-withdrawal, and the tax profile of an uttag, none of which exist here yet.
+The withdrawal phase is the gap in RantaPaRanta: it accumulates and stops.
+`NarKanJagSluta/` models drawdown and the tax profile of an uttag, but not
+sequence-of-returns risk (single real return, no distribution, documented in
+its "vad den inte gör").
+
+**Delningstal table, still unverified.** `NarKanJagSluta` ships an illustrative
+delningstal table (`DELNINGSTAL_ILLUSTRATIV` in `lib/pension.js`), not
+Pensionsmyndighetens published cohort figures: the real delningstal is
+published per birth year in Pensionsmyndighetens föreskrifter, one xlsx per
+cohort, not a single shared table. Before showing a real pension figure from
+this app, fetch the actual cohort table and replace the illustrative one; the
+app flags this in its UI in the meantime rather than hiding it.
 
 ## Basis conventions
 
@@ -84,6 +95,13 @@ Contributions are deflated by _their own date_, never by the end year, and an
 amount paid today is not deflated at all. Deflating a running total by the
 end-year factor cancels inflation out of the comparison entirely, which is the
 bug that made "förlorad köpkraft" unreachable in the first version.
+
+`NarKanJagSluta` is the one app where the basis toggle changes only the
+displayed kronor figures, never the headline age: its model runs natively in
+real terms (equivalent to the "dagens kronor" basis), so the earliest age is
+basis-invariant by construction, and every money figure shown at a given age
+(chart, stats, floor line) is converted by the same per-age factor so they
+stay mutually consistent when the basis changes.
 
 ## Cross-linking
 
