@@ -13,9 +13,9 @@
     <header>
       <h1>När kan jag sluta</h1>
       <p class="lede">
-        Inte "vänta längre och få mer", frågan minPension och Pensionsmyndigheten redan svarar på. Den här söker åt andra hållet: lägsta
-        möjliga pensionsålder där nettoinkomsten håller sig över ett golv du sätter, hela vägen, även efter att en tidsbegränsad
-        tjänstepension tagit slut.
+        Tre tal räcker: allmän pension, tjänstepension och privat/ISK-kapital du väntas ha vid pensionen. Sätt en planerad ålder och se
+        nettoinkomsten direkt, livsvarigt, ratta kapitalet och se den ändras. Sätt sedan ett golv, lägsta acceptabla nettoinkomst, och se
+        hur mycket mer kapital som krävs för att hålla det, hela vägen.
       </p>
     </header>
 
@@ -30,11 +30,10 @@
         <div id="situation" class="controls"></div>
 
         <h2 class="group-h">
-          Pensionsrader
-          <span class="group-toggle">Tjänstepensioner och privat/ISK-sparande, en rad per källa</span>
+          Kapital
+          <span class="group-toggle">Tjänstepension och privat/ISK-sparande, båda antas tas ut livsvarigt</span>
         </h2>
-        <div id="rows-host"></div>
-        <button type="button" id="row-add">+ Lägg till en rad</button>
+        <div id="pots-host"></div>
 
         <details id="adv-wrap">
           <summary>
@@ -46,10 +45,13 @@
       </section>
 
       <section class="result">
-        <div class="basis" id="basis" role="tablist">
-          <button data-basis="life">Livsstilsjusterat</button>
-          <button data-basis="cpi" class="active">Dagens kronor (KPI)</button>
-          <button data-basis="nom">Nominellt</button>
+        <div class="basis-row">
+          <div class="basis" id="basis" role="tablist">
+            <button data-basis="life">Livsstilsjusterat</button>
+            <button data-basis="cpi" class="active">Dagens kronor (KPI)</button>
+            <button data-basis="nom">Nominellt</button>
+          </div>
+          <div id="basis-age" class="controls basis-age"></div>
         </div>
 
         <p class="headline-note">
@@ -61,15 +63,12 @@
 
         <div class="headline-pair">
           <div class="headline-block honest">
-            <div class="headline-k">Lägsta möjliga pensionsålder</div>
-            <div class="headline-v" id="headline-earliest"></div>
-          </div>
-          <div class="headline-block naive">
-            <div class="headline-k">Om bara första året räknas</div>
-            <div class="headline-v" id="headline-naive"></div>
+            <div class="headline-k">Nettoinkomst vid <span id="headline-planned-age"></span> år</div>
+            <div class="headline-v" id="headline-income"></div>
+            <div class="headline-sub">livsvarigt, med kapitalet du anger nedan</div>
           </div>
         </div>
-        <p class="headline-note" id="headline-note"></p>
+        <p class="headline-note hidden" id="gap-note"></p>
 
         <div class="stats" id="stats"></div>
       </section>
@@ -78,22 +77,17 @@
         <div class="legend" id="legend"></div>
         <div id="chart"></div>
         <div id="tip" class="tip"></div>
-
-        <div class="strip-wrap">
-          <p class="strip-label">
-            Uppfyllbarhet per ålder, klicka för att se just den åldern i diagrammet. Lägsta godkända: <b id="strip-earliest"></b>
-          </p>
-          <div id="strip"></div>
-        </div>
       </section>
 
       <section class="notes">
-        <h2>Varför två åldrar, och varför de kan ligga långt ifrån varandra</h2>
+        <h2>Varför en beräkning, inte ett ögonmått</h2>
         <p>
-          Den naiva åldern uppfyller bara golvet det första året, exakt vad minPensions "Simulera olika val" och de flesta
-          pensionskalkylatorer visar: en engångsprognos vid en vald ålder. Den ärliga åldern kräver att nettot håller sig över golvet
-          <em>och</em> aldrig faller mer än falltoleransen under startnivån, hela vägen till kurvans slutålder. Gapet mellan dem är åren en
-          tidsbegränsad tjänstepension täcker innan den tar slut, ett hål ingen av de två siffrorna visar för sig.
+          minPensions "Simulera olika val" och de flesta pensionskalkylatorer projicerar framåt från en ålder du väljer själv, samma princip
+          som här: en planerad ålder in, ett netto ut. Skillnaden är vad som ligger mellan de två talen. Att sluta jobba innan allmän
+          pensions prognosålder kostar uteblivna års pensionsrätt, delningstalskvoten flyttar prognosen olikt beroende på exakt vilken ålder
+          du väljer, och förhöjt grundavdrag vid 66 år ändrar skatten i ett steg. Ingen av de tre är linjär, så en genväg med ett par
+          tumregler kan missa nettot med tusenlappar. "Kapital du behöver" nedan är samma kedja körd baklänges: en bisektion, inte en
+          gissning, mot exakt samma skatte- och delningstalsformler.
         </p>
 
         <h2>Allmän pension flyttas med delningstalet, räknas inte om</h2>
@@ -138,11 +132,6 @@
             beräkning.
           </li>
           <li>
-            <strong>En rad med känt månadsbelopp (inte kapital) flyttad till en annan startålder bär beloppet ojusterat.</strong> Om du
-            flyttar en sådan rads start via "Startar när jag går i pension" räknas inte beloppet om för den nya åldern, ett
-            försäkringsbolags utfäst belopp gäller normalt bara vid den ålder det är tecknat för.
-          </li>
-          <li>
             <strong>Skatten beräknas på hela beskattningsåret.</strong> En pension som börjar mitt i året, med lön tidigare samma år,
             modelleras inte: det första året blir därför optimistiskt i modellen, den verkliga skatten på det första årets pension kan bli
             högre.
@@ -152,14 +141,31 @@
             man kan sluta, och besvaras inte här.
           </li>
           <li>
-            <strong>Ingen automatisk lösning för "hur mycket behöver jag ha sparat" i en privat/ISK-rad.</strong> Storleksbestäm den för
-            hand, som vilken kapitalrad som helst, och kör om sökningen. Tillräckligt snabbt via sliders att en dedikerad lösare inte är
-            värd komplexiteten.
+            <strong>Tjänstepensionen antas alltid tas ut livsvarigt, aldrig som ett tidsbegränsat belopp.</strong> Modellen körde tidigare
+            en per-policy-rad per pensionskälla just för att fånga "klippan" när en tidsbegränsad tjänstepension tar slut. Den byggdes bort
+            (2026-08-19) med motiveringen att en tjänstepensions utbetalningsperiod i praktiken går att pausa eller förlänga, bara inte
+            korta ner, så man styr i regel bort från en klippa i stället för att råka ut för en. Har du ändå en tecknad tjänstepension med
+            ett kort utbetalningsfönster (till exempel 5 eller 10 år) ger den ett högre månadsbelopp under de åren än den här modellen
+            visar, och tar sedan slut: en klippa den här förenklade versionen inte längre fångar.
           </li>
           <li>
-            <strong>Ingen ISK-schablonskatt under uppbyggnadsfasen.</strong> Avsättningsfältet (kr/mån fram till radens startålder) växer
-            med real avkastning rakt av. Väv in schablonskatten i avkastningsantagandet om du vill ha med den, samma förenkling som
-            RantaPaRanta gör synlig i sin egen modell.
+            <strong>Kapitalfälten är vad du väntas ha VID pensionen, appen räknar inte upp ett nu-belopp åt dig.</strong> En tidigare
+            version tog kapitalet som "idag" och räknade upp det med real avkastning fram till den ålder du provar, vilket band in din
+            nuvarande ålder i en fråga som inte behöver den (frågan handlar bara om vad du har när du väl går i pension). Vill du utgå från
+            ett dagens belopp och en avkastning, räkna fram slutsumman själv, till exempel med
+            <a href="../RantaPaRanta/">Ränta på ränta</a>, och skriv in resultatet här.
+          </li>
+          <li>
+            <strong>Allmän pension går inte att ta ut före 64 år</strong> (Pensionsmyndighetens lägsta uttagsålder, 2026), en verklig spärr,
+            inte ett modellval. Tjänstepension och privat/ISK-kapital antas i modellen kunna börja betalas ut från vilken ålder du än väljer
+            att sluta jobba vid, så en pensionsålder under 64 år lever helt på de två, och nettot hoppar upp igen från 64 år, se gapnotisen
+            ovan.
+          </li>
+          <li>
+            <strong>Tjänstepension och privat/ISK-kapital annuitiseras identiskt här, men är olika flexibla i verkligheten.</strong>
+            Privat/ISK-kapital går i princip att ta ut hur och när som helst. En tjänstepension är bunden av produktens egna regler
+            (pausa/förlänga men inte korta ner, se punkten ovan). Att räkna dem likadant är en förenkling för att slippa modellera olika
+            utbetalningsregler per försäkringsbolag, inte ett påstående om att de är utbytbara.
           </li>
           <li>
             <strong>Brytpunkten för allmän pension räknas på ett enda konstant lönebelopp,</strong> inte en verklig lönebana. Löneväxling
@@ -191,16 +197,16 @@
           </li>
           <li>
             <a href="https://minpension.se/" target="_blank" rel="noopener">minPension</a>: den samlade prognosen (allmän, tjänste, privat)
-            som "Simulera olika val" bara söker uppåt ifrån, det den här appen söker nedåt ifrån i stället.
+            "Simulera olika val" utgår från, och siffrorna du läser av för "Allmän pension enligt prognos" här.
           </li>
           <li>
-            <a href="../RantaPaRanta/" target="_blank" rel="noopener">Ränta på ränta</a>: sanity-check för en privat/ISK-rads
+            <a href="../RantaPaRanta/" target="_blank" rel="noopener">Ränta på ränta</a>: sanity-check för privat/ISK-pottens
             avkastningsantaganden, med full ISK-schablonskatt och ett Monte Carlo-spann den här appen medvetet inte bygger om.
           </li>
         </ul>
-        <p class="strip-label">
-          Länken kodar dina belopp i adressfältet, inget skickas någonstans. Radernas namn kodas inte, klistra ändå inte in länken
-          någonstans publikt om du skrivit in riktiga belopp.
+        <p class="small-note">
+          Länken kodar dina belopp i adressfältet, inget skickas någonstans, klistra ändå inte in den någonstans publikt om du skrivit in
+          riktiga belopp.
         </p>
       </section>
     </main>

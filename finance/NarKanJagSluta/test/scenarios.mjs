@@ -6,7 +6,7 @@
 // (inga ES-moduler), så den här konkatenerar dem i laddordning och
 // evaluerar resultatet i en vm med en stub-DOM, precis som webbläsaren ser
 // dem, och plockar sedan ut de funktioner den behöver. DOM-uppbyggnaden
-// (buildControlsInto, buildRowCard, render, init) körs INTE här: stubben gör
+// (buildControlsInto, buildPotCard, render, init) körs INTE här: stubben gör
 // document.addEventListener till en no-op, så DOMContentLoaded aldrig
 // triggar init(). Det här filen testar bara de rena funktionerna:
 // aritmetiken i lib/pension.js och algoritmen/kontraktet i script.js.
@@ -55,13 +55,14 @@ const {
   SKATTEREDUKTION_ANDEL_APPROX,
   incomeCurve,
   evaluate,
-  searchEarliest,
+  requiredCapitalForFloor,
+  netAtCapital,
+  totalCapital,
   DELNINGSTAL_ILLUSTRATIV,
   CONTROLS,
   PRESETS,
-  MAX_ROWS,
-  rowFieldSpecs,
-  rowControlSpecs,
+  POTS,
+  potFieldSpecs,
   activeControls,
   ageStr,
   parseUrlValues,
@@ -70,7 +71,7 @@ const {
   parseField
 } = vm.runInContext(
   code +
-    ";({monthlyFromCapital, growCapital, growCapitalWithContrib, monthlyFromCapitalLifelong, delningstalAt, allmanMonthlyAtAge, pensionsUnderlag, pensionsrattPerYear, brytpunktAllmanPension, allmanShortfallMonthly, grundavdrag, inkomstskattPension, netMonthlyFromGrossYearly, PBB, IBB, SKIKTGRANS, LAGSTA_UTTAGSALDER_ALLMAN, FORHOJT_GRUNDAVDRAG_ALDER, KOMMUNALSKATT_SNITT, SKATTEREDUKTION_ANDEL_APPROX, incomeCurve, evaluate, searchEarliest, DELNINGSTAL_ILLUSTRATIV, CONTROLS, PRESETS, MAX_ROWS, rowFieldSpecs, rowControlSpecs, activeControls, ageStr, parseUrlValues, buildUrlQuery, fieldText, parseField})",
+    ";({monthlyFromCapital, growCapital, growCapitalWithContrib, monthlyFromCapitalLifelong, delningstalAt, allmanMonthlyAtAge, pensionsUnderlag, pensionsrattPerYear, brytpunktAllmanPension, allmanShortfallMonthly, grundavdrag, inkomstskattPension, netMonthlyFromGrossYearly, PBB, IBB, SKIKTGRANS, LAGSTA_UTTAGSALDER_ALLMAN, FORHOJT_GRUNDAVDRAG_ALDER, KOMMUNALSKATT_SNITT, SKATTEREDUKTION_ANDEL_APPROX, incomeCurve, evaluate, requiredCapitalForFloor, netAtCapital, totalCapital, DELNINGSTAL_ILLUSTRATIV, CONTROLS, PRESETS, POTS, potFieldSpecs, activeControls, ageStr, parseUrlValues, buildUrlQuery, fieldText, parseField})",
   vm.createContext(sandbox)
 );
 
@@ -131,7 +132,11 @@ const DT = [
 }
 
 // 3. growCapital och growCapitalWithContrib mot en handbyggd
-//    slutvärde-av-annuitet-beräkning.
+//    slutvärde-av-annuitet-beräkning. Ingen av de två används längre av
+//    script.js (potterna anger kapitalet VID pensionen direkt, ingen
+//    tillväxtprojektion från idag, se potGrossMonthlys header 2026-08-19),
+//    men de lever kvar i lib/pension.js och testas ändå: delad aritmetik ska
+//    hålla oavsett vem som råkar anropa den just nu.
 {
   near("growCapital ren ränta-på-ränta", growCapital(100000, 0.03, 10), 100000 * Math.pow(1.03, 10), 1e-6);
 
@@ -323,155 +328,99 @@ const DT = [
   check("netto är mindre än brutto", rOver.netYearly < overSkikt, rOver.netYearly, "< " + overSkikt);
 }
 
-// ---------- sökalgoritmen: incomeCurve / evaluate / searchEarliest ----------
+// ---------- kärnberäkningen: incomeCurve / evaluate ----------
+//
+// Modellen slog tidigare upp per-policy-rader med egna fönster, för att
+// fånga "klippan" när en tidsbegränsad tjänstepension tar slut (se
+// script.js's headerkommentar). Sedan 2026-08-19 är båda potterna alltid
+// livsvariga och startar exakt vid den planerade pensionsåldern, och sedan
+// 2026-08-20 finns ingen sekundär "sök nedåt efter lägsta ålder"-fråga
+// kvar heller: frågan är alltid direkt, vid en given ålder. Testerna nedan
+// speglar det: de verifierar att golvvillkoret verkligen prövas hela vägen
+// till kurvans slut, inte att det råkar klara sig vid startåldern.
 
 const GLOBALS_BASE = {
   currentAge: 50,
   floor: 1,
-  dropTol: 0.3,
   allmanMonthly: 0,
   allmanRefAge: 67,
   income: 0,
   realReturn: 0.02,
   horizonAge: 90,
-  maxAge: 85,
+  maxAge: 100,
   ibb: IBB,
   pbb: PBB,
   kommunalskatt: KOMMUNALSKATT_SNITT,
   skiktgrans: SKIKTGRANS,
-  table: DT,
-  minSearchAge: 60,
-  maxSearchAge: 75
+  table: DT
 };
 
-// 12. Uppfyllbarheten är inte monoton i A: en livsvarig flexibel baspott ger
-//     ett jämnt golv, och en icke-flexibel rad med fast fönster 68-70 höjer
-//     inkomsten temporärt. Den som går i pension MITT I höjningen (69) får
-//     sin egen startnivå satt av den tillfälliga höjningen, och när den tar
-//     slut blir fallet större än dropTol. Den som går i pension FÖRE (65)
-//     eller EFTER (72) höjningen har en låg startnivå hela vägen och klarar
-//     sig. Det är skälet searchEarliest måste skanna linjärt, inte
-//     binärsöka: en binärsökning på det här predikatet ger ett tyst fel svar.
+// 12. Kurvan är monotont icke-avtagande i ålder (potterna är konstanta,
+//     allmän pension stiger med delningstalskvoten, skatten sjunker aldrig
+//     vid förhöjt grundavdrag): den lägsta punkten i kurvan är alltid
+//     STARTÅLDERN. Det är skälet evaluate() ändå kontrollerar hela kurvan i
+//     stället för att lita på egenskapen (se kommentaren vid evaluate): en
+//     framtida modelländring som bryter monotoniciteten ska fortfarande
+//     fångas av okFloor, inte tyst förlita sig på att kurvan råkar stiga.
 {
-  const rows = [
-    { kind: 1, mode: 0, cap: 300000, contrib: 0, liv: 1, flex: true, minstart: 60, start: 60, years: 0 },
-    { kind: 1, mode: 0, cap: 1500000, contrib: 0, liv: 0, flex: false, start: 68, years: 3, minstart: 68 }
-  ];
-  const evAt = (A) => evaluate(incomeCurve(rows, GLOBALS_BASE, A), GLOBALS_BASE.floor, GLOBALS_BASE.dropTol);
-  const ok65 = evAt(65).ok;
-  const ok69 = evAt(69).ok;
-  const ok72 = evAt(72).ok;
-  check("pension före höjningen klarar fallet (65)", ok65 === true, ok65, true);
-  check("pension mitt i höjningen klarar INTE fallet (69)", ok69 === false, ok69, false);
-  check("pension efter höjningen klarar fallet igen (72)", ok72 === true, ok72, true);
-
-  const result = searchEarliest(rows, GLOBALS_BASE);
-  const idx69 = result.map.findIndex((r) => Math.abs(r.age - 69) < 1 / 24);
-  const firstTrueAfter69 = result.map.slice(idx69).find((r) => r.ok);
-  check(
-    "kartan är genuint icke-monoton: en sann ålder finns bortom en falsk",
-    result.map[idx69].ok === false && !!firstTrueAfter69,
-    result.map[idx69].ok,
-    "false, med en sann ålder efteråt"
-  );
-  check(
-    "searchEarliest returnerar ändå den lägsta sanna åldern, inte en binärsökt fel",
-    Math.abs(result.earliest - 60) < 1 / 24,
-    result.earliest,
-    60
-  );
-}
-
-// 13. earliestNaive <= earliest över en slumpad genomgång av radsett: den
-//     som bara tittar på första året kan aldrig ge en HÖGRE ålder än den
-//     som också kräver att fallet klarar sig, bara en lägre eller lika.
-{
-  // Deterministisk pseudoslump (Date.now/Math.random är inte tillåtna i
-  // testmiljön när det spelar roll, men det gör det inte här och Math.random
-  // är tillgänglig i sandboxen). En enkel LCG räcker och gör testet
-  // reproducerbart utan att bero på något globalt slumpfrö.
-  let seed = 42;
-  function rnd() {
-    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-    return seed / 0x7fffffff;
-  }
-  for (let trial = 0; trial < 15; trial++) {
-    const rows = [];
-    const n = 1 + Math.floor(rnd() * 3);
-    for (let i = 0; i < n; i++) {
-      const liv = rnd() < 0.5 ? 1 : 0;
-      rows.push({
-        kind: rnd() < 0.5 ? 1 : 2,
-        mode: 0,
-        cap: 100000 + rnd() * 900000,
-        contrib: 0,
-        liv: liv,
-        flex: rnd() < 0.5,
-        start: 60 + Math.floor(rnd() * 10),
-        years: liv ? 0 : 3 + Math.floor(rnd() * 10),
-        minstart: 60
-      });
-    }
-    const g = Object.assign({}, GLOBALS_BASE, {
-      floor: 5000 + rnd() * 15000,
-      dropTol: 0.1 + rnd() * 0.3,
-      allmanMonthly: 5000 + rnd() * 10000
-    });
-    const result = searchEarliest(rows, g);
-    if (result.earliest !== null && result.earliestNaive !== null) {
-      check(
-        "earliestNaive <= earliest (trial " + trial + ")",
-        result.earliestNaive <= result.earliest + 1e-9,
-        result.earliestNaive,
-        "<= " + result.earliest
-      );
-    }
-  }
-}
-
-// 14. Allt livsvarigt: inget fönster tar någonsin slut, så den naiva
-//     första-årets-testen och det fulla testet ger EXAKT samma ålder.
-{
-  const rows = [{ kind: 1, mode: 0, cap: 800000, contrib: 0, liv: 1, flex: true, minstart: 60, start: 60, years: 0 }];
-  const g = Object.assign({}, GLOBALS_BASE, { allmanMonthly: 10000, floor: 15000, dropTol: 0.1 });
-  const result = searchEarliest(rows, g);
-  near("allt livsvarigt: naiv och ärlig ålder är identiska", result.earliestNaive, result.earliest, 1e-9);
-}
-
-// 15. Att höja golvet sänker aldrig earliest, att höja falltoleransen höjer
-//     aldrig earliest. Två garanterade monotonicitetsegenskaper, billiga
-//     sanitetstester även om huvudsökningen inte är monoton i sig själv.
-{
-  const rows = [
-    { kind: 1, mode: 0, cap: 400000, contrib: 0, liv: 1, flex: true, minstart: 60, start: 60, years: 0 },
-    { kind: 2, mode: 0, cap: 600000, contrib: 0, liv: 0, flex: true, minstart: 60, start: 60, years: 15 }
-  ];
-  const gLow = Object.assign({}, GLOBALS_BASE, { allmanMonthly: 8000, floor: 12000, dropTol: 0.2 });
-  const gHighFloor = Object.assign({}, gLow, { floor: 25000 });
-  const gHighDrop = Object.assign({}, gLow, { dropTol: 0.5 });
-  const rLow = searchEarliest(rows, gLow);
-  const rHighFloor = searchEarliest(rows, gHighFloor);
-  const rHighDrop = searchEarliest(rows, gHighDrop);
-  if (rLow.earliest !== null && rHighFloor.earliest !== null) {
-    check("högre golv sänker aldrig earliest", rHighFloor.earliest >= rLow.earliest - 1e-9, rHighFloor.earliest, ">= " + rLow.earliest);
-  }
-  if (rLow.earliest !== null && rHighDrop.earliest !== null) {
+  const pots = [{ id: "tjp", cap: 400000 }];
+  const g = Object.assign({}, GLOBALS_BASE, { allmanMonthly: 12000, income: 400000, allmanRefAge: 67 });
+  const curve = incomeCurve(pots, g, 65);
+  for (let i = 1; i < curve.length; i++) {
     check(
-      "större falltolerans höjer aldrig earliest",
-      rHighDrop.earliest <= rLow.earliest + 1e-9,
-      rHighDrop.earliest,
-      "<= " + rLow.earliest
+      "nettot vid " + curve[i].age + " år är minst nettot vid " + curve[i - 1].age + " år",
+      curve[i].netMonthly >= curve[i - 1].netMonthly - 1e-9,
+      curve[i].netMonthly,
+      ">= " + curve[i - 1].netMonthly
     );
   }
+  const evLow = evaluate(curve, 1000000);
+  const evHigh = evaluate(curve, 1);
+  check("ett orimligt högt golv underkänns", evLow.okFloor === false, evLow.okFloor, false);
+  check("ett golv på nästan noll godkänns alltid", evHigh.okFloor === true, evHigh.okFloor, true);
 }
 
-// 16. En storhet, ett tal: golvet som används i villkoret är exakt samma
+// 13. Två potter summerar bruttot: att fördela samma totala kapital på
+//     tjänstepension och privat/ISK ger samma golvresultat som att lägga
+//     hela beloppet i en enda pott, eftersom båda annuitiseras på samma
+//     sätt. "En storhet, ett tal" för potterna, inte bara för golvet.
+{
+  const onePot = [{ id: "tjp", cap: 1000000 }];
+  const twoPots = [
+    { id: "tjp", cap: 600000 },
+    { id: "priv", cap: 400000 }
+  ];
+  const A = 65;
+  const curveOne = incomeCurve(onePot, GLOBALS_BASE, A);
+  const curveTwo = incomeCurve(twoPots, GLOBALS_BASE, A);
+  near("samma totalkapital ger samma nettot, oavsett fördelning mellan potterna", curveTwo[0].netMonthly, curveOne[0].netMonthly, 1e-6);
+}
+
+// 14. Att sluta jobba tidigare än allmän pensions prognosålder kostar
+//     uteblivna års pensionsrätt: nettot vid start är strikt lägre ju
+//     tidigare A är, allt annat lika, eftersom bortfallet växer.
+{
+  const pots = [{ id: "tjp", cap: 500000 }];
+  const g = Object.assign({}, GLOBALS_BASE, { allmanMonthly: 12000, allmanRefAge: 67, income: 400000 });
+  const netAt60 = allmanGrossMonthlyForTest(g, 60);
+  const netAt65 = allmanGrossMonthlyForTest(g, 65);
+  const netAt67 = allmanGrossMonthlyForTest(g, 67);
+  check("allmän pension efter bortfall stiger ju närmre prognosåldern man slutar", netAt65 > netAt60, netAt65, "> " + netAt60);
+  check("allmän pension efter bortfall är som högst vid prognosåldern", netAt67 >= netAt65, netAt67, ">= " + netAt65);
+
+  function allmanGrossMonthlyForTest(globals, A) {
+    const curve = incomeCurve(pots, globals, A);
+    return curve[0].grossAllman;
+  }
+}
+
+// 15. En storhet, ett tal: golvet som används i villkoret är exakt samma
 //     tal som skickas in, ingen dold omskalning någonstans i kedjan.
 {
-  const rows = [{ kind: 1, mode: 0, cap: 500000, contrib: 0, liv: 1, flex: true, minstart: 60, start: 60, years: 0 }];
+  const pots = [{ id: "tjp", cap: 500000 }];
   const g = Object.assign({}, GLOBALS_BASE, { floor: 17321, allmanMonthly: 9000 });
-  const curve = incomeCurve(rows, g, 65);
-  const ev = evaluate(curve, g.floor, g.dropTol);
+  const curve = incomeCurve(pots, g, 65);
+  const ev = evaluate(curve, g.floor);
   check(
     "golvvärdet i villkoret är identiskt med kontrollens värde",
     ev.okFloor === curve.every((c) => c.netMonthly >= 17321),
@@ -480,10 +429,69 @@ const GLOBALS_BASE = {
   );
 }
 
-// ---------- steg 4-8: kontroller, presets, URL-kontrakt, personuppgifter ----------
+// ---------- kapitalbehovet: den omvända frågan ----------
+
+// 16b. requiredCapitalForFloor mot en oberoende handbyggd kedja: kapitalet
+//      VID A som bisektionen hittar ska, annuitiserat med monthlyFromCapital,
+//      ge exakt den BRUTTOinkomst grundavdragskedjan (redan verifierad i
+//      test 9-11) sedan skattar ner till floor. Två separata kedjor
+//      (bisektion mot skatt+annuitet i koden, algebra mot annuiteten för sig
+//      här) som ändå ska mötas. requiredCapitalForFloor är pot-agnostisk (se
+//      filhuvudkommentaren vid funktionen): den tar inga potter alls, bara
+//      globals/A/floor, och kapitalet den löser för är VID A, inte idag (se
+//      potGrossMonthlys header, 2026-08-19: nuvarande ålder är irrelevant
+//      för frågan).
+{
+  const g = Object.assign({}, GLOBALS_BASE, { allmanMonthly: 0, income: 0 });
+  const A = 65;
+  const floor = 12000;
+  const capital = requiredCapitalForFloor(g, A, floor);
+  near("kapitalet håller golvet exakt", netAtCapital(g, A, capital), floor, 0.02);
+
+  const months = Math.round((g.horizonAge - A) * 12);
+  const handbyggdGrossMonthly = monthlyFromCapital(capital, g.realReturn, months);
+  const taxParams = { pbb: g.pbb, kommunalskatt: g.kommunalskatt, skiktgrans: g.skiktgrans, ageAtYearStart: Math.floor(A) };
+  const handbyggdNet = inkomstskattPension(Object.assign({ yearly: handbyggdGrossMonthly * 12 }, taxParams)).netYearly / 12;
+  near("den handbyggda annuitets- och skattekedjan ger också floor", handbyggdNet, floor, 0.02);
+
+  // Ett kapital en enda krona mindre får INTE hålla golvet, annars vore
+  // bisektionen inte den lägsta lösningen utan bara "en lösning".
+  const evOneLess = netAtCapital(g, A, capital - 1);
+  check("en krona mindre kapital håller inte längre golvet", evOneLess < floor, evOneLess, "< " + floor);
+}
+
+// 16c. requiredCapitalForFloor ger 0 när golvet redan hålls utan kapital
+//      (allmän pension ensam räcker).
+{
+  const g = Object.assign({}, GLOBALS_BASE, { allmanMonthly: 40000 });
+  near("golvet redan uppnått kräver inget extra kapital", requiredCapitalForFloor(g, 65, 12000), 0, 0);
+}
+
+// 16d. Fördelningen mellan potterna spelar ingen roll för hur mycket
+//      SAMMANLAGT kapital som saknas: att redan ha hälften av det behövda
+//      kapitalet i tjänstepensionen ger samma återstående gap som att ha
+//      det i privat/ISK, eftersom båda annuitiseras identiskt.
+{
+  const g = Object.assign({}, GLOBALS_BASE, { allmanMonthly: 8000 });
+  const A = 65;
+  const floor = 15000;
+  const required = requiredCapitalForFloor(g, A, floor);
+  const halfInTjp = [{ id: "tjp", cap: required / 2 }];
+  const halfInPriv = [{ id: "priv", cap: required / 2 }];
+  const gapTjp = requiredCapitalForFloor(g, A, floor) - totalCapital(halfInTjp);
+  const gapPriv = requiredCapitalForFloor(g, A, floor) - totalCapital(halfInPriv);
+  near("gapet är detsamma oavsett vilken pott halva kapitalet ligger i", gapTjp, gapPriv, 1);
+}
+
+// ---------- kontroller, presets, URL-kontrakt, personuppgifter ----------
 
 function specForId(id) {
-  return CONTROLS.find((c) => c.id === id) || rowControlSpecs(MAX_ROWS).find((c) => c.id === id);
+  return (
+    CONTROLS.find((c) => c.id === id) ||
+    POTS.map((p) => potFieldSpecs(p.id))
+      .flat()
+      .find((c) => c.id === id)
+  );
 }
 
 // Statutoriska konstanter (pbb/ibb/skiktgrans) är UNDANTAGNA från
@@ -503,15 +511,16 @@ function roundnessOk(spec, v) {
   return v % divisor === 0;
 }
 
-// 17. Personuppgifts-tripwire: varje kronbelopp i CONTROLS och PRESETS är
-//     runt (delbart med 1000, eller 100 för månatliga belopp), utom de
-//     statutoriska konstanterna ovan.
+// 17. Personuppgifts-tripwire: varje kronbelopp i CONTROLS, potternas
+//     fältspecar och PRESETS är runt (delbart med 1000, eller 100 för
+//     månatliga belopp), utom de statutoriska konstanterna ovan.
 {
+  const allPotSpecs = POTS.map((p) => potFieldSpecs(p.id)).flat();
   CONTROLS.forEach((c) => {
     check("CONTROLS." + c.id + " är runt (eller undantaget)", roundnessOk(c, c.value), c.value, "delbart med 1000/100");
   });
-  rowControlSpecs(MAX_ROWS).forEach((c) => {
-    check("radfält " + c.id + " är runt (eller undantaget)", roundnessOk(c, c.value), c.value, "delbart med 1000/100");
+  allPotSpecs.forEach((c) => {
+    check("pottfält " + c.id + " är runt (eller undantaget)", roundnessOk(c, c.value), c.value, "delbart med 1000/100");
   });
   PRESETS.forEach((preset) => {
     Object.keys(preset.v).forEach((id) => {
@@ -527,9 +536,10 @@ function roundnessOk(spec, v) {
   });
 }
 
-// 18. Presets rör aldrig en ärlighetsknapp: realReturn, horizonAge, maxAge,
-//     dropTol, inflation, drift, pbb, ibb, kommunalskatt, skiktgrans,
-//     minSearchAge/maxSearchAge.
+// 18. Presets rör aldrig en ärlighetsknapp: realReturn, horizonAge,
+//     inflation, drift, pbb, ibb, kommunalskatt, skiktgrans. Gäller även
+//     inflation/drift trots att de fysiskt visas i basis-raden (hostOverride
+//     är bara var de renderas, inte deras group).
 {
   const honestyIds = CONTROLS.filter((c) => c.group === "honesty").map((c) => c.id);
   check("det finns minst en ärlighetsknapp att skydda", honestyIds.length > 0, honestyIds.length, "> 0");
@@ -539,41 +549,25 @@ function roundnessOk(spec, v) {
   });
 }
 
-// 19. URL-tur-och-retur med en dynamisk radlista: bygg med n rader, tolka
-//     tillbaka mot samma lista, och mot en LÄNGRE lista (fler rader än
-//     länken faktiskt bär, ska falla tillbaka på sina egna defaultvärden).
+// 19. URL-tur-och-retur: bygg med alla aktiva kontroller, tolka tillbaka.
 {
-  const n = 4;
-  const controls = activeControls(n);
+  const controls = activeControls();
   const values = {};
   controls.forEach((c) => {
     values[c.id] = c.value + c.step; // varje värde skilt från defaulten
   });
   const q = buildUrlQuery(controls, values, null, "cpi", null);
-  const parsedSame = parseUrlValues(controls, "?" + q);
+  const parsed = parseUrlValues(controls, "?" + q);
   controls.forEach((c) => {
-    near("URL-tur-och-retur (samma lista) " + c.id, parsedSame.values[c.id], values[c.id], 1e-6);
+    near("URL-tur-och-retur " + c.id, parsed.values[c.id], values[c.id], 1e-6);
   });
-  check("URL-tur-och-retur bär basen", parsedSame.basis === "cpi", parsedSame.basis, "cpi");
-
-  const widerControls = activeControls(MAX_ROWS);
-  const parsedWider = parseUrlValues(widerControls, "?" + q);
-  controls.forEach((c) => {
-    near("URL tolkas korrekt in i en app med fler rader, " + c.id, parsedWider.values[c.id], values[c.id], 1e-6);
-  });
-  const extraSpec = rowFieldSpecs(n + 1)[0];
-  check(
-    "en rad bortom länken får sitt eget default, inte något från länken",
-    parsedWider.values[extraSpec.id] === undefined,
-    parsedWider.values[extraSpec.id],
-    undefined
-  );
+  check("URL-tur-och-retur bär basen", parsed.basis === "cpi", parsed.basis, "cpi");
 }
 
 // 20. Formatterartur-och-retur över varje kontrolls fulla intervall,
 //     inklusive negativa tal (realReturn har min under 0).
 {
-  CONTROLS.concat(rowFieldSpecs(1)).forEach((c) => {
+  activeControls().forEach((c) => {
     [c.min, c.max, (c.min + c.max) / 2].forEach((v) => {
       const text = fieldText(c, v);
       const back = parseField(text);
@@ -583,12 +577,12 @@ function roundnessOk(spec, v) {
   });
 }
 
-// Delade hjälpfunktioner för presettesterna nedan: bygger globals/rows från
-// en preset exakt som applyPreset()/rowsFromState() gör i script.js, men
-// utan DOM. Använder DELNINGSTAL_ILLUSTRATIV, den TABELL APPEN FAKTISKT
-// SKEPPAR, inte testsvitens egen DT: de här testerna vill veta hur presetens
-// siffror beter sig i appen, inte testa interpolationsmatematiken isolerat
-// (det gör redan test 5 ovan, mot DT).
+// Delad hjälpfunktion för presettestet nedan: bygger globals från en preset
+// exakt som applyPreset()/globalsFromState() gör i script.js, men utan DOM.
+// Använder DELNINGSTAL_ILLUSTRATIV, den TABELL APPEN FAKTISKT SKEPPAR, inte
+// testsvitens egen DT: testet vill veta hur presetens siffror beter sig i
+// appen, inte testa interpolationsmatematiken isolerat (det gör redan test 5
+// ovan, mot DT).
 function globalsFromPreset(preset) {
   const g = {};
   CONTROLS.forEach((c) => {
@@ -598,14 +592,12 @@ function globalsFromPreset(preset) {
     currentAge: g.currentAge,
     income: g.income,
     floor: g.floor,
+    plannedAge: g.plannedAge,
     allmanMonthly: g.allmanMonthly,
     allmanRefAge: g.allmanRefAge,
-    dropTol: g.dropTol / 100,
     realReturn: g.realReturn / 100,
     horizonAge: g.horizonAge,
-    maxAge: g.maxAge,
-    minSearchAge: g.minSearchAge,
-    maxSearchAge: g.maxSearchAge,
+    maxAge: g.horizonAge + 10, // samma CURVE_END_MARGIN_YEARS som globalsFromState i script.js
     pbb: g.pbb,
     ibb: g.ibb,
     kommunalskatt: g.kommunalskatt / 100,
@@ -613,78 +605,22 @@ function globalsFromPreset(preset) {
     table: DELNINGSTAL_ILLUSTRATIV
   };
 }
-function rowsFromPreset(preset) {
-  const n = preset.v.rows;
-  const rows = [];
-  for (let i = 1; i <= n; i++) {
-    const specs = rowFieldSpecs(i);
-    const row = {};
-    specs.forEach((s) => {
-      const field = s.id.slice(("p" + i).length);
-      row[field] = preset.v[s.id] !== undefined ? preset.v[s.id] : s.value;
-    });
-    rows.push(row);
-  }
-  return rows;
-}
-
-// 21. Allt-livsvarigt-preseten (PRESETS[3]) ger earliestNaive === earliest
-//     exakt: ingen rad är tidsbegränsad, så det finns ingen klippa att
-//     skilja den naiva och den ärliga åldern åt.
+// 21. Varje presets faktiska kapitalbehov vid sin planerade ålder är inom
+//     ett rimligt tak, verifierat genom att faktiskt köra siffrorna (node,
+//     inte "ser rimligt ut"). Ett par av de ursprungliga radbaserade
+//     presettalen gav "aldrig någon giltig lösning" innan de retunades, ett
+//     tyst fel som bara syns om man frågar algoritmen, inte källkoden.
 {
-  const preset = PRESETS[3];
-  check('den fjärde preseten heter "Allt livsvarigt"', preset.name === "Allt livsvarigt", preset.name, "Allt livsvarigt");
-  const rows = rowsFromPreset(preset);
-  check(
-    "alla rader i allt-livsvarigt-preseten är faktiskt livsvariga",
-    rows.every((r) => r.liv === 1),
-    rows.map((r) => r.liv),
-    "alla 1"
-  );
-  const g = globalsFromPreset(preset);
-  const result = searchEarliest(rows, g);
-  check("allt-livsvarigt-preseten hittar en giltig ålder", result.earliest !== null, result.earliest, "!== null");
-  near("allt-livsvarigt-preseten: naiv och ärlig ålder är identiska", result.earliestNaive, result.earliest, 1e-9);
-}
-
-// 22. Varje presets faktiska sökresultat matchar vad presetens EGEN
-// beskrivning lovar, inte bara att koden råkar köra utan fel. Hittad genom
-// att faktiskt köra siffrorna (node, inte "ser rimligt ut"): presetens
-// ursprungliga tal gav "aldrig någon ålder" för två av fyra presets och
-// "ingen klippa alls" för den som skulle visa klippan, tre tysta fel som
-// bara syns om man frågar algoritmen, inte källkoden.
-{
-  const p0 = rowsAndGlobals(0);
-  const r0 = searchEarliest(p0.rows, p0.g);
-  check(
-    'preset 0 ("tre tjänstepensioner, en tidsbegränsad") visar ett verkligt gap',
-    r0.earliest !== null && r0.earliestNaive !== null && r0.earliest > r0.earliestNaive + 1,
-    { earliest: r0.earliest, naive: r0.earliestNaive },
-    "earliest > naive + 1 år"
-  );
-
-  const p1 = rowsAndGlobals(1);
-  const r1 = searchEarliest(p1.rows, p1.g);
-  check(
-    'preset 1 ("bara allmän + liten tjänstepension") hittar en giltig ålder trots 63/64-tröskeln',
-    r1.earliest !== null,
-    r1.earliest,
-    "!== null"
-  );
-
-  const p2 = rowsAndGlobals(2);
-  const r2 = searchEarliest(p2.rows, p2.g);
-  check(
-    'preset 2 ("stort privat kapital, kort utbetalningstid") visar det största naiv/ärlig-gapet',
-    r2.earliest !== null && r2.earliestNaive !== null && r2.earliest - r2.earliestNaive >= r0.earliest - r0.earliestNaive,
-    { earliest: r2.earliest, naive: r2.earliestNaive },
-    "gap >= preset 0:s gap"
-  );
-
-  function rowsAndGlobals(idx) {
-    const preset = PRESETS[idx];
-    return { rows: rowsFromPreset(preset), g: globalsFromPreset(preset) };
-  }
+  PRESETS.forEach((preset) => {
+    const g = globalsFromPreset(preset);
+    const required = requiredCapitalForFloor(g, g.plannedAge, g.floor);
+    check(
+      'preset "' + preset.name + '" ger ett kapitalbehov inom rimligt tak vid sin planerade ålder',
+      required !== null,
+      required,
+      "!== null"
+    );
+  });
 }
 
 console.log(pass + " pass, " + fail + " fail");

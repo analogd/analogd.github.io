@@ -1,56 +1,55 @@
 "use strict";
 
 // När kan jag sluta: lägsta möjliga pensionsålder där livsvarig månadsinkomst
-// efter skatt håller sig över ett golv, även efter att tidsbegränsade
-// utbetalningar tagit slut.
+// efter skatt håller sig över ett golv.
 //
 // lib/engine.js, lib/ui.js och lib/pension.js laddas före den här filen.
 // Modellsammansättningen (incomeCurve/evaluate/searchEarliest) lever här,
 // inte i lib/, eftersom det är appens egen fråga, inte delad aritmetik:
 // BilTCO håller computeCar här av samma skäl och delar bara annuityPayment.
 
-// UI, chart och URL-tillstånd lever i den här filen (steg 4-7 i
-// implementationsplanen), enligt samma uppdelning som RantaPaRanta och BilTCO:
-// lib/*.js håller aritmetiken, appens egen script.js håller sammansättningen
-// och DOM:en.
+// UI, chart och URL-tillstånd lever i den här filen, enligt samma
+// uppdelning som RantaPaRanta och BilTCO: lib/*.js håller aritmetiken,
+// appens egen script.js håller sammansättningen och DOM:en.
 
-// ---------- kurvan för en given pensionsålder ----------
+// Modellen slog tidigare upp till MAX_ROWS fritt konfigurerbara
+// tjänstepensions/privat-rader, var och en med egen startålder, längd och
+// livsvarig/tidsbegränsad-flagga, för att fånga "klippan" när en
+// tidsbegränsad tjänstepension tar slut. Daniel (2026-08-19) ifrågasatte den
+// premissen: en tjänstepension går i praktiken att pausa och förlänga, bara
+// inte korta ner (se "vad den inte gör"), så man styr i praktiken bort från
+// en klippa i stället för att råka ut för en. Modellen antar nu i stället att
+// varje pott alltid tas ut livsvarigt (självannuitiserat till
+// horisontåldern), startandes exakt vid den kandiderade pensionsåldern. Det
+// är en enklare, mindre exakt modell för den som faktiskt har en tecknad
+// tidsbegränsad utbetalning, dokumenterat som en avvikelse i "vad den inte
+// gör" i stället för dolt.
 
-// En rad är en tjänstepension eller ett privat/ISK-sparande (aldrig allmän
-// pension, den räknas separat via globals nedan eftersom den inte är en
-// kapitalpott utan en delningstalsprognos). Formen:
-//   { kind: 1|2, mode: 0|1, cap, mon, refage, start, years, liv, flex,
-//     minstart, contrib }
-// kind: 1 tjänste, 2 privat. mode: 0 kapital känt, 1 månadsbelopp känt.
-// liv/flex: 0/1-flaggor. contrib: kr/mån, avsättning fram till start,
-// endast för mode 0.
+// ---------- de två potterna ----------
 
-// När en rad faktiskt betalar ut, givet den kandiderade pensionsåldern A.
-function rowWindow(row, A) {
-  const start = row.flex ? Math.max(A, row.minstart) : row.start;
-  const end = row.liv ? Infinity : start + row.years;
-  return { start: start, end: end };
-}
+// En pott är antingen tjänstepension eller privat/ISK-sparande, alltid
+// kapital känt (se filhuvudet 2026-08-19: ett känt-månadsbelopp-läge fanns
+// tidigare men gav inget en läsare inte redan kan göra genom att lägga in
+// motsvarande kapital, ren komplexitet utan en fråga den besvarade). Formen:
+//   { cap }
+const POTS = [
+  { id: "tjp", title: "Tjänstepension" },
+  { id: "priv", title: "Privat/ISK-sparande" }
+];
 
-// Bruttobelopp per månad från en enskild rad vid en given ålder, för en
-// given kandiderad pensionsålder A (som avgör när en flex-rad startar och,
-// via ackumuleringstiden till start, hur stort kapitalet hinner bli).
-function rowGrossMonthly(row, globals, A, age) {
-  const w = rowWindow(row, A);
-  if (age < w.start || age >= w.end) return 0;
-
-  if (row.mode === 1) {
-    // Känt månadsbelopp, giltigt bara vid row.refage. Att flexa starten bär
-    // beloppet ojusterat, en dokumenterad förenkling (se "vad den inte gör").
-    return row.mon;
-  }
-
-  const yearsToStart = Math.max(0, w.start - globals.currentAge);
-  const capitalAtStart = growCapitalWithContrib(row.cap, row.contrib || 0, globals.realReturn, yearsToStart);
-  if (row.liv) {
-    return monthlyFromCapitalLifelong(capitalAtStart, globals.realReturn, w.start, globals.horizonAge);
-  }
-  return monthlyFromCapital(capitalAtStart, globals.realReturn, row.years * 12);
+// Bruttobelopp per månad från en pott, givet den kandiderade pensionsåldern
+// A. pot.cap är kapitalet VID A, inte idag: Daniel (2026-08-19) påpekade att
+// frågan alltid handlar om vad man har när man går i pension, så
+// nuvarande ålder är irrelevant för den här beräkningen. En tidigare version
+// tog kapitalet som "idag" och räknade upp det med realReturn fram till A,
+// vilket i onödan kopplade in currentAge i en fråga som inte behöver den:
+// den som vill uppskatta ett framtida kapital från ett nuvarande gör det
+// själv (till exempel med Ränta på ränta) och skriver in resultatet här,
+// precis som "Allmän pension enligt prognos" redan är en prognos vid en
+// vald ålder, inte ett dagens-saldo. Konstant över hela kurvan: potten är
+// alltid livsvarig och startar exakt vid A.
+function potGrossMonthly(pot, globals, A) {
+  return monthlyFromCapitalLifelong(pot.cap, globals.realReturn, A, globals.horizonAge);
 }
 
 // Allmän pension vid en given ålder, givet den kandiderade pensionsåldern A:
@@ -76,16 +75,16 @@ function allmanGrossMonthly(globals, A, age) {
 }
 
 // Inkomstkurvan från den kandiderade pensionsåldern A till globals.maxAge,
-// ett värde per beskattningsår (ageAtYearStart = heltalsålder). Det är
-// exakt den här kurvan som har "klippan" när en tidsbegränsad utbetalning
-// tar slut, eftersom varje källa håller sitt eget fönster.
-function incomeCurve(rows, globals, A) {
+// ett värde per beskattningsår (ageAtYearStart = heltalsålder). Potterna är
+// konstanta över kurvan (se potGrossMonthly), allmän pension och skatten
+// rör sig med åldern.
+function incomeCurve(pots, globals, A) {
   const firstYear = Math.floor(A);
+  const potMonthly = pots.map((pot) => potGrossMonthly(pot, globals, A));
   const curve = [];
   for (let age = firstYear; age <= globals.maxAge; age++) {
-    const grossPerSource = rows.map((row) => rowGrossMonthly(row, globals, A, age));
     const grossAllman = allmanGrossMonthly(globals, A, age);
-    const grossMonthly = grossAllman + grossPerSource.reduce((s, v) => s + v, 0);
+    const grossMonthly = grossAllman + potMonthly.reduce((s, v) => s + v, 0);
     const grossYearly = grossMonthly * 12;
     const skatt = inkomstskattPension({
       yearly: grossYearly,
@@ -97,7 +96,7 @@ function incomeCurve(rows, globals, A) {
     curve.push({
       age: age,
       grossAllman: grossAllman,
-      grossPerSource: grossPerSource,
+      grossPerPot: potMonthly,
       grossYearly: grossYearly,
       netYearly: skatt.netYearly,
       netMonthly: skatt.netYearly / 12
@@ -106,133 +105,83 @@ function incomeCurve(rows, globals, A) {
   return curve;
 }
 
-// ---------- de två villkoren ----------
+// ---------- villkoret ----------
 //
-// 1. Golvet: nettot får aldrig understiga floor.
-// 2. Fallet: nettot får aldrig falla under (1-dropTol) av startnivån.
-// Båda rapporteras separat, eftersom VARFÖR en ålder underkänns är det
-// användbara: "för lite direkt" är ett annat problem än "håller inte efter
-// klippan vid 75".
-function evaluate(curve, floor, dropTol) {
+// Golvet: nettot får aldrig understiga floor, hela vägen till kurvans
+// slutålder. Utan tidsbegränsade potter finns ingen klippa längre (se filens
+// header), men kurvan kontrolleras ändå hela vägen i stället för att bara
+// lita på att den råkar vara stigande: en framtida ändring av modellen ska
+// inte tyst tappa skyddet.
+function evaluate(curve, floor) {
   const startNet = curve[0].netMonthly;
   let minNet = Infinity;
   let minAtAge = curve[0].age;
-  let cliffAge = null;
-  let cliffDropKr = 0;
   for (let i = 0; i < curve.length; i++) {
     if (curve[i].netMonthly < minNet) {
       minNet = curve[i].netMonthly;
       minAtAge = curve[i].age;
     }
-    if (i > 0) {
-      const drop = curve[i - 1].netMonthly - curve[i].netMonthly;
-      if (drop > cliffDropKr) {
-        cliffDropKr = drop;
-        cliffAge = curve[i].age;
-      }
-    }
   }
   const okFloor = curve.every((c) => c.netMonthly >= floor);
-  const dropFloor = (1 - dropTol) * startNet;
-  const okDrop = curve.every((c) => c.netMonthly >= dropFloor);
-  const worstDropPct = startNet > 0 ? 1 - minNet / startNet : 0;
   return {
     startNet: startNet,
     minNet: minNet,
     minAtAge: minAtAge,
     okFloor: okFloor,
-    okDrop: okDrop,
-    ok: okFloor && okDrop,
-    worstDropPct: worstDropPct,
-    cliffAge: cliffAge,
-    cliffDropKr: cliffDropKr
+    ok: okFloor
   };
 }
 
-// ---------- sökningen ----------
+// ---------- kapitalbehovet ----------
 //
-// Linjär skanning i enmånadssteg, INTE binärsökning: uppfyllbarheten är
-// bevisbart icke-monoton i A (en icke-flexibel rads fasta startålder,
-// delningstalskurvan och förhöjt-grundavdrag-steget kan alla göra en äldre
-// kandidat sämre än en yngre). Se testet
-// "uppfyllbarheten är inte monoton" i test/scenarios.mjs, det är skälet
-// den här inte får bli en binärsökning i en framtida "optimering".
-function searchEarliest(rows, globals) {
-  const map = [];
-  const stepMonths = 1;
-  const startCents = Math.round(globals.minSearchAge * 12);
-  const endCents = Math.round(globals.maxSearchAge * 12);
-  for (let m = startCents; m <= endCents; m += stepMonths) {
-    const A = m / 12;
-    const curve = incomeCurve(rows, globals, A);
-    const ev = evaluate(curve, globals.floor, globals.dropTol);
-    map.push({
-      age: A,
-      ok: ev.ok,
-      okFloor: ev.okFloor,
-      okDrop: ev.okDrop,
-      // Den naiva golvtesten är bara FÖRSTA årets nettobelopp mot golvet,
-      // exakt det en engångsprognos (minPension vid en vald ålder) visar.
-      // ev.okFloor prövar golvet över HELA kurvan (rätt för det ärliga
-      // villkoret, se evaluate()), men skulle den återanvändas här hade
-      // "naiv" tyst blivit "golvet håller för alltid, fallet struntar vi i"
-      // i stället för "bara det första året räknas", planens definition.
-      okFloorFirstYear: curve[0].netMonthly >= globals.floor,
-      startNet: ev.startNet,
-      minNet: ev.minNet,
-      minAtAge: ev.minAtAge
-    });
+// 2026-08-20: appen körde tidigare en sekundär "sök nedåt efter lägsta
+// pensionsålder"-fråga (`searchEarliest`, en uppfyllbarhetsremsa, en egen
+// rubrik) vid sidan av den direkta frågan nedan. Daniel strök den: "vem
+// kommer vilja skruva på Självannuitiseringshorisont? slutålder?" var
+// startskottet för att inse att sökrutan (minSearchAge/maxSearchAge) och
+// hela sök-maskineriet bara var kvarleva från planens ursprungliga skiss,
+// och att den faktiska frågan alltid varit den direkta: vid min planerade
+// ålder, hur stort måste mitt sammanlagda kapital vara. Två potter som är
+// livsvariga och startar exakt vid A ger samma sammanlagda netto oavsett hur
+// ett givet totalkapital delas mellan dem (se testet "en storhet, ett tal
+// för potterna"), så frågan reduceras till EN variabel, oberoende av hur
+// kapitalet faktiskt är fördelat mellan tjänstepensionen och privat/ISK.
+
+// Nettot vid start om det sammanlagda kapitalet vore totalCap.
+function netAtCapital(globals, A, totalCap) {
+  return incomeCurve([{ id: "solve", cap: totalCap }], globals, A)[0].netMonthly;
+}
+
+// Lägsta sammanlagda kapital som håller golvet vid A, med bisektion: nettot
+// är monotont icke-avtagande i kapitalet (mer kapital ger mer
+// bruttoinkomst, och även en progressiv skatt sänker aldrig nettot när
+// bruttot stiger), så bisektionen är giltig även om ingen sluten form är
+// värd att härleda ur den fulla grundavdragsbrakettabellen. Returnerar 0 om
+// golvet redan hålls utan något kapital alls (allmän pension räcker), null
+// om inget kapital inom ett rimligt tak räcker.
+function requiredCapitalForFloor(globals, A, floor) {
+  if (netAtCapital(globals, A, 0) >= floor) return 0;
+  let hi = 100000;
+  while (netAtCapital(globals, A, hi) < floor) {
+    hi *= 2;
+    if (hi > 1e9) return null;
   }
-  const firstOk = map.find((r) => r.ok);
-  const firstNaiveOk = map.find((r) => r.okFloorFirstYear);
-  return {
-    earliest: firstOk ? firstOk.age : null,
-    earliestNaive: firstNaiveOk ? firstNaiveOk.age : null,
-    map: map
-  };
+  let lo = 0;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (netAtCapital(globals, A, mid) >= floor) hi = mid;
+    else lo = mid;
+  }
+  return hi;
+}
+
+function totalCapital(pots) {
+  return pots.reduce((s, p) => s + p.cap, 0);
 }
 
 // ---------- globala kontroller (situation + ärlighetsknappar) ----------
-//
-// "rows" är en strukturell kontroll, inte en ärlighetsknapp: den styr hur
-// många av de MAX_ROWS radkorten som räknas som aktiva, se "rader" nedan.
-// Presets sätter den (radsettet är ett situationsfaktum), men den är inte i
-// listan över knappar presets aldrig får röra.
-const MAX_ROWS = 6;
 
 const CONTROLS = [
-  {
-    id: "currentAge",
-    group: "situation",
-    label: "Din ålder nu",
-    unit: "år",
-    min: 40,
-    max: 75,
-    step: 1,
-    value: 50
-  },
-  {
-    id: "income",
-    group: "situation",
-    label: "Årslön nu",
-    unit: "kr",
-    min: 0,
-    max: 1200000,
-    step: 10000,
-    value: 480000,
-    hint: "Används för allmän pensions bortfallsberäkning och brytpunkten, inte för skatten på pensionen."
-  },
-  {
-    id: "rows",
-    group: "situation",
-    label: "Antal pensionsrader",
-    unit: "st",
-    min: 1,
-    max: MAX_ROWS,
-    step: 1,
-    value: 3,
-    hint: "Tjänstepensioner och privat/ISK-sparande, en rad per källa. Allmän pension räknas separat ovan."
-  },
   {
     id: "floor",
     group: "situation",
@@ -242,7 +191,18 @@ const CONTROLS = [
     max: 40000,
     step: 500,
     value: 15000,
-    hint: "Det är X i frågan: nettot per månad får aldrig understiga detta, hela vägen till maxåldern."
+    hint: 'Det är X i frågan: nettot per månad får aldrig understiga detta, hela vägen till maxåldern. Knappen "Sätt till dagens nettolön" nedan ger en utgångspunkt.'
+  },
+  {
+    id: "plannedAge",
+    group: "situation",
+    label: "Planerad pensionsålder",
+    unit: "år",
+    min: 55,
+    max: 75,
+    step: 1,
+    value: 65,
+    hint: "Åldern du siktar på att sluta jobba. Kapitalet du behöver nedan räknas fram för just den här åldern."
   },
   {
     id: "allmanMonthly",
@@ -267,37 +227,50 @@ const CONTROLS = [
     hint: "Åldern prognosen ovan gäller för. Flyttas till andra åldrar med delningstalskvoten."
   },
   {
+    id: "income",
+    group: "situation",
+    label: "Årslön nu",
+    unit: "kr",
+    min: 0,
+    max: 1200000,
+    step: 10000,
+    value: 480000,
+    hint: "Bara till för att prissätta bortfallet av att sluta innan allmän pensions prognosålder ovan: uteblivna års pensionsrätt. Inte skatten på pensionen."
+  },
+  {
+    id: "currentAge",
+    group: "basis",
+    label: "Din ålder nu",
+    unit: "år",
+    min: 40,
+    max: 75,
+    step: 1,
+    value: 50,
+    hint: 'Bara referenspunkten för "dagens kronor" i basväljaren nedan, rör inget annat i beräkningen.'
+  },
+  {
     id: "inflation",
     group: "honesty",
+    hostOverride: "basis-age",
     label: "Inflation (KPI)",
     unit: "%",
     min: 0,
     max: 8,
     step: 0.1,
     value: 2,
-    hint: "Riksbankens mål är 2 %. Används bara för att räkna om till nominella kronor i basväljaren."
+    hint: 'Bara till för basväljarens "Nominellt", Riksbankens mål 2 %. Rör inget annat i beräkningen.'
   },
   {
     id: "drift",
     group: "honesty",
+    hostOverride: "basis-age",
     label: "Standardglidning",
     unit: "%",
     min: 0,
     max: 3,
     step: 0.1,
     value: 1,
-    hint: "Det KPI inte fångar: att normal standard flyttar sig uppåt. Samma default som Ränta på ränta."
-  },
-  {
-    id: "dropTol",
-    group: "honesty",
-    label: "Falltolerans",
-    unit: "%",
-    min: 5,
-    max: 50,
-    step: 1,
-    value: 20,
-    hint: "Hur mycket nettot får sjunka under startnivån innan det räknas som ett fall, inte bara en avtrappning."
+    hint: 'Bara till för basväljarens "Livsstilsjusterat": att normal standard flyttar sig uppåt. Rör inget annat i beräkningen.'
   },
   {
     id: "realReturn",
@@ -319,38 +292,7 @@ const CONTROLS = [
     max: 100,
     step: 1,
     value: 90,
-    hint: 'Åldern en livsvarig kapitalpott antas räcka till. Ingen dödlighetspoolning, se "vad den inte gör".'
-  },
-  {
-    id: "maxAge",
-    group: "honesty",
-    label: "Kurvans slutålder",
-    unit: "år",
-    min: 80,
-    max: 105,
-    step: 1,
-    value: 95,
-    hint: "Hur långt golv- och fallvillkoret prövas. Sätt den högre än du tror du behöver, inte lägre."
-  },
-  {
-    id: "minSearchAge",
-    group: "honesty",
-    label: "Sökning: lägsta ålder",
-    unit: "år",
-    min: 55,
-    max: 70,
-    step: 1,
-    value: 60
-  },
-  {
-    id: "maxSearchAge",
-    group: "honesty",
-    label: "Sökning: högsta ålder",
-    unit: "år",
-    min: 65,
-    max: 80,
-    step: 1,
-    value: 72
+    hint: 'Åldern kapitalpotterna antas räcka till. Ingen dödlighetspoolning, se "vad den inte gör".'
   },
   {
     id: "pbb",
@@ -398,89 +340,53 @@ const CONTROLS = [
   }
 ];
 
-// Varje fält en pensionsrad kan ha, samma id-mönster för alla MAX_ROWS
-// radkort: p{i}kind, p{i}mode, ... En rad är alltid tjänste (1) eller
-// privat/ISK (2), aldrig allmän pension (kind 0), det räknas via CONTROLS
-// ovan (allmanMonthly/allmanRefAge/income) i stället för som en radtyp,
-// eftersom allmän pension inte är en kapitalpott utan en delningstalsprognos.
-// Det är appens tolkning av planens "rad 0 är alltid kind 0, kan inte tas
-// bort": den fasta allmän-pensions-blocket ÄR rad 0, aldrig en genererad
-// p0-kontroll, så den kan strukturellt inte tas bort.
-function rowFieldSpecs(i) {
-  const p = "p" + i;
+// Varje fält en pott har, samma id-mönster för de två fasta potterna:
+// tjpcap, tjpmon, ... privcap, privmon, ... Ingen "kind"-väljare längre: de
+// två potterna ÄR typen, ingen dynamisk lista av rader att typa om.
+function potFieldSpecs(potId) {
   return [
-    { id: p + "kind", label: "Typ", unit: "1=tjänste, 2=privat/ISK", min: 1, max: 2, step: 1, value: 1 },
-    { id: p + "mode", label: "Vad som är känt", unit: "0=kapital känt, 1=månadsbelopp känt", min: 0, max: 1, step: 1, value: 0 },
-    { id: p + "cap", label: "Kapital", unit: "kr", min: 0, max: 5000000, step: 10000, value: 300000 },
-    { id: p + "mon", label: "Månadsbelopp", unit: "kr/mån", min: 0, max: 50000, step: 100, value: 0 },
-    { id: p + "refage", label: "...vid den åldern", unit: "år", min: 55, max: 80, step: 1, value: 65 },
-    { id: p + "start", label: "Startålder", unit: "år", min: 55, max: 80, step: 1, value: 65 },
-    { id: p + "years", label: "Antal år den betalas ut", unit: "år", min: 0, max: 30, step: 1, value: 10 },
-    { id: p + "liv", label: "Livsvarig", unit: "0=nej, 1=ja", min: 0, max: 1, step: 1, value: 0 },
-    { id: p + "flex", label: "Startar när jag går i pension", unit: "0=nej, 1=ja", min: 0, max: 1, step: 1, value: 1 },
-    { id: p + "minstart", label: "Tidigast startålder", unit: "år", min: 55, max: 80, step: 1, value: 60 },
-    { id: p + "contrib", label: "Fortsatt avsättning fram till start", unit: "kr/mån", min: 0, max: 20000, step: 100, value: 0 }
+    {
+      id: potId + "cap",
+      label: "Kapital vid pensionen",
+      unit: "kr",
+      min: 0,
+      max: 8000000,
+      step: 10000,
+      value: potId === "tjp" ? 1200000 : 0,
+      hint: "Vad du väntas ha VID den planerade pensionsåldern nedan, inte vad du har idag. Räkna upp ett nu-belopp själv om du utgår från ett."
+    }
   ];
 }
 
-function rowControlSpecs(n) {
-  const out = [];
-  for (let i = 1; i <= n; i++) out.push.apply(out, rowFieldSpecs(i));
-  return out;
-}
+const ALL_POT_CONTROLS = POTS.reduce((out, pot) => out.concat(potFieldSpecs(pot.id)), []);
 
-// Kontroller för URL-LÄSNING täcker alltid alla MAX_ROWS radkort, så en länk
-// byggd av en app med fler rader tolkas korrekt av en med färre (varje
-// utelämnad p{i}xxx faller tillbaka på sitt eget default). Kontroller för
-// URL-SKRIVNING täcker bara de just nu aktiva raderna, så en dold rads gamla
-// värden aldrig läcker in i en delad länk (privacy).
-const ALL_ROW_CONTROLS = rowControlSpecs(MAX_ROWS);
-
-function activeControls(rowsCount) {
-  return CONTROLS.concat(rowControlSpecs(rowsCount));
+function activeControls() {
+  return CONTROLS.concat(ALL_POT_CONTROLS);
 }
 
 // ---------- presets ----------
 //
 // Situationer, aldrig ärlighetsknappar (regel i finance/CLAUDE.md och i
-// planen): realReturn, horizonAge, maxAge, dropTol, pbb, ibb, kommunalskatt,
-// skiktgrans, minSearchAge/maxSearchAge rörs aldrig här. Syntetiska, runda
+// planen): realReturn, horizonAge, inflation, drift, pbb, ibb, kommunalskatt,
+// skiktgrans rörs aldrig här, oavsett var de fysiskt visas (inflation/drift
+// bor i basis-raden men är fortfarande ärlighetsknappar, se hostOverride).
+// Syntetiska, runda
 // belopp, generiska etiketter, aldrig Daniels riktiga institutioner eller
-// belopp (se personuppgifts-avsnittet i planen).
+// belopp (se personuppgifts-avsnittet i planen). Verifierade mot faktiskt
+// sökresultat (test/scenarios.mjs), inte mot ögonmått.
 const PRESETS = [
   {
-    name: "Anställd, tre tjänstepensioner, en tidsbegränsad",
+    name: "Anställd, tjänstepension och lite eget sparande",
     v: {
       currentAge: 50,
       income: 450000,
       floor: 15000,
+      plannedAge: 65,
       allmanMonthly: 9000,
       allmanRefAge: 65,
-      rows: 3,
-      p1kind: 1,
-      p1mode: 0,
-      p1cap: 200000,
-      p1liv: 1,
-      p1flex: 1,
-      p1minstart: 63,
-      p1contrib: 0,
-      p2kind: 1,
-      p2mode: 1,
-      p2mon: 14000,
-      p2refage: 63,
-      p2liv: 0,
-      p2flex: 0,
-      p2start: 63,
-      p2years: 5,
-      p3kind: 1,
-      p3mode: 0,
-      p3cap: 200000,
-      p3liv: 1,
-      p3flex: 1,
-      p3minstart: 63,
-      p3contrib: 2000
-    },
-    labels: ["Tjänstepension A, livsvarig", "Tjänstepension B, tidsbegränsad 5 år", "Tjänstepension C, livsvarig"]
+      tjpcap: 2000000,
+      privcap: 700000
+    }
   },
   {
     name: "Bara allmän pension och en liten tjänstepension",
@@ -488,64 +394,38 @@ const PRESETS = [
       currentAge: 55,
       income: 300000,
       floor: 9000,
+      plannedAge: 65,
       allmanMonthly: 9000,
       allmanRefAge: 65,
-      rows: 1,
-      p1kind: 1,
-      p1mode: 0,
-      p1cap: 150000,
-      p1liv: 1,
-      p1flex: 1,
-      p1minstart: 64,
-      p1contrib: 0
-    },
-    labels: ["Liten tjänstepension, livsvarig"]
+      tjpcap: 700000,
+      privcap: 0
+    }
   },
   {
-    name: "Stort privat kapital, kort utbetalningstid",
+    name: "Stort privat kapital, tidig pension",
     v: {
       currentAge: 50,
       income: 400000,
-      floor: 11000,
+      floor: 15000,
+      plannedAge: 58,
       allmanMonthly: 10000,
       allmanRefAge: 65,
-      rows: 1,
-      p1kind: 2,
-      p1mode: 0,
-      p1cap: 3000000,
-      p1liv: 0,
-      p1flex: 0,
-      p1start: 60,
-      p1years: 3,
-      p1contrib: 0
-    },
-    labels: ["Stort privat kapital, 3 år"]
+      tjpcap: 300000,
+      privcap: 6000000
+    }
   },
   {
-    name: "Allt livsvarigt",
+    name: "Vill sluta vid 62, saknar kapital ännu",
     v: {
-      currentAge: 55,
+      currentAge: 50,
       income: 400000,
       floor: 16000,
+      plannedAge: 62,
       allmanMonthly: 11000,
       allmanRefAge: 65,
-      rows: 2,
-      p1kind: 1,
-      p1mode: 0,
-      p1cap: 500000,
-      p1liv: 1,
-      p1flex: 1,
-      p1minstart: 61,
-      p1contrib: 0,
-      p2kind: 2,
-      p2mode: 0,
-      p2cap: 300000,
-      p2liv: 1,
-      p2flex: 1,
-      p2minstart: 61,
-      p2contrib: 0
-    },
-    labels: ["Tjänstepension, livsvarig", "Privat/ISK, livsvarig"]
+      tjpcap: 1500000,
+      privcap: 1000000
+    }
   }
 ];
 
@@ -617,234 +497,58 @@ function setControl(id, value) {
   if (!store) return;
   const c = store.spec;
   const v = Math.min(c.max, Math.max(c.min, value));
-  // Radens kind/mode/liv/flex-fält har ett <select>/checkbox-adapter i
-  // stället för slider+textfält (se buildRowCard), och saknar därför rng.
-  store.num.value = store.rng ? fieldText(c, v) : String(Math.round(v));
-  if (store.rng) store.rng.value = valueToSlider(c, v);
+  store.num.value = fieldText(c, v);
+  store.rng.value = valueToSlider(c, v);
 }
 
-// ---------- rader: MAX_ROWS radkort, bara "rows" av dem är aktiva ----------
-//
-// Alla MAX_ROWS korten finns i DOM:en hela tiden, bara dolda: att ta bort en
-// rad och sen lägga tillbaka den återställer alltså vad man senast skrev in,
-// i stället för att nollställa den. "Aktiv" avgörs enbart av rows-kontrollen.
+// ---------- de två fasta pottkorten ----------
 
-const ROW_LABELS_DEFAULT = [];
-for (let i = 1; i <= MAX_ROWS; i++) ROW_LABELS_DEFAULT.push("Rad " + i);
-let rowLabels = ROW_LABELS_DEFAULT.slice();
-
-const ROW_FIELD_HOST_FIELDS = ["cap", "contrib", "mon", "refage", "start", "minstart", "years"];
-
-function buildRowCard(i) {
-  const host = document.getElementById("rows-host");
-  const specs = rowFieldSpecs(i);
-  const byField = {};
-  specs.forEach((s) => (byField[s.id.replace("p" + i, "")] = s));
+function buildPotCard(pot) {
+  const host = document.getElementById("pots-host");
+  const specs = potFieldSpecs(pot.id);
 
   const card = document.createElement("div");
   card.className = "row-card";
-  card.dataset.row = String(i);
+  card.dataset.pot = pot.id;
   card.innerHTML =
-    '<div class="row-head">' +
-    '<input type="text" class="row-label" id="p' +
-    i +
-    'label" value="' +
-    rowLabels[i - 1] +
-    '" aria-label="Radens namn" />' +
-    '<select class="row-kind" id="p' +
-    i +
-    'kind" aria-label="Typ av pensionskälla">' +
-    '<option value="1">Tjänstepension</option><option value="2">Privat/ISK-sparande</option>' +
-    "</select>" +
-    '<button type="button" class="row-remove" data-row="' +
-    i +
-    '">Ta bort rad</button>' +
-    "</div>" +
-    '<div class="row-toggles">' +
-    '<select class="row-mode" id="p' +
-    i +
-    'mode" aria-label="Vad som är känt">' +
-    '<option value="0">Kapital känt</option><option value="1">Månadsbelopp känt</option>' +
-    "</select>" +
-    '<label><input type="checkbox" class="row-liv" id="p' +
-    i +
-    'liv" /> Livsvarig</label>' +
-    '<label><input type="checkbox" class="row-flex" id="p' +
-    i +
-    'flex" checked /> Startar när jag går i pension</label>' +
-    "</div>" +
-    '<div class="controls row-fields" id="p' +
-    i +
+    '<div class="row-head"><span class="row-label">' +
+    pot.title +
+    '</span></div><div class="controls row-fields" id="' +
+    pot.id +
     'fields"></div>';
   host.appendChild(card);
 
-  buildControlsInto(
-    card.querySelector("#p" + i + "fields"),
-    ROW_FIELD_HOST_FIELDS.map((f) => byField[f]),
-    el
-  );
-
-  const kindSel = card.querySelector(".row-kind");
-  const modeSel = card.querySelector(".row-mode");
-  const livCb = card.querySelector(".row-liv");
-  const flexCb = card.querySelector(".row-flex");
-  const labelInput = card.querySelector(".row-label");
-
-  // kind/mode/liv/flex läses via en liten adapter, inte via
-  // buildControlsInto: en 1-2-slider är en sämre widget för en typ-väljare
-  // än ett <select>, men parseUrlValues/buildUrlQuery bryr sig bara om ett
-  // id och ett numeriskt värde, aldrig om vilken DOM-nod som äger det.
-  el["p" + i + "kind"] = {
-    num: {
-      get value() {
-        return kindSel.value;
-      },
-      set value(v) {
-        kindSel.value = v;
-      }
-    },
-    spec: byField.kind
-  };
-  el["p" + i + "mode"] = {
-    num: {
-      get value() {
-        return modeSel.value;
-      },
-      set value(v) {
-        modeSel.value = v;
-      }
-    },
-    spec: byField.mode
-  };
-  el["p" + i + "liv"] = {
-    num: {
-      get value() {
-        return livCb.checked ? "1" : "0";
-      },
-      set value(v) {
-        livCb.checked = v === "1" || v === 1;
-      }
-    },
-    spec: byField.liv
-  };
-  el["p" + i + "flex"] = {
-    num: {
-      get value() {
-        return flexCb.checked ? "1" : "0";
-      },
-      set value(v) {
-        flexCb.checked = v === "1" || v === 1;
-      }
-    },
-    spec: byField.flex
-  };
-
-  const updateVisibility = () => {
-    const mode = modeSel.value === "1" ? 1 : 0;
-    const liv = livCb.checked;
-    const flex = flexCb.checked;
-    card.querySelector('[data-field="p' + i + 'cap"]').classList.toggle("hidden", mode !== 0);
-    card.querySelector('[data-field="p' + i + 'contrib"]').classList.toggle("hidden", mode !== 0);
-    card.querySelector('[data-field="p' + i + 'mon"]').classList.toggle("hidden", mode !== 1);
-    card.querySelector('[data-field="p' + i + 'refage"]').classList.toggle("hidden", mode !== 1);
-    card.querySelector('[data-field="p' + i + 'years"]').classList.toggle("hidden", liv);
-    card.querySelector('[data-field="p' + i + 'start"]').classList.toggle("hidden", flex);
-    card.querySelector('[data-field="p' + i + 'minstart"]').classList.toggle("hidden", !flex);
-  };
-  updateVisibility();
-  card._updateVisibility = updateVisibility;
-
-  kindSel.addEventListener("change", schedule);
-  modeSel.addEventListener("change", () => {
-    updateVisibility();
-    schedule();
-  });
-  livCb.addEventListener("change", () => {
-    updateVisibility();
-    schedule();
-  });
-  flexCb.addEventListener("change", () => {
-    updateVisibility();
-    schedule();
-  });
-  labelInput.addEventListener("input", () => {
-    rowLabels[i - 1] = labelInput.value;
-  });
-  card.querySelector(".row-remove").addEventListener("click", () => {
-    const n = Math.round(readControlValue("rows"));
-    if (n <= 1) return;
-    // "Ta bort" på rad i flyttar de aktiva raderna ovanför ihop, precis som
-    // att dra ur en byrålåda: det är enklare att förstå än att hålla reda på
-    // vilket kortnummer som råkar vara ledigt.
-    for (let k = i; k < n; k++) copyRowValues(k + 1, k);
-    setControl("rows", n - 1);
-    updateRowsVisibility();
-    schedule();
-  });
+  buildControlsInto(card.querySelector("#" + pot.id + "fields"), specs, el);
 
   return card;
 }
 
-function copyRowValues(from, to) {
-  ["kind", "mode", "cap", "mon", "refage", "start", "years", "liv", "flex", "minstart", "contrib"].forEach((f) => {
-    const src = el["p" + from + f];
-    if (src) setControl("p" + to + f, parseField(String(src.num.value)));
-  });
-  rowLabels[to - 1] = rowLabels[from - 1];
-  const lbl = document.getElementById("p" + to + "label");
-  if (lbl) lbl.value = rowLabels[to - 1];
+function potsFromState() {
+  return POTS.map((pot) => ({
+    id: pot.id,
+    cap: readControlValue(pot.id + "cap")
+  }));
 }
 
-function updateRowsVisibility() {
-  const n = Math.round(readControlValue("rows"));
-  for (let i = 1; i <= MAX_ROWS; i++) {
-    const card = document.querySelector('.row-card[data-row="' + i + '"]');
-    if (!card) continue;
-    card.classList.toggle("hidden", i > n);
-    const removeBtn = card.querySelector(".row-remove");
-    if (removeBtn) removeBtn.disabled = n <= 1;
-  }
-  const addBtn = document.getElementById("row-add");
-  if (addBtn) addBtn.disabled = n >= MAX_ROWS;
-}
-
-function rowsFromState() {
-  const n = Math.round(readControlValue("rows"));
-  const rows = [];
-  for (let i = 1; i <= n; i++) {
-    rows.push({
-      kind: Math.round(readControlValue("p" + i + "kind")),
-      mode: Math.round(readControlValue("p" + i + "mode")),
-      cap: readControlValue("p" + i + "cap"),
-      mon: readControlValue("p" + i + "mon"),
-      refage: readControlValue("p" + i + "refage"),
-      start: readControlValue("p" + i + "start"),
-      years: readControlValue("p" + i + "years"),
-      liv: Math.round(readControlValue("p" + i + "liv")),
-      flex: Math.round(readControlValue("p" + i + "flex")),
-      minstart: readControlValue("p" + i + "minstart"),
-      contrib: readControlValue("p" + i + "contrib") || 0,
-      label: rowLabels[i - 1]
-    });
-  }
-  return rows;
-}
+// Hur långt golvvillkoret prövas. Var tidigare en egen ärlighetsknapp
+// ("Kurvans slutålder"), struken 2026-08-20: ingen läsare hade en åsikt om
+// den, bara om horisonten pengarna faktiskt ska räcka till. maxAge sätts nu
+// till horisonten plus en marginal, aldrig kortare än horisonten själv.
+const CURVE_END_MARGIN_YEARS = 10;
 
 function globalsFromState() {
+  const horizonAge = readControlValue("horizonAge");
   return {
     currentAge: readControlValue("currentAge"),
     income: readControlValue("income"),
     floor: readControlValue("floor"),
     allmanMonthly: readControlValue("allmanMonthly"),
     allmanRefAge: readControlValue("allmanRefAge"),
-    dropTol: readControlValue("dropTol") / 100,
     inflation: readControlValue("inflation") / 100,
     drift: readControlValue("drift") / 100,
     realReturn: readControlValue("realReturn") / 100,
-    horizonAge: readControlValue("horizonAge"),
-    maxAge: readControlValue("maxAge"),
-    minSearchAge: readControlValue("minSearchAge"),
-    maxSearchAge: readControlValue("maxSearchAge"),
+    horizonAge: horizonAge,
+    maxAge: horizonAge + CURVE_END_MARGIN_YEARS,
     pbb: readControlValue("pbb"),
     ibb: readControlValue("ibb"),
     kommunalskatt: readControlValue("kommunalskatt") / 100,
@@ -856,7 +560,6 @@ function globalsFromState() {
 // ---------- ålder som text ----------
 
 function ageStr(a) {
-  if (a === null || !isFinite(a)) return "aldrig inom sökintervallet";
   const years = Math.floor(a);
   const months = Math.round((a - years) * 12);
   const y2 = months === 12 ? years + 1 : years;
@@ -867,18 +570,7 @@ function ageStr(a) {
 // ---------- presets ----------
 
 function applyPreset(preset) {
-  // rows sist av CONTROLS-nycklarna, men det spelar ingen roll här: alla
-  // MAX_ROWS radkort finns redan i DOM:en, bara synligheten ändras.
   Object.keys(preset.v).forEach((id) => setControl(id, preset.v[id]));
-  const n = Math.round(readControlValue("rows"));
-  for (let i = 1; i <= MAX_ROWS; i++) {
-    rowLabels[i - 1] = i <= n && preset.labels && preset.labels[i - 1] ? preset.labels[i - 1] : "Rad " + i;
-    const lbl = document.getElementById("p" + i + "label");
-    if (lbl) lbl.value = rowLabels[i - 1];
-    const card = document.querySelector('.row-card[data-row="' + i + '"]');
-    if (card && card._updateVisibility) card._updateVisibility();
-  }
-  updateRowsVisibility();
 }
 
 function buildPresets(hostId, list) {
@@ -939,14 +631,10 @@ function setBasis(b) {
   document.querySelectorAll("#basis button").forEach((o) => o.classList.toggle("active", o.dataset.basis === b));
 }
 
-// ---------- rader att räkna på, färger ----------
+// ---------- serier, färger ----------
 
-const ROW_COLORS = ["#4a7cff", "#3f9a6a", "#c99a3f", "#b5495b", "#8a5fd6", "#3fb0b0"];
+const POT_COLORS = ["#4a7cff", "#3f9a6a"];
 const ALLMAN_COLOR = "#6b9bff";
-
-function rowLabelOrDefault(row, i) {
-  return row.label && row.label.trim() ? row.label : "Rad " + (i + 1);
-}
 
 // ---------- statistikrader ----------
 
@@ -964,50 +652,76 @@ function statRow(k, v, n, neg) {
   );
 }
 
-// Sista tidsbegränsade utbetalningens slutålder: högsta slutåldern bland
-// rader som INTE är livsvariga, vid den valda pensionsåldern A. null om alla
-// rader är livsvariga, det finns då ingen klippa att visa.
-function lastFixedWindowEnd(rows, A) {
-  let end = null;
-  rows.forEach((row) => {
-    if (row.liv) return;
-    const w = rowWindow(row, A);
-    if (isFinite(w.end) && (end === null || w.end > end)) end = w.end;
-  });
-  return end;
-}
-
 function render() {
   const g = globalsFromState();
-  const rows = rowsFromState();
-  const result = searchEarliest(rows, g);
-  // Om ingen ålder i sökintervallet klarar villkoren finns inget "earliest"
-  // att falla tillbaka på. g.currentAge (din ålder nu) är fel val då: det
-  // låtsas att du redan är pensionär vid din nuvarande ålder, vilket bakar in
-  // åratal av inte-uppburen allmän pension som ett bortfall i kurvan och gör
-  // den obegriplig. g.minSearchAge, sökintervallets egen nedre gräns, visar i
-  // stället den tidigast rimliga kandidaten, så diagrammet och remsan
-  // fortfarande förklarar VARFÖR sökningen misslyckades.
-  const A = viewedAge !== null ? viewedAge : result.earliest !== null ? result.earliest : g.minSearchAge;
-  const curve = incomeCurve(rows, g, A);
-  const ev = evaluate(curve, g.floor, g.dropTol);
+  const pots = potsFromState();
 
-  el.headlineEarliest.textContent = ageStr(result.earliest);
-  el.headlineNaive.textContent = ageStr(result.earliestNaive);
-  const cliffEnd = lastFixedWindowEnd(rows, A);
-  el.headlineNote.textContent = cliffEnd
-    ? "Gapet är åren från " + Math.round(cliffEnd) + " år, när en tidsbegränsad utbetalning tar slut, till maxåldern nettot måste hålla."
-    : "Ingen rad är tidsbegränsad, så det finns ingen klippa: den naiva och den ärliga åldern kan hamna nära varandra.";
+  // Huvudfrågan, direkt: vid den planerade åldern och det kapital du just nu
+  // har angett, hur stor blir månadsinkomsten. Ingen sökning, ingen
+  // bisektion, bara incomeCurve rakt av vid g.plannedAge, så den här siffran
+  // uppdateras live så fort ett kapital- eller ålderreglage dras, precis den
+  // "rattning" appen finns till för. A är alltid den planerade åldern nu:
+  // det fanns tidigare en sekundär "sök nedåt"-fråga med en egen ålder att
+  // titta på, struken 2026-08-20 (se kommentaren vid requiredCapitalForFloor).
+  const A = g.plannedAge;
+  const curve = incomeCurve(pots, g, A);
+  const ev = evaluate(curve, g.floor);
+  const plannedNet = curve[0].netMonthly;
+  el.headlinePlannedAge.textContent = Math.round(g.plannedAge);
+  el.headlineIncome.textContent = kr(plannedNet);
+
+  // Den omvända frågan, som en stat-rad snarare än en rubrik: vid den
+  // planerade åldern, hur stort måste det sammanlagda kapitalet
+  // (tjänstepension + privat/ISK) vara för att hålla golvet. Pot-agnostiskt
+  // med flit (se requiredCapitalForFloor): modellen annuitiserar båda
+  // potterna på exakt samma sätt, så den saknade summan är densamma oavsett
+  // om den läggs i tjänstepensionen eller i privat/ISK.
+  const requiredTotal = requiredCapitalForFloor(g, g.plannedAge, g.floor);
+  const haveTotal = totalCapital(pots);
+  let capitalGapNote;
+  if (requiredTotal === null) {
+    capitalGapNote = "golvet nås inte inom ett rimligt kapitalbelopp";
+  } else {
+    const gapCapital = requiredTotal - haveTotal;
+    capitalGapNote =
+      "behöver " +
+      kr(requiredTotal) +
+      " totalt (du har " +
+      kr(haveTotal) +
+      "), " +
+      (gapCapital > 0 ? "saknar " + kr(gapCapital) : kr(-gapCapital) + " över golvet");
+  }
+
+  // Gapet innan allmän pension tidigast kan tas ut: planerar du att sluta
+  // före LAGSTA_UTTAGSALDER_ALLMAN bär tjänstepensionen/privat/ISK hela
+  // inkomsten själva fram till dess, sedan tillkommer allmän pension. Det är
+  // ingen klippa (åldern är känd i förväg och beloppen är fasta, se
+  // filhuvudet), men en läsare bör se den, inte bara ana den i diagrammet.
+  if (g.plannedAge < LAGSTA_UTTAGSALDER_ALLMAN) {
+    const afterGap = curve.find((c) => c.age >= LAGSTA_UTTAGSALDER_ALLMAN);
+    el.gapNote.textContent = afterGap
+      ? Math.round(g.plannedAge) +
+        " till " +
+        LAGSTA_UTTAGSALDER_ALLMAN +
+        " år: " +
+        kr(plannedNet) +
+        "/mån, bara tjänstepension och privat/ISK, allmän pension går inte att ta ut än. Från " +
+        LAGSTA_UTTAGSALDER_ALLMAN +
+        " år: " +
+        kr(afterGap.netMonthly) +
+        "/mån."
+      : "";
+    el.gapNote.classList.toggle("hidden", !afterGap);
+  } else {
+    el.gapNote.classList.add("hidden");
+  }
 
   // Golvet är satt i reala termer (dagens kronor, samma som modellens
   // nativa läge), precis som nettokurvan. Att visa det i valfri bas kräver
   // därför SAMMA per-ålder-faktor som nettot får, aldrig ett fast tal: annars
   // ritas en rät golvlinje mot en kurva som lutar i nom/life-basen, vilket är
   // fel även om ingen enskild siffra är fel var för sig. Se motsvarande fix
-  // i drawChart för golv- och falltröskellinjerna.
-  const d0 = displayFactor(g, curve[0].age - g.currentAge);
-  const startNetDisp = curve[0].netMonthly * d0;
-  const floorAtStart = g.floor * d0;
+  // i drawChart för golvlinjen.
   const minEntry = curve.find((c) => c.age === ev.minAtAge) || curve[0];
   const dMin = displayFactor(g, minEntry.age - g.currentAge);
   const minDisp = ev.minNet * dMin;
@@ -1025,14 +739,13 @@ function render() {
   const taxAfterForhojt = afterForhojt.grossYearly > 0 ? 1 - afterForhojt.netYearly / afterForhojt.grossYearly : 0;
 
   const stats = [
-    ["Netto vid start", kr(startNetDisp) + "/mån", "vid " + ageStr(A) + ", " + BASIS_NOTE[basis], false],
-    ["Lägsta netto", kr(minDisp) + "/mån", "vid " + ageStr(minEntry.age), minDisp < floorAtMin],
     [
-      "Fallet",
-      kr(startNetDisp - minDisp) + " (" + NF1.format(ev.worstDropPct * 100) + " %)",
-      "från startnivån till det lägsta, förankrat vid start",
-      ev.worstDropPct > g.dropTol
+      "Kapital du behöver vid " + Math.round(g.plannedAge) + " år",
+      requiredTotal === null ? "-" : kr(requiredTotal),
+      capitalGapNote,
+      requiredTotal !== null && requiredTotal > haveTotal
     ],
+    ["Lägsta netto", kr(minDisp) + "/mån", "vid " + ageStr(minEntry.age) + ", " + BASIS_NOTE[basis], minDisp < floorAtMin],
     ["Marginal till golvet", kr(marginDisp) + "/mån", marginDisp >= 0 ? "över golvet vid det sämsta året" : "under golvet", marginDisp < 0],
     [
       "Skatt vid start jämfört med efter förhöjt grundavdrag",
@@ -1056,16 +769,15 @@ function render() {
   ];
   el.stats.innerHTML = stats.map((s) => statRow(s[0], s[1], s[2], s[3])).join("");
 
-  drawChart(curve, rows, g, ev, A);
-  drawStrip(result, A, g);
-  writeUrlState(g, rows);
+  drawChart(curve, pots, g, ev, A);
+  writeUrlState(g);
 }
 
 // ---------- diagram ----------
 
 const W = 1000;
 let G = { l: 62, r: 12, t: 16, b: 34, H: 380, s: 1, font: 12 };
-let bandOn = { allman: true };
+let bandOn = { allman: true, tjp: true, priv: true };
 
 function geometry() {
   const w = el.chart.clientWidth || W;
@@ -1073,14 +785,10 @@ function geometry() {
   return { l: 62 * s, r: 12 * s, t: 16 * s, b: 34 * s, H: Math.round(380 * Math.min(2.05, s)), s: s, font: 12 * s };
 }
 
-function buildLegend(rows) {
+function buildLegend(pots) {
   const host = document.getElementById("legend");
-  if (bandOn.allman === undefined) bandOn.allman = true;
-  rows.forEach((row, i) => {
-    if (bandOn["r" + i] === undefined) bandOn["r" + i] = true;
-  });
   const items = [{ key: "allman", label: "Allmän pension", color: ALLMAN_COLOR }].concat(
-    rows.map((row, i) => ({ key: "r" + i, label: rowLabelOrDefault(row, i), color: ROW_COLORS[i % ROW_COLORS.length] }))
+    POTS.map((pot, i) => ({ key: pot.id, label: pot.title, color: POT_COLORS[i % POT_COLORS.length] }))
   );
   host.innerHTML = items
     .map(
@@ -1107,8 +815,8 @@ function buildLegend(rows) {
   });
 }
 
-function drawChart(curve, rows, g, ev, A) {
-  buildLegend(rows);
+function drawChart(curve, pots, g, ev, A) {
+  buildLegend(pots);
   G = geometry();
   const M = G;
   const H = G.H;
@@ -1119,17 +827,16 @@ function drawChart(curve, rows, g, ev, A) {
   const disp = curve.map((c) => displayFactor(g, c.age - g.currentAge));
   const netSeries = curve.map((c, i) => c.netMonthly * disp[i]);
   const allmanSeries = curve.map((c, i) => c.grossAllman * disp[i]);
-  const rowSeries = rows.map((row, ri) => curve.map((c, i) => c.grossPerSource[ri] * disp[i]));
-  // Golvet är ett realt tal precis som nettot, se kommentaren nedan vid
-  // floorSeries/dropSeries: måste skalas med samma disp[] för att jämförelsen
-  // mot netSeries ska förbli meningsfull i nom/life-basen.
+  const potSeries = pots.map((pot, pi) => curve.map((c, i) => c.grossPerPot[pi] * disp[i]));
+  // Golvet är ett realt tal precis som nettot, se kommentaren nedan: måste
+  // skalas med samma disp[] för att jämförelsen mot netSeries ska förbli
+  // meningsfull i nom/life-basen.
   const floorSeries = disp.map((d) => g.floor * d);
-  const dropSeries = disp.map((d) => netSeries[0] * (1 - g.dropTol) * (d / disp[0]));
 
   const stackTop = (i) => {
     let acc = bandOn.allman ? allmanSeries[i] : 0;
-    rowSeries.forEach((series, ri) => {
-      if (bandOn["r" + ri]) acc += series[i];
+    pots.forEach((pot, pi) => {
+      if (bandOn[pot.id]) acc += potSeries[pi][i];
     });
     return acc;
   };
@@ -1181,10 +888,10 @@ function drawChart(curve, rows, g, ev, A) {
       s += rect(bx, yy(acc + allmanSeries[i]), barW, yy(acc) - yy(acc + allmanSeries[i]), ALLMAN_COLOR);
       acc += allmanSeries[i];
     }
-    rowSeries.forEach((series, ri) => {
-      if (!bandOn["r" + ri] || !(series[i] > 0)) return;
-      s += rect(bx, yy(acc + series[i]), barW, yy(acc) - yy(acc + series[i]), ROW_COLORS[ri % ROW_COLORS.length]);
-      acc += series[i];
+    pots.forEach((pot, pi) => {
+      if (!bandOn[pot.id] || !(potSeries[pi][i] > 0)) return;
+      s += rect(bx, yy(acc + potSeries[pi][i]), barW, yy(acc) - yy(acc + potSeries[pi][i]), POT_COLORS[pi % POT_COLORS.length]);
+      acc += potSeries[pi][i];
     });
   }
 
@@ -1194,7 +901,6 @@ function drawChart(curve, rows, g, ev, A) {
     return '<path d="' + p + '" fill="none" stroke="' + color + '" stroke-width="' + width * G.s + '" stroke-dasharray="' + dash + '"/>';
   };
   s += dashedPath(floorSeries, "#e0798a", 1.4, 6 * G.s + " " + 4 * G.s);
-  s += dashedPath(dropSeries, "#8b6b73", 1.1, 4 * G.s + " " + 4 * G.s);
 
   // nettolinjen
   let path = "";
@@ -1241,7 +947,7 @@ function drawChart(curve, rows, g, ev, A) {
   s += "</svg>";
   el.chart.innerHTML = s;
 
-  wireTooltip(curve, netSeries, allmanSeries, rowSeries, rows, floorSeries);
+  wireTooltip(curve, netSeries, allmanSeries, potSeries, pots, floorSeries);
 }
 
 function rect(x, y, w, h, fill) {
@@ -1261,7 +967,7 @@ function rect(x, y, w, h, fill) {
   );
 }
 
-function wireTooltip(curve, netSeries, allmanSeries, rowSeries, rows, floorSeries) {
+function wireTooltip(curve, netSeries, allmanSeries, potSeries, pots, floorSeries) {
   const svg = el.chart.firstChild;
   if (!svg) return;
   const n = curve.length - 1;
@@ -1273,8 +979,8 @@ function wireTooltip(curve, netSeries, allmanSeries, rowSeries, rows, floorSerie
     i = Math.max(0, Math.min(n, i));
     let html = "<b>" + Math.round(curve[i].age) + ' år</b><br><span class="k">Netto</span> <b>' + kr(netSeries[i]) + "</b>/mån<br>";
     if (allmanSeries[i] > 0) html += '<span class="k">Allmän pension</span> ' + kr(allmanSeries[i]) + "<br>";
-    rows.forEach((row, ri) => {
-      if (rowSeries[ri][i] > 0) html += '<span class="k">' + rowLabelOrDefault(row, ri) + "</span> " + kr(rowSeries[ri][i]) + "<br>";
+    pots.forEach((pot, pi) => {
+      if (potSeries[pi][i] > 0) html += '<span class="k">' + pot.title + "</span> " + kr(potSeries[pi][i]) + "<br>";
     });
     html += '<span class="k">Golv</span> ' + kr(floorSeries[i]);
     el.tip.innerHTML = html;
@@ -1297,55 +1003,22 @@ function wireTooltip(curve, netSeries, allmanSeries, rowSeries, rows, floorSerie
   svg.addEventListener("touchend", () => el.tip.classList.remove("on"), { passive: true });
 }
 
-// ---------- uppfyllbarhetsremsa ----------
-//
-// En cell per skannad ålder, klickbar: gör icke-monotoniciteten synlig i
-// stället för att gömma den bakom en enda "lägsta ålder"-siffra, och
-// fungerar som en ålderspickare för diagrammet ovan.
-let viewedAge = null;
-
-function drawStrip(result, A, g) {
-  const host = el.strip;
-  host.innerHTML = result.map
-    .map((r) => {
-      const cls = r.ok ? "ok" : r.okFloor ? "fail-drop" : "fail-floor";
-      const on = Math.abs(r.age - A) < 1 / 24 ? " on" : "";
-      return '<button type="button" class="cell ' + cls + on + '" data-age="' + r.age + '" title="' + ageStr(r.age) + '"></button>';
-    })
-    .join("");
-  host.querySelectorAll("button").forEach((b) => {
-    b.addEventListener("click", () => {
-      viewedAge = parseFloat(b.dataset.age);
-      render();
-    });
-  });
-  el.stripLegendEarliest.textContent = result.earliest !== null ? ageStr(result.earliest) : "ingen ålder i intervallet klarar villkoren";
-}
-
 // ---------- URL-tillstånd ----------
 //
 // Samma kontrakt som RantaPaRanta/BilTCO (finance/CLAUDE.md): ett
 // query-parameter per kontroll-id, plain nummer, defaultvärden utelämnas.
-// Radetiketterna kodas MEDVETET INTE: de är det mest identifierande fältet
-// (se planens personuppgiftsavsnitt), så en delad länk bär beloppen men
-// aldrig vad du kallar dem.
 
 function applyUrlState() {
-  const s = parseUrlValues(CONTROLS.concat(ALL_ROW_CONTROLS), location.search);
+  const s = parseUrlValues(activeControls(), location.search);
   Object.keys(s.values).forEach((id) => setControl(id, s.values[id]));
   if (s.basis) setBasis(s.basis);
-  for (let i = 1; i <= MAX_ROWS; i++) {
-    const card = document.querySelector('.row-card[data-row="' + i + '"]');
-    if (card && card._updateVisibility) card._updateVisibility();
-  }
-  updateRowsVisibility();
 }
 
 let urlTimer = null;
-function writeUrlState(g, rows) {
+function writeUrlState(g) {
   clearTimeout(urlTimer);
   urlTimer = setTimeout(() => {
-    const active = activeControls(rows.length);
+    const active = activeControls();
     const values = {};
     active.forEach((c) => {
       values[c.id] = readControlValue(c.id);
@@ -1379,22 +1052,55 @@ function init() {
   );
   buildControlsInto(
     document.getElementById("honesty"),
-    CONTROLS.filter((c) => c.group === "honesty"),
+    CONTROLS.filter((c) => c.group === "honesty" && !c.hostOverride),
+    el
+  );
+  // "Din ålder nu", inflation och standardglidning hör hemma vid
+  // basväljaren, inte i "Din situation"/"Ärlighetsknappar": alla tre rör
+  // bara vad en viss basväljarknapp betyder, ingen kapital- eller
+  // åldersberäkning. Att lista dem bland de faktiskt verkningsfulla fälten
+  // var precis den sortens dolda-utan-att-vara-dold clutter Daniel
+  // (2026-08-19/20) reagerade på i Prisma. Inflation/drift är fortfarande
+  // ärlighetsknappar (group "honesty", presets rör dem aldrig, se testet),
+  // bara fysiskt flyttade via hostOverride.
+  buildControlsInto(
+    document.getElementById("basis-age"),
+    CONTROLS.filter((c) => c.group === "basis" || c.hostOverride === "basis-age"),
     el
   );
 
-  for (let i = 1; i <= MAX_ROWS; i++) buildRowCard(i);
+  POTS.forEach((pot) => buildPotCard(pot));
 
   buildPresets("presets", PRESETS);
+
+  // Golvet defaultar till en godtycklig 15 000 kr, inte till din faktiska
+  // inkomst: den här knappen ger en snabb utgångspunkt för "kan jag behålla
+  // dagens inkomst". Approximationen återanvänder pensionens skatteformel på
+  // dagens lön, vilket INTE är rätt skatt (jobbskatteavdrag på förvärvsinkomst
+  // saknas, se "vad den inte gör"), men appen har ingen egen löneskattmodell
+  // och det är en bättre startpunkt än ett gissat rundat tal.
+  const floorBtn = document.createElement("button");
+  floorBtn.type = "button";
+  floorBtn.id = "floor-to-income";
+  floorBtn.textContent = "Sätt till dagens nettolön (uppskattat)";
+  floorBtn.addEventListener("click", () => {
+    const g = globalsFromState();
+    const net = netMonthlyFromGrossYearly(readControlValue("income"), Math.round(g.currentAge), {
+      pbb: g.pbb,
+      kommunalskatt: g.kommunalskatt,
+      skiktgrans: g.skiktgrans
+    });
+    setControl("floor", Math.round(net / 100) * 100);
+    schedule();
+  });
+  el.floor.wrap.appendChild(floorBtn);
 
   el.stats = document.getElementById("stats");
   el.chart = document.getElementById("chart");
   el.tip = document.getElementById("tip");
-  el.strip = document.getElementById("strip");
-  el.stripLegendEarliest = document.getElementById("strip-earliest");
-  el.headlineEarliest = document.getElementById("headline-earliest");
-  el.headlineNaive = document.getElementById("headline-naive");
-  el.headlineNote = document.getElementById("headline-note");
+  el.headlinePlannedAge = document.getElementById("headline-planned-age");
+  el.headlineIncome = document.getElementById("headline-income");
+  el.gapNote = document.getElementById("gap-note");
 
   document.querySelectorAll("#basis button").forEach((b) => {
     b.addEventListener("click", () => {
@@ -1403,25 +1109,8 @@ function init() {
     });
   });
 
-  document.getElementById("row-add").addEventListener("click", () => {
-    const n = Math.round(readControlValue("rows"));
-    if (n >= MAX_ROWS) return;
-    setControl("rows", n + 1);
-    updateRowsVisibility();
-    schedule();
-  });
-  // Kortens synlighet styrs av "rows"-kontrollen oavsett hur den ändras:
-  // "+ Lägg till en rad" ovan, en preset, en URL, eller att dra reglaget
-  // direkt. De tre första anropar updateRowsVisibility() själva, men
-  // reglaget/textfältet går via buildControlsInto:s vanliga input-lyssnare,
-  // som bara vet om schedule(). Lägg på uppdateringen här i stället för att
-  // gafla in ett specialfall i buildControlsInto.
-  el.rows.num.addEventListener("input", updateRowsVisibility);
-  el.rows.rng.addEventListener("input", updateRowsVisibility);
-
   applyUrlState();
   setBasis(basis);
-  updateRowsVisibility();
 
   window.addEventListener("resize", () => {
     if (el.chart.firstChild) render();

@@ -27,7 +27,7 @@ reimplements a formatter, the link format, or any arithmetic.
 | `RantaPaRanta/`           | What a monthly saving is actually worth after inflation, standardglidning, avgift and ISK-skatt. The calculator the others hand a scenario to.                                                                                      |
 | `AmorteraEllerInvestera/` | Mortgage versus index fund, answered as a break-even expected return. Both branches spend the same monthly budget.                                                                                                                  |
 | `BilTCO/`                 | A car's true monthly cost, split into fixed and per-mil. Declining-balance depreciation, opportunity cost of the tied-up capital kept separate from loan interest, and a small trip-splitting section priced off the marginal cost. |
-| `NarKanJagSluta/`         | Lowest retirement age where lifelong net income stays above a floor, with no cliff when a time-limited tjänstepension payout ends. Per-policy rows, searched downward, unlike minPension/Pensionsmyndigheten's own tools.           |
+| `NarKanJagSluta/`         | Given allmän pension, tjänstepension and privat/ISK capital at retirement: monthly income at a planned age, live as you drag the capital sliders, and the capital needed to hold a floor for life.                                  |
 
 ## Tax and rate numbers
 
